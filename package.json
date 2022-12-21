@@ -28,10 +28,8 @@
   "dependencies": {
     "@tago-io/sdk": "^10.10.0",
     "@types/prompts": "^2.4.2",
-    "app-root-path": "^3.1.0",
     "colors-cli": "^1.0.29",
     "commander": "^9.4.1",
-    "prompt-sync": "^4.2.0",
     "prompts": "^2.4.2",
     "socket.io-client": "4.5.4",
     "ts-node-dev": "2.0.0"
@@ -39,8 +37,6 @@
   "devDependencies": {
     "@types/jest": "29.2.4",
     "@types/node": "^18.11.17",
-    "@types/prompt-sync": "^4.2.0",
-    "@types/readline-sync": "^1.4.4",
     "@types/socket.io-client": "3.0.0",
     "@typescript-eslint/eslint-plugin": "^5.47.0",
     "@typescript-eslint/parser": "^5.47.0",

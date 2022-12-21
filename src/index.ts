@@ -5,6 +5,9 @@ import { deviceCommands } from "./commands/devices";
 import { setEnvironment } from "./commands/devices/set-env";
 import { tagoLogin } from "./commands/login";
 import { startConfig } from "./commands/start-config";
+import { getConfigFile } from "./lib/config-file";
+
+const defaultEnvironment = getConfigFile()?.default || "prod";
 
 function getAllCommands(program: Command) {
   analysisCommands(program);
@@ -26,8 +29,8 @@ program.configureOutput({
 program
   .command("init")
   .description("create/update the config file for analysis in your current folder")
-  .argument("[environment]", "name of the environment.", "prod")
-  .option("-t, --token <profile-token>", "profile token of the environment")
+  .argument("[environment]", "name of the environment.", defaultEnvironment)
+  .option("-t, --token <profile-token>", "profile token of the environment and skip login step")
   .action(startConfig)
   .addHelpText(
     "after",
@@ -43,10 +46,10 @@ program
 program
   .command("login")
   .description("login to your account and store profile_token in the tago-lock.")
-  .argument("<environment>", "name of the environment")
+  .argument("[environment]", "name of the environment", defaultEnvironment)
   .option("-u, --email <email>", "your TagoIO email")
   .option("-p, --password <password>", "your TagoIO password")
-  .option("-t, --token <profile-token>", "set a profile-token for the environment")
+  .option("-t, --token <profile-token>", "set a profile-token for the environment and skip login step")
   .action(tagoLogin)
   .addHelpText(
     "after",
@@ -61,7 +64,7 @@ program
 
 program
   .command("set-env")
-  .description("set default environment")
+  .description("set your default environment from tagoconfig.ts")
   .argument("[environment]", "name of the environment")
   .action(setEnvironment)
   .addHelpText(
