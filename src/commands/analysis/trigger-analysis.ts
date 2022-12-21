@@ -1,6 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler } from "../../lib/messages";
+import { searchName } from "./deploy";
 
 async function triggerAnalysis(scriptName: string, options: { environment: string }) {
   const config = getEnvironmentConfig(options.environment);
@@ -9,14 +10,12 @@ async function triggerAnalysis(scriptName: string, options: { environment: strin
     return;
   }
 
-  let scriptList = Object.keys(config.analysisIDList);
-  scriptList = scriptList.filter((key) => key.toLowerCase().includes(scriptName.toLowerCase()));
+  const scriptList = config.analysisList.filter((x) => searchName(scriptName, x.fileName, x.name));
   // scriptList = scriptList.filter((key) => cmd.find((x) => key.toLowerCase().includes(x)));
 
   const account = new Account({ token: config.profileToken });
-  for (const script_name of scriptList) {
-    const analysisID = config.analysisIDList[script_name];
-    console.log(`> Analysis found: ${script_name} [${analysisID}].`);
+  for (const { id: analysisID, fileName } of scriptList) {
+    console.log(`> Analysis found: ${fileName} [${analysisID}].`);
     await account.analysis.run(analysisID).then(console.log);
   }
 }

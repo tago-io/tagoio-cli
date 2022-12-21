@@ -1,8 +1,8 @@
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
-import { keyInSelect, keyInYN, question } from "readline-sync";
+import prompts from "prompts";
 import { getConfigFile, IEnvironment, writeConfigFileEnv } from "../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, questionMSG } from "../lib/messages";
+import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { tagoLogin } from "./login";
 
@@ -17,7 +17,13 @@ interface ConfigOptions {
  * @returns
  */
 async function createEnvironmentToken(environment: string) {
-  if (!keyInYN(questionMSG("Do you want to login and create a token now? (Press N to create a token)"), { defaultInput: "N" })) {
+  const { tryLogin } = await prompts({
+    message: "Do you want to login and create a token now?",
+    type: "confirm",
+    name: "tryLogin",
+    hint: "Press N to enter a token later",
+  });
+  if (!tryLogin) {
     return;
   }
   infoMSG(`You can create a token by running: ${highlightMSG("tagoio-cli login")}`);
@@ -34,41 +40,34 @@ async function createEnvironmentToken(environment: string) {
  * @param oldList
  * @returns
  */
-async function getAnalysisList(account: Account, oldList: IEnvironment["analysisIDList"] = {}) {
+async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
 
   if (!analysisList) {
-    return {};
+    return [];
   }
 
   const getName = (analysis: AnalysisInfo) => `[${analysis.id}] ${analysis.name}`;
 
-  const oldIDList = new Set(Object.keys(oldList).map((x) => oldList[x]));
-  const analysisOptions = analysisList.map((x) => (oldIDList.has(x.id) ? highlightMSG(getName(x)) : getName(x)));
+  const oldIDList = new Set(oldList.map((x) => x.id));
   const configList: AnalysisInfo[] = analysisList.filter((x) => oldIDList.has(x.id));
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const index = keyInSelect(analysisOptions, "Which analysis to take?");
-    if (index === -1) {
-      break;
-    }
+  const analysisOptions = analysisList.map((x) => ({ title: getName(x), selected: configList.some((y) => y.id === x.id), value: x }));
+  const { response } = await prompts({
+    type: "autocompleteMultiselect",
+    limit: 20,
+    choices: analysisOptions,
+    message: "Which analysis to take?",
+    name: "response",
+  });
 
-    const selectedAnalysis = analysisList[index];
-    const configID = configList.findIndex((x) => x.id === selectedAnalysis.id);
-    if (configID !== -1) {
-      analysisOptions[index] = getName(selectedAnalysis);
-      configList.splice(configID);
-      continue;
-    }
-    analysisOptions[index] = `${highlightMSG(getName(selectedAnalysis))}`;
-    configList.push(selectedAnalysis);
-  }
-
-  const result = configList.reduce((final, an) => {
-    final[an.name] = an.id;
-    return final;
-  }, {} as IEnvironment["analysisIDList"]);
+  const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
+  const result: IEnvironment["analysisList"] = (response as AnalysisInfo[]).map((x) => ({
+    fileName: formatFileName(x.name),
+    name: x.name,
+    id: x.id,
+    ...oldList.find((old) => old.id === x.id),
+  }));
 
   return result;
 }
@@ -78,9 +77,9 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
  * @param param0
  * @returns
  */
-async function startConfig({ token, environment }: ConfigOptions) {
+async function startConfig(environment: string, { token }: ConfigOptions) {
   if (!environment) {
-    environment = question(questionMSG("Enter a name for this environment: "), { defaultInput: "prod" });
+    ({ environment } = await prompts({ message: "Enter a name for this environment: ", type: "text", name: "environment" }));
   }
 
   const configFile = getConfigFile();
@@ -102,9 +101,9 @@ async function startConfig({ token, environment }: ConfigOptions) {
   }
 
   const account = new Account({ token });
-  const analysisList = await getAnalysisList(account, configFile[environment]?.analysisIDList);
+  const analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
 
-  const newEnv: IEnvironment = { analysisIDList: analysisList };
+  const newEnv: IEnvironment = { analysisList: analysisList };
   writeConfigFileEnv(environment, newEnv);
 }
 

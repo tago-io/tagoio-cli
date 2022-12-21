@@ -23,28 +23,27 @@ async function connectAnalysisConsole(scriptName: string, options: { environment
     return;
   }
 
-  const scriptList = Object.keys(config.analysisIDList);
-  const scriptKey = scriptList.find((key) => key.toLowerCase().includes(scriptName.toLowerCase()));
+  const scriptObj = config.analysisList.find((x) => x.name.toLowerCase().includes(scriptName.toLowerCase()));
 
-  if (!scriptKey) {
+  if (!scriptObj) {
     errorHandler(`Analysis not found: ${scriptName}`);
     return process.exit();
   }
 
   const account = new Account({ token: config.profileToken });
-  const analysis_info = await account.analysis.info(config.analysisIDList[scriptKey]).catch(() => null);
+  const analysis_info = await account.analysis.info(scriptObj.id).catch(() => null);
   if (!analysis_info) {
-    errorHandler(`Analysis with ID: ${config.analysisIDList[scriptKey]} couldn't be found.`);
+    errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);
     return process.exit();
   }
 
   const socket = apiSocket(config.profileToken);
   socket.on("connect", () => {
     infoMSG("Connected to TagoIO, Getting analysis information...");
-    socket.emit("attach", "analysis", config.analysisIDList[scriptKey]);
+    socket.emit("attach", "analysis", scriptObj.id);
     socket.emit("attach", {
       resourceName: "analysis",
-      resourceID: config.analysisIDList[scriptKey],
+      resourceID: scriptObj.id,
     });
   });
 

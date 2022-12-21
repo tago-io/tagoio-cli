@@ -13,23 +13,17 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
 
   scriptName = scriptName.toLowerCase();
 
-  const scriptList = Object.keys(config.analysisIDList);
-  const scriptToRunName = scriptList.find((key) => key.toLowerCase().includes(scriptName));
+  const scriptToRun = config.analysisList.find((x) => x.name.toLowerCase().includes(scriptName));
   // const scriptToRunName = scriptList.find((key) => cmd.find((x) => key.toLowerCase().includes(x)));
-  if (!scriptToRunName) {
+  if (!scriptToRun) {
     errorHandler(`Analysis couldnt be found in your environment: ${scriptName}`);
     return process.exit();
   }
 
-  const analysisID = config.analysisIDList[scriptToRunName];
-  if (!analysisID) {
-    return errorHandler(`> Analysis not found: ${scriptToRunName}.`);
-  }
-
   const account = new Account({ token: config.profileToken });
 
-  const { token: analysisToken } = await account.analysis.info(analysisID);
-  successMSG(`> Analysis found: ${highlightMSG(scriptToRunName)} [${highlightMSG(analysisToken)}].`);
+  const { token: analysisToken } = await account.analysis.info(scriptToRun.id);
+  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} [${highlightMSG(analysisToken)}].`);
 
   const spawnOptions: SpawnOptions = {
     shell: true,
@@ -39,11 +33,11 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
       ...process.env,
       T_EXTERNAL: "external",
       T_ANALYSIS_TOKEN: analysisToken,
-      T_ANALYSIS_ID: analysisID,
+      T_ANALYSIS_ID: scriptToRun.id,
     },
   };
 
-  const scriptPath = `${config.analysisPath}/${scriptToRunName}`;
+  const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
   let cmd = "ts-node-dev --quiet";
   if (options.debug) {
     cmd += " --inspect";
@@ -53,10 +47,10 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
     cmd += " --clear";
   }
 
-  await account.analysis.edit(analysisID, { run_on: "external" });
+  await account.analysis.edit(scriptToRun.id, { run_on: "external" });
   const spawnProccess = spawn(`${cmd} ${scriptPath}`, spawnOptions);
   spawnProccess.addListener("close", async () => {
-    await account.analysis.edit(analysisID, { run_on: "tago" }).then(infoMSG);
+    await account.analysis.edit(scriptToRun.id, { run_on: "tago" }).then(infoMSG);
   });
 }
 export { runAnalysis };

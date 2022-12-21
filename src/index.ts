@@ -26,7 +26,7 @@ program.configureOutput({
 program
   .command("init")
   .description("create/update the config file for analysis in your current folder")
-  .option("-env, --environment <name>", "name of the environment.")
+  .argument("<environment>", "name of the environment.")
   .option("-t, --token <profile-token>", "profile token of the environment")
   .action(startConfig)
   .addHelpText(
@@ -62,12 +62,13 @@ program
 program
   .command("set-env")
   .description("set default environment")
-  .argument("<environment>", "name of the environment")
+  .argument("[environment]", "name of the environment")
   .action(setEnvironment)
   .addHelpText(
     "after",
     `
 Example:
+   $ tago-cli set-env
    $ tago-cli set-env dev`
   );
 

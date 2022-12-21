@@ -26,6 +26,10 @@ async function deleteOldFile(buildedFile: string) {
   }
 }
 
+function searchName(key: string, ...args: string[]) {
+  return args.find((x) => x.toLowerCase() === key.toLowerCase());
+}
+
 async function buildScript(account: Account, scriptName: string, analysisID: string, config: EnvConfig) {
   const { analysisPath, buildPath, folderPath } = getPaths(config);
 
@@ -62,18 +66,16 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     return;
   }
 
-  let scriptList = Object.keys(config.analysisIDList);
+  let scriptList = config.analysisList;
   if (cmdScriptName !== "all") {
-    scriptList = scriptList.filter((key) => key.toLowerCase().includes(cmdScriptName));
+    scriptList = scriptList.filter((x) => searchName(cmdScriptName, x.fileName, x.name));
   }
 
   const account = new Account({ token: config.profileToken });
-  for (const scriptName of scriptList) {
-    const analysisID = config.analysisIDList[scriptName];
-
-    await buildScript(account, scriptName, analysisID, config);
+  for (const { id, fileName } of scriptList) {
+    await buildScript(account, fileName, id, config);
   }
   process.exit();
 }
 
-export { deployAnalysis };
+export { deployAnalysis, searchName };

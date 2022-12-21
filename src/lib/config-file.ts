@@ -4,7 +4,7 @@ import { errorHandler, highlightMSG, infoMSG } from "./messages";
 import { readToken } from "./token";
 
 interface IEnvironment {
-  analysisIDList: { [key: string]: string };
+  analysisList: { name: string; fileName: string; id: string }[];
 }
 
 interface IConfigFileEnvs {

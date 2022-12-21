@@ -25,7 +25,7 @@ function deviceCommands(program: Command) {
   program
     .command("device-info")
     .description("Get information about a device and it's configuration parameters.")
-    .argument("<ID/Token>", "ID/Token of your device")
+    .argument("[ID/Token]", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
     .action(deviceInfo)
     .addHelpText(

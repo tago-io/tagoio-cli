@@ -1,7 +1,7 @@
-import appRootPath from "app-root-path";
+import { cwd } from "process";
 
 function getCurrentFolder() {
-  return appRootPath.toString();
+  return cwd();
 }
 
 export { getCurrentFolder };

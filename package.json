@@ -15,11 +15,12 @@
   "license": "ISC",
   "dependencies": {
     "@tago-io/sdk": "^10.10.0",
+    "@types/prompts": "^2.4.2",
     "app-root-path": "^3.1.0",
     "colors-cli": "^1.0.29",
     "commander": "^9.4.1",
     "prompt-sync": "^4.2.0",
-    "readline-sync": "^1.4.10",
+    "prompts": "^2.4.2",
     "socket.io-client": "4.5.4",
     "ts-node-dev": "2.0.0"
   },
