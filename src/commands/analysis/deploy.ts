@@ -27,15 +27,15 @@ async function deleteOldFile(buildedFile: string) {
 }
 
 function searchName(key: string, ...args: string[]) {
-  return args.find((x) => x.toLowerCase() === key.toLowerCase());
+  return args.some((x) => x.toLowerCase().includes(key.toLowerCase()));
 }
 
 async function buildScript(account: Account, scriptName: string, analysisID: string, config: EnvConfig) {
   const { analysisPath, buildPath, folderPath } = getPaths(config);
 
-  const analysisFile = `${analysisPath}/${scriptName}.ts`;
-  const buildFile = `${buildPath}/${scriptName}.tago.js`;
-  const buildedFile = `${folderPath}/${buildFile.replace(".", "")}`;
+  const analysisFile = `${analysisPath}/${scriptName}`;
+  const buildFile = `${buildPath}/${scriptName.replace(".ts", "")}.tago.js`;
+  const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
   execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
@@ -67,8 +67,14 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   }
 
   let scriptList = config.analysisList;
+  console.log(scriptList);
   if (cmdScriptName !== "all") {
     scriptList = scriptList.filter((x) => searchName(cmdScriptName, x.fileName, x.name));
+  }
+
+  if (scriptList.length === 0) {
+    errorHandler(`No analysis found containing name: ${cmdScriptName}`);
+    return;
   }
 
   const account = new Account({ token: config.profileToken });

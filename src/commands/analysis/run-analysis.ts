@@ -39,16 +39,15 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
   let cmd = "ts-node-dev --quiet";
+  if (options.clear) {
+    cmd += " --clear";
+  }
   if (options.debug) {
     cmd += " --inspect";
   }
 
-  if (options.clear) {
-    cmd += " --clear";
-  }
-
   await account.analysis.edit(scriptToRun.id, { run_on: "external" });
-  const spawnProccess = spawn(`${cmd} ${scriptPath}`, spawnOptions);
+  const spawnProccess = spawn(`${cmd} -- ${scriptPath}`, spawnOptions);
   spawnProccess.addListener("close", async () => {
     await account.analysis.edit(scriptToRun.id, { run_on: "tago" }).then(infoMSG);
   });

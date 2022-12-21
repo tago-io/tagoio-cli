@@ -1,8 +1,20 @@
 {
   "name": "tagoio-cli",
   "version": "1.0.0",
-  "description": "",
+  "description": "TagoIO Application CLI Node.JS",
   "main": "build/index.js",
+  "type": "commonjs",
+  "repository": "tago-io/tagoio-cli",
+  "keywords": [
+    "tago",
+    "tagoio",
+    "tago-io",
+    "iot",
+    "tago.io",
+    "cli",
+    "analysis",
+    "device"
+  ],
   "scripts": {
     "start": "node build/index.js",
     "build": "tsc --build",
@@ -11,7 +23,7 @@
   "bin": {
     "tago-cli": "./build/index.js"
   },
-  "author": "TagoIO",
+  "author": "TagoIO LLC",
   "license": "ISC",
   "dependencies": {
     "@tago-io/sdk": "^10.10.0",
