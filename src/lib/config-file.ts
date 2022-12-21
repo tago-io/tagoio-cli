@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { getCurrentFolder } from "./get-current-folder";
-import { errorHandler } from "./messages";
+import { errorHandler, highlightMSG, infoMSG } from "./messages";
 import { readToken } from "./token";
 
 interface IEnvironment {
@@ -56,6 +56,7 @@ function getEnvironmentConfig(environment?: string) {
   }
 
   if (configFile.default) {
+    infoMSG(`Using default environment: ${highlightMSG(configFile.default)}`);
     return { ...configFile[configFile.default], ...defaultPaths, profileToken: readToken(configFile.default) };
   }
 }
@@ -70,6 +71,12 @@ function writeConfigFileEnv(environment: string, data: IEnvironment) {
   // @ts-expect-error token is set by functions
   delete data.profileToken;
   configFile[environment] = data;
+
+  writeFileSync(configPath, JSON.stringify(configFile, null, 4), { encoding: "utf-8" });
+}
+
+function writeToConfigFile(configFile: IConfigFile & IConfigFileEnvs) {
+  const configPath = getFilePath();
 
   writeFileSync(configPath, JSON.stringify(configFile, null, 4), { encoding: "utf-8" });
 }
@@ -90,4 +97,4 @@ function setDefault(environment: string) {
   writeFileSync(configPath, JSON.stringify(configFile), { encoding: "utf-8" });
 }
 
-export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, setDefault, IConfigFile, IEnvironment };
+export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, IConfigFile, IEnvironment };
