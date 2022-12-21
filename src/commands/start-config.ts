@@ -1,6 +1,7 @@
+import { readdirSync } from "fs";
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
-import prompts from "prompts";
+import prompts, { Choice } from "prompts";
 import { getConfigFile, IEnvironment, writeConfigFileEnv } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
@@ -62,14 +63,42 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
   });
 
   const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
-  const result: IEnvironment["analysisList"] = (response as AnalysisInfo[]).map((x) => ({
+  const analysisResult: IEnvironment["analysisList"] = (response as AnalysisInfo[]).map((x) => ({
     fileName: formatFileName(x.name),
     name: x.name,
     id: x.id,
     ...oldList.find((old) => old.id === x.id),
   }));
 
-  return result;
+  return analysisResult;
+}
+
+async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
+  infoMSG(`Searching for files at ${analysisPath}`);
+  const files: Choice[] = readdirSync(analysisPath).map((x) => ({ title: x }));
+
+  for (const analysis of analysisList) {
+    const editFile = files.find((x) => x.title === analysis.fileName);
+    if (editFile) {
+      editFile.selected = true;
+    }
+
+    const { response } = await prompts({
+      type: "autocomplete",
+      limit: 20,
+      choices: files,
+      message: `Which analysis do you want to relate to ${highlightMSG(analysis.name)}`,
+      name: "response",
+    });
+
+    const fileIndex = files.findIndex((x) => x.title === response);
+    if (fileIndex !== -1) {
+      files.splice(fileIndex, 1);
+    }
+
+    analysis.fileName = response;
+  }
+  return analysisList;
 }
 
 /**
@@ -101,7 +130,8 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   }
 
   const account = new Account({ token });
-  const analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
+  let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
+  analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
   const newEnv: IEnvironment = { analysisList: analysisList };
   writeConfigFileEnv(environment, newEnv);

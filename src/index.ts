@@ -26,7 +26,7 @@ program.configureOutput({
 program
   .command("init")
   .description("create/update the config file for analysis in your current folder")
-  .argument("<environment>", "name of the environment.")
+  .argument("[environment]", "name of the environment.", "prod")
   .option("-t, --token <profile-token>", "profile token of the environment")
   .action(startConfig)
   .addHelpText(
