@@ -8,7 +8,7 @@ Devices only requires you to have generate your profile-token or authenticated w
 - Download this repository.
 - Run **npm install** to install dependecies
 - Run **npm run build** to create the build
-- Run **npm i -g** to install globally
+- Run **npm link** to install globally
 - Use it by running **tago-cli**
 
 ## Command List
