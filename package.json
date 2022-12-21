@@ -2,10 +2,14 @@
   "name": "tagoio-cli",
   "version": "1.0.0",
   "description": "",
-  "main": "tsnd src/index.ts",
+  "main": "build/index.js",
   "scripts": {
-    "start": "tsnd src/index.ts --",
+    "start": "tsnd src/index.ts",
+    "build": "tsc --build",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "tago-cli": "./build/index.js"
   },
   "author": "TagoIO",
   "license": "ISC",

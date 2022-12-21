@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Command } from "commander";
 import { analysisCommands } from "./commands/analysis";
 import { deviceCommands } from "./commands/devices";
