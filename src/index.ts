@@ -6,6 +6,9 @@ import { setEnvironment } from "./commands/devices/set-env";
 import { tagoLogin } from "./commands/login";
 import { startConfig } from "./commands/start-config";
 import { getConfigFile } from "./lib/config-file";
+import { configureHelp } from "./lib/configure-help";
+
+const packageJSON = require("../package.json");
 
 const defaultEnvironment = getConfigFile()?.default || "prod";
 
@@ -20,11 +23,13 @@ function errorColor(str: string) {
 }
 
 const program = new Command();
-program.version("1.0.0").description("TagoIO Command Line Tools");
+program.version(packageJSON.version).description("TagoIO Command Line Tools");
 
 program.configureOutput({
   writeErr: (str) => process.stdout.write(`[${errorColor("ERROR")}] ${str}`),
 });
+
+configureHelp(program);
 
 program
   .command("init")

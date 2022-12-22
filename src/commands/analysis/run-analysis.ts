@@ -2,7 +2,7 @@ import { spawn, SpawnOptions } from "child_process";
 import { Account } from "@tago-io/sdk";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
+import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 
 async function runAnalysis(scriptName: string, options: { environment: string; debug: boolean; clear: boolean }) {
   const config = getEnvironmentConfig(options.environment);
@@ -38,7 +38,19 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
   };
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
-  let cmd = "ts-node-dev --quiet";
+  let cmd: string = "";
+  if (scriptToRun.fileName.endsWith(".ts")) {
+    cmd += "ts-node-dev --quiet";
+  }
+  if (scriptToRun.fileName.endsWith(".js")) {
+    cmd += "node ";
+  }
+
+  if (!cmd) {
+    errorHandler(`Couldn't run file ${scriptToRun.fileName}`);
+    return;
+  }
+
   if (options.clear) {
     cmd += " --clear";
   }
@@ -48,8 +60,9 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
 
   await account.analysis.edit(scriptToRun.id, { run_on: "external" });
   const spawnProccess = spawn(`${cmd} -- ${scriptPath}`, spawnOptions);
-  spawnProccess.addListener("close", async () => {
-    await account.analysis.edit(scriptToRun.id, { run_on: "tago" }).then(infoMSG);
-  });
+
+  const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" }).then(console.log);
+  spawnProccess.on("close", killAnalysis);
+  spawnProccess.on("SIGINT", killAnalysis);
 }
 export { runAnalysis };
