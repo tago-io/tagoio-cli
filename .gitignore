@@ -54,5 +54,6 @@ yarn.lock
 .tago-lock.test.lock
 .tago-lock.prod.lock
 tagoconfig.json
+tagoconfig.user.json
 src/analysis
 .tago-lock.ty.lock
