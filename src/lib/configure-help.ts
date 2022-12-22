@@ -1,22 +1,46 @@
-import { bold, cyan, italic, red, yellow } from "colors-cli";
+import { bold, cyan, green, italic, red, yellow } from "colors-cli";
 import { Command } from "commander";
 
-const setParamColor = (param: string) => (param.includes("<") ? red(`${param}`) : cyan(`${param}`));
+const setParamColor = (param: string) => (param.includes("<") ? red(italic(`${param}`)) : cyan(italic(`${param}`)));
 
 function configureHelp(program: Command) {
   program.addHelpText("afterAll", `\n${red("<param>")}: required\n${cyan("[param]")}: optional`);
 
+  const categories = [
+    { category: "analysis", marked: "", title: "Analysis" },
+    { category: "device", marked: "", title: "Device" },
+    // { category: "action", marked: "", title: "Action" },
+    // { category: "dashboard", marked: "", title: "Fashboard" },
+    { category: "help", marked: "", title: "Help" },
+  ];
+
+  // console.log(categories);
+  // const subcommandTermList: string[] = [];
   program.configureHelp({
+    // helpWidth: 500,
+    // padWidth: () => 300,
     subcommandTerm: (help) => {
-      const t = help.name() === "help" ? "\n" : "";
+      const cmdName = help.name();
+      const header = categories.find((x) => (!x.marked || x.marked === cmdName) && cmdName.includes(x.category));
+      // console.log(header);
+      if (header) {
+        header.marked = cmdName;
+      }
+      const headerText = header ? `\n${bold(header.title)}\n` : "";
+
       const usage = help.usage().replaceAll("[options] ", "");
       const params = setParamColor(` ${usage}`);
-      return `${t}- ${bold(help.name())}${params}`;
+
+      const alias = help.alias() ? `${help.alias()}, ` : "";
+
+      // console.log(`${headerText}- ${bold(cmdName)}${params}`);
+      return `${headerText}- ${alias}${cmdName}${params}`;
     },
     subcommandDescription: (help) => {
-      const aliases = help.alias() ? cyan(` (alias: ${help.alias()})`) : "";
-      const options = help.usage().includes("options") ? yellow(` [OPTIONS]`) : "";
-      return `${help.description()}${aliases}${options}`;
+      const cmdName = help.name();
+      const header = categories.find((x) => (!x.marked || x.marked === cmdName) && cmdName.includes(x.category));
+      // const options = help.usage().includes("options") ? "" : "";
+      return `${header ? "      " : ""}${help.description()}`;
     },
     optionTerm: (help) => {
       let flags = help.flags;

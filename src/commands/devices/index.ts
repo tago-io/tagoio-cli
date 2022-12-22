@@ -8,7 +8,7 @@ function deviceCommands(program: Command) {
     .command("device-inspector")
     .alias("inspect")
     .description("Connect to your Device Live Inspector")
-    .argument("<ID/Token>", "ID/Token of your device")
+    .argument("[ID/Token]", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
     // .option("-p, --postOnly", "filter logs to show POST content only")
     // .option("-g, --getOnly", "fiter logs to show GET content only")
@@ -29,6 +29,9 @@ function deviceCommands(program: Command) {
     .description("Get information about a device and it's configuration parameters.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
+    .option("-js, --json", "return json list")
+    .option("-raw, --raw", "get object the same as stored")
+    .option("-tk, --tokens", "get tokens")
     .action(deviceInfo)
     .addHelpText(
       "after",
@@ -46,6 +49,8 @@ function deviceCommands(program: Command) {
     .option("-k, --tagkey [key]", "tag key to filter in")
     .option("-v, --tagvalue [value]", "tag value to filter in")
     .option("-s, --stringify", "return list as text")
+    .option("-js, --json", "return json list")
+    .option("-raw, --raw", "get object the same as stored")
     .action(deviceList)
     .addHelpText(
       "after",

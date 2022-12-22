@@ -15,6 +15,7 @@ const defaultEnvironment = getConfigFile()?.default || "prod";
 function getAllCommands(program: Command) {
   analysisCommands(program);
   deviceCommands(program);
+  configureHelp(program);
 }
 
 function errorColor(str: string) {
@@ -28,8 +29,6 @@ program.version(packageJSON.version).description("TagoIO Command Line Tools");
 program.configureOutput({
   writeErr: (str) => process.stdout.write(`[${errorColor("ERROR")}] ${str}`),
 });
-
-configureHelp(program);
 
 program
   .command("init")
