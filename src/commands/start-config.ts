@@ -2,6 +2,7 @@ import { readdirSync } from "fs";
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
 import prompts, { Choice } from "prompts";
+import { cosine } from "string-comparison";
 import { getConfigFile, IEnvironment, writeConfigFileEnv } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
@@ -75,21 +76,25 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
 
 async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
   infoMSG(`Searching for files at ${analysisPath}`);
-  const files: Choice[] = readdirSync(analysisPath).map((x) => ({ title: x }));
+  let files: Choice[] = readdirSync(analysisPath).map((x) => ({ title: x }));
 
   for (const analysis of analysisList) {
-    const editFile = files.find((x) => x.title === analysis.fileName);
-    if (editFile) {
-      editFile.selected = true;
-    }
+    files = files.sort((a, b) => (cosine.distance(analysis.name, a.title) > cosine.distance(analysis.name, b.title) ? 1 : -1));
 
+    const editFile = files.find((x) => x.title === analysis.fileName);
     const { response } = await prompts({
       type: "autocomplete",
       limit: 20,
-      choices: files,
+      choices: files.concat([{ title: "> Skip", value: ">skip-selector" }]),
       message: `Which analysis do you want to relate to ${highlightMSG(analysis.name)}`,
       name: "response",
+      initial: editFile?.title,
     });
+
+    if (response === ">skip-selector") {
+      analysis.fileName = "";
+      continue;
+    }
 
     const fileIndex = files.findIndex((x) => x.title === response);
     if (fileIndex !== -1) {

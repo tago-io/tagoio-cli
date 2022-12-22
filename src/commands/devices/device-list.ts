@@ -39,13 +39,14 @@ async function deviceList(options: IOptions) {
       f[t.key] = t.value;
       return f;
     }, {} as any);
+  const mapDate = (date: Date | null) => (date ? `${date?.toLocaleDateString()} ${date?.toLocaleTimeString()}` : undefined);
 
-  const resultList = deviceList.map((x) => ({ ...x, tags: mapTags(x.tags) }));
+  const resultList = deviceList.map((x) => ({ ...x, tags: mapTags(x.tags), last_input: mapDate(x.last_input) }));
 
   if (options.stringify) {
     console.info(JSON.stringify(resultList, null, 2));
   } else {
-    console.info(resultList);
+    console.table(resultList);
   }
   successMSG(`${deviceList.length} devices found.`);
 }

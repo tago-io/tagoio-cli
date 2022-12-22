@@ -27,7 +27,7 @@ async function deleteOldFile(buildedFile: string) {
 }
 
 function searchName(key: string, ...args: string[]) {
-  return args.some((x) => x.toLowerCase().includes(key.toLowerCase()));
+  return args.some((x) => x.toLowerCase().replace(".ts", "").includes(key.toLowerCase()));
 }
 
 async function buildScript(account: Account, scriptName: string, analysisID: string, config: EnvConfig) {

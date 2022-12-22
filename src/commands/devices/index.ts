@@ -6,6 +6,7 @@ import { inspectorConnection } from "./device-live-inspector";
 function deviceCommands(program: Command) {
   program
     .command("device-inspector")
+    .alias("inspect")
     .description("Connect to your Device Live Inspector")
     .argument("<ID/Token>", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
@@ -24,6 +25,7 @@ function deviceCommands(program: Command) {
 
   program
     .command("device-info")
+    .alias("info")
     .description("Get information about a device and it's configuration parameters.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
@@ -38,7 +40,8 @@ function deviceCommands(program: Command) {
 
   program
     .command("device-list")
-    .description("Get information about a device and it's configuration parameters.")
+    .alias("dl")
+    .description("Get the list of devices.")
     .option("-n, --name [deviceName]", "partial name of the device name")
     .option("-k, --tagkey [key]", "tag key to filter in")
     .option("-v, --tagvalue [value]", "tag value to filter in")

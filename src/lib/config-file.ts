@@ -71,6 +71,9 @@ function writeConfigFileEnv(environment: string, data: IEnvironment) {
   // @ts-expect-error token is set by functions
   delete data.profileToken;
   configFile[environment] = data;
+  if (!configFile.default) {
+    configFile.default = environment;
+  }
 
   writeFileSync(configPath, JSON.stringify(configFile, null, 4), { encoding: "utf-8" });
 }
