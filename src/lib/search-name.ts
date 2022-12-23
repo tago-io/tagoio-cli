@@ -1,12 +1,5 @@
 import { cosine } from "string-comparison";
 
-function findAllNames(key: string, names: string[]) {
-  return names.some((x) => {
-    const argValue = x.toLowerCase().replace(".ts", "");
-    return cosine.similarity(key, argValue) > 0.7;
-  });
-}
-
 function orderNames(key: string, names: string[]) {
   const similarity = Math.max(
     ...names.map((x) => {
