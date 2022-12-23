@@ -1,7 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import { RunInfo } from "@tago-io/sdk/out/modules/Account/run.types";
-import { errorHandler } from "../../../lib/messages";
-import { replaceObj } from "../../../lib/replace-obj";
+import { errorHandler } from "../../../../lib/messages";
+import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 
 interface ISidebarButton {

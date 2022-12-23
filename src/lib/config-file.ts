@@ -1,10 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import kleur from "kleur";
 import { getCurrentFolder } from "./get-current-folder";
 import { errorHandler, highlightMSG, infoMSG } from "./messages";
 import { readToken } from "./token";
 
 interface IEnvironment {
   analysisList: { name: string; fileName: string; id: string }[];
+  id: string;
+  profileName: string;
+  email: string;
 }
 
 interface IConfigFileEnvs {
@@ -52,12 +56,20 @@ function getEnvironmentConfig(environment?: string) {
   const defaultPaths = { analysisPath: configFile.analysisPath, buildPath: configFile.buildPath };
 
   if (environment) {
+    const userEnvironment = configFile[environment];
+    if (!userEnvironment) {
+      errorHandler(`Environment not found: ${environment}`);
+    }
+    const profileInfo = kleur.dim(`[${userEnvironment.profileName}] [${userEnvironment.email}]`);
+    infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}\n`);
     return { ...configFile[environment], ...defaultPaths, profileToken: readToken(environment) };
   }
 
   if (configFile.default) {
-    infoMSG(`Using default environment: ${highlightMSG(configFile.default)}`);
-    return { ...configFile[configFile.default], ...defaultPaths, profileToken: readToken(configFile.default) };
+    const defaultEnvironment = configFile[configFile.default];
+    const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
+    infoMSG(`Using default environment: ${highlightMSG(configFile.default)} ${profileInfo}\n`);
+    return { ...defaultEnvironment, ...defaultPaths, profileToken: readToken(configFile.default) };
   }
 }
 

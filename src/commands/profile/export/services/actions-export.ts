@@ -1,5 +1,5 @@
 import { Account } from "@tago-io/sdk";
-import { replaceObj } from "../../../lib/replace-obj";
+import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 
 async function actionsExport(account: Account, import_account: Account, export_holder: IExportHolder) {

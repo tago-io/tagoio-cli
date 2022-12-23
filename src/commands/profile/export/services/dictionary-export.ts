@@ -1,7 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import { DictionaryInfo } from "@tago-io/sdk/out/modules/Account/dictionaries.types";
 import { queue } from "async";
-import { errorHandler } from "../../../lib/messages";
+import { errorHandler } from "../../../../lib/messages";
 import { IExportHolder } from "../types";
 
 interface IQueue {

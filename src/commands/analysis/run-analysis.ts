@@ -20,7 +20,7 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
   );
 
   if (!scriptToRun) {
-    errorHandler(`Analysis couldnt be found in your environment: ${scriptName}`);
+    errorHandler(`Analysis couldnt be found: ${scriptName}`);
     return process.exit();
   }
 

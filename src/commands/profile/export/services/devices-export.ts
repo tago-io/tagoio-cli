@@ -1,6 +1,6 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
-import { errorHandler } from "../../../lib/messages";
-import { replaceObj } from "../../../lib/replace-obj";
+import { errorHandler } from "../../../../lib/messages";
+import { replaceObj } from "../../../../lib/replace-obj";
 import { IExport, IExportHolder } from "../types";
 
 async function deviceExport(account: Account, import_account: Account, export_holder: IExportHolder, config: IExport) {

@@ -1,10 +1,10 @@
 import { Account } from "@tago-io/sdk";
 import prompts from "prompts";
 import kleur from "kleur";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { readToken } from "../../lib/token";
-import { pickEnvironment } from "../../prompt/pick-environment";
-import { confirmPrompt } from "../../prompt/confirm";
+import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
+import { readToken } from "../../../lib/token";
+import { pickEnvironment } from "../../../prompt/pick-environment";
+import { confirmPrompt } from "../../../prompt/confirm";
 import { EntityType, IExport, IExportHolder } from "./types";
 import { accessExport } from "./services/access-export";
 import { actionsExport } from "./services/actions-export";

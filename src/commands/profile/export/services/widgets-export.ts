@@ -1,8 +1,8 @@
 import { Account } from "@tago-io/sdk";
 import { DashboardInfo, WidgetInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
 import { queue } from "async";
-import { errorHandler } from "../../../lib/messages";
-import { replaceObj } from "../../../lib/replace-obj";
+import { errorHandler } from "../../../../lib/messages";
+import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 
 async function insertWidgets(account: Account, import_account: Account, dashboard: DashboardInfo, target: DashboardInfo, export_holder: IExportHolder) {

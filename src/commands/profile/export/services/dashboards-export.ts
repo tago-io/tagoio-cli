@@ -1,7 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import { DashboardInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
 import { queue } from "async";
-import { errorHandler } from "../../../lib/messages";
+import { errorHandler } from "../../../../lib/messages";
 import { IExportHolder } from "../types";
 import { insertWidgets, removeAllWidgets } from "./widgets-export";
 

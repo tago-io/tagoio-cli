@@ -3,8 +3,8 @@ import { Account } from "@tago-io/sdk";
 import { TagsObj } from "@tago-io/sdk/out/common/common.types";
 import kleur from "kleur";
 import prompts from "prompts";
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
+import { getEnvironmentConfig } from "../../../lib/config-file";
+import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
 import { chooseEntities, enterExportTag } from "./export";
 import { EntityType, ENTITY_ORDER } from "./types";
 

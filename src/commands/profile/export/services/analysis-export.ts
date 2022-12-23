@@ -2,8 +2,8 @@ import zlib from "zlib";
 import { Account } from "@tago-io/sdk";
 import axios from "axios";
 import { IExportHolder } from "../types";
-import { infoMSG } from "../../../lib/messages";
-import { replaceObj } from "../../../lib/replace-obj";
+import { infoMSG } from "../../../../lib/messages";
+import { replaceObj } from "../../../../lib/replace-obj";
 
 async function analysisExport(account: Account, import_account: Account, export_holder: IExportHolder) {
   infoMSG("Exporting analysis: started");

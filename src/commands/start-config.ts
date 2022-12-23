@@ -36,6 +36,17 @@ async function createEnvironmentToken(environment: string) {
   return options.token;
 }
 
+async function chooseAnalysis(analysisOptions: any[]) {
+  const { response } = await prompts({
+    type: "autocompleteMultiselect",
+    limit: 20,
+    choices: analysisOptions,
+    message: "Which analysis to take?",
+    name: "response",
+  });
+  return (response || []) as AnalysisInfo[];
+}
+
 /**
  *
  * @param account
@@ -55,16 +66,10 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
   const configList: AnalysisInfo[] = analysisList.filter((x) => oldIDList.has(x.id));
 
   const analysisOptions = analysisList.map((x) => ({ title: getName(x), selected: configList.some((y) => y.id === x.id), value: x }));
-  const { response } = await prompts({
-    type: "autocompleteMultiselect",
-    limit: 20,
-    choices: analysisOptions,
-    message: "Which analysis to take?",
-    name: "response",
-  });
+  const response = await chooseAnalysis(analysisOptions);
 
   const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
-  const analysisResult: IEnvironment["analysisList"] = (response as AnalysisInfo[]).map((x) => ({
+  const analysisResult: IEnvironment["analysisList"] = response.map((x) => ({
     fileName: formatFileName(x.name),
     name: x.name,
     id: x.id,
@@ -135,10 +140,12 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   }
 
   const account = new Account({ token });
+  const profile = await account.profiles.info("current");
+  const accountInfo = await account.info();
   let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
   analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
-  const newEnv: IEnvironment = { analysisList: analysisList };
+  const newEnv: IEnvironment = { analysisList: analysisList, id: profile.info.id, profileName: profile.info.name, email: accountInfo.email };
   writeConfigFileEnv(environment, newEnv);
 }
 
