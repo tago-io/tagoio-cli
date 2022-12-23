@@ -3,7 +3,7 @@ import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { io } from "socket.io-client";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
-import { getDeviceIDFromPrompt } from "./device-info";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 
 function apiSocket(profileToken: string) {
   const socket = io("wss://realtime.tago.io", {
@@ -55,7 +55,7 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
 
   const account = new Account({ token: config.profileToken });
   if (!deviceIdOrToken) {
-    deviceIdOrToken = await getDeviceIDFromPrompt(account);
+    deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
   }
 
   let device_info = await account.devices.info(deviceIdOrToken).catch(() => null);

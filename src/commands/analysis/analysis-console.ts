@@ -1,7 +1,9 @@
 import { Account } from "@tago-io/sdk";
 import { connect } from "socket.io-client";
-import { getEnvironmentConfig } from "../../lib/config-file";
+import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
+import { searchName } from "../../lib/search-name";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
 
 function apiSocket(profileToken: string) {
   const socket = connect("wss://realtime.tago.io", {
@@ -16,34 +18,38 @@ function apiSocket(profileToken: string) {
   return socket;
 }
 
-async function connectAnalysisConsole(scriptName: string, options: { environment: string }) {
+async function connectAnalysisConsole(scriptName: string | void, options: { environment: string }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
     return;
   }
-
-  const scriptObj = config.analysisList.find((x) => x.name.toLowerCase().includes(scriptName.toLowerCase()));
+  let scriptObj: IEnvironment["analysisList"][0] | undefined;
+  if (scriptName) {
+    scriptObj = config.analysisList.find((x) => searchName(x.name, scriptName));
+  } else {
+    scriptObj = await pickAnalysisFromConfig(config.analysisList);
+  }
 
   if (!scriptObj) {
     errorHandler(`Analysis not found: ${scriptName}`);
-    return process.exit();
+    return;
   }
 
   const account = new Account({ token: config.profileToken });
   const analysis_info = await account.analysis.info(scriptObj.id).catch(() => null);
   if (!analysis_info) {
     errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);
-    return process.exit();
+    return;
   }
 
   const socket = apiSocket(config.profileToken);
   socket.on("connect", () => {
     infoMSG("Connected to TagoIO, Getting analysis information...");
-    socket.emit("attach", "analysis", scriptObj.id);
+    socket.emit("attach", "analysis", scriptObj?.id);
     socket.emit("attach", {
       resourceName: "analysis",
-      resourceID: scriptObj.id,
+      resourceID: scriptObj?.id,
     });
   });
 

@@ -2,16 +2,6 @@ import { randomBytes } from "crypto";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { getCurrentFolder } from "./get-current-folder";
 
-let profileToken: string | void;
-
-function getToken(environment: string) {
-  if (!profileToken) {
-    return readToken(environment);
-  }
-
-  return profileToken;
-}
-
 function readToken(environment: string) {
   const folder = getCurrentFolder();
 
@@ -19,9 +9,8 @@ function readToken(environment: string) {
     const tokenFile = readFileSync(`${folder}/.tago-lock.${environment}.lock`, { encoding: "utf-8" });
     const tokenDirty = tokenFile.split("\n");
     const token = Buffer.from(tokenDirty[tokenDirty.length - 1], "hex").toString();
-    profileToken = token;
 
-    return Buffer.from(tokenDirty[tokenDirty.length - 1], "hex").toString();
+    return token;
   } catch {
     return undefined;
   }
@@ -43,8 +32,6 @@ function writeToken(token: string, environment: string) {
 
   writeFileSync(`${folder}/.tago-lock.${environment}.lock`, tokenFile, { encoding: "utf-8" });
   addOnGitIgnore(folder, environment);
-
-  profileToken = token;
 }
 
 function addOnGitIgnore(folder: string, environment: string) {
@@ -71,4 +58,4 @@ function addOnGitIgnore(folder: string, environment: string) {
   }
 }
 
-export { readToken, writeToken, getToken };
+export { readToken, writeToken };

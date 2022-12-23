@@ -4,6 +4,9 @@ import { Account } from "@tago-io/sdk";
 import { getEnvironmentConfig, IConfigFile } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, successMSG } from "../../lib/messages";
+import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
+import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list";
+import { searchName } from "../../lib/search-name";
 
 type EnvConfig = Omit<IConfigFile, "default">;
 function getPaths(config: EnvConfig) {
@@ -24,10 +27,6 @@ async function deleteOldFile(buildedFile: string) {
   if (await fs.stat(buildedFile).catch(() => null)) {
     await fs.unlink(buildedFile);
   }
-}
-
-function searchName(key: string, ...args: string[]) {
-  return args.some((x) => x.toLowerCase().replace(".ts", "").includes(key.toLowerCase()));
 }
 
 async function buildScript(account: Account, scriptName: string, analysisID: string, config: EnvConfig) {
@@ -59,21 +58,31 @@ async function buildScript(account: Account, scriptName: string, analysisID: str
   });
 }
 
-async function deployAnalysis(cmdScriptName: string, options: { environment: string }) {
+async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
     return;
   }
 
-  let scriptList = config.analysisList;
-  console.log(scriptList);
-  if (cmdScriptName !== "all") {
+  let scriptList = config.analysisList.filter((x) => x.fileName);
+  if (!cmdScriptName || cmdScriptName === "all") {
+    scriptList = await chooseAnalysisListFromConfig(scriptList);
+  } else {
     scriptList = scriptList.filter((x) => searchName(cmdScriptName, x.fileName, x.name));
+
+    if (scriptList.length === 0) {
+      errorHandler(`No analysis found containing name: ${cmdScriptName}`);
+      return;
+    }
+
+    if (!options.silent) {
+      scriptList = await confirmAnalysisFromConfig(scriptList);
+    }
   }
 
   if (scriptList.length === 0) {
-    errorHandler(`No analysis found containing name: ${cmdScriptName}`);
+    errorHandler(`Cancelled`);
     return;
   }
 
@@ -84,4 +93,4 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   process.exit();
 }
 
-export { deployAnalysis, searchName };
+export { deployAnalysis };

@@ -61,7 +61,7 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
   await account.analysis.edit(scriptToRun.id, { run_on: "external" });
   const spawnProccess = spawn(`${cmd} -- ${scriptPath}`, spawnOptions);
 
-  const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" }).then(console.log);
+  const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" });
   spawnProccess.on("close", killAnalysis);
   spawnProccess.on("SIGINT", killAnalysis);
 }

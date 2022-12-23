@@ -17,7 +17,7 @@ interface LoginOptions {
 
 async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<LoginOptions>) {
   if (otp_autosend !== "authenticator") {
-    await Account.requestLoginPINCode({ email, password }, otp_autosend).then(console.log, console.log);
+    await Account.requestLoginPINCode({ email, password }, otp_autosend).catch(errorHandler);
   }
 
   const pinCode = await prompts({ type: "text", message: `Enter your PINCODE [${otp_autosend}]: `, name: "value" });

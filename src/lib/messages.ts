@@ -1,23 +1,24 @@
-import color from "colors-cli/safe";
+import kleur from "kleur";
 
 function questionMSG(str: any) {
-  return `[${color.magenta("PROMPT")}] ${str}`;
+  return `[${kleur.magenta("PROMPT")}] ${str}`;
 }
 
 function errorHandler(str: any) {
-  return console.error(`[${color.red("ERROR")}] ${color.x221(str)}`);
+  console.error(`[${kleur.red("ERROR")}] ${kleur.magenta(str)}`);
+  process.exit(0);
 }
 
 function highlightMSG(str: any) {
-  return color.cyan(str);
+  return kleur.cyan(str);
 }
 
 function successMSG(str: any) {
-  return console.info(`[${color.green("INFO")}] ${str}`);
+  return console.info(`[${kleur.green("INFO")}] ${str}`);
 }
 
 function infoMSG(str: any) {
-  return console.info(`[${color.blue("INFO")}] ${str}`);
+  return console.info(`[${kleur.blue("INFO")}] ${str}`);
 }
 
 export { errorHandler, questionMSG, highlightMSG, successMSG, infoMSG };

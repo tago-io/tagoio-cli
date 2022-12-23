@@ -1,67 +1,63 @@
-import { bold, cyan, green, italic, red, yellow } from "colors-cli";
 import { Command } from "commander";
+import kleur from "kleur";
 
-const setParamColor = (param: string) => (param.includes("<") ? red(italic(`${param}`)) : cyan(italic(`${param}`)));
+const setParamColor = (param: string) => (param.includes("<") ? kleur.red().italic(`${param}`) : kleur.cyan().italic(`${param}`));
 
 function configureHelp(program: Command) {
-  program.addHelpText("afterAll", `\n${red("<param>")}: required\n${cyan("[param]")}: optional`);
+  program.addHelpText("afterAll", `\n${kleur.red("<param>")}: required\n${kleur.cyan("[param]")}: optional`);
 
-  const categories = [
-    { category: "analysis", marked: "", title: "Analysis" },
-    { category: "device", marked: "", title: "Device" },
-    // { category: "action", marked: "", title: "Action" },
-    // { category: "dashboard", marked: "", title: "Fashboard" },
-    { category: "help", marked: "", title: "Help" },
-  ];
-
-  // console.log(categories);
-  // const subcommandTermList: string[] = [];
   program.configureHelp({
-    // helpWidth: 500,
-    // padWidth: () => 300,
+    // longestOptionTermLength: (cmd, helper) => {
+    //   return helper.visibleOptions(cmd).reduce((max, option) => {
+    //     // eslint-disable-next-line no-control-regex
+    //     const optionTerm = helper.optionTerm(option).replaceAll(/\u001b\[.*?m/g, "");
+    //     return Math.max(max, optionTerm.length);
+    //   }, 0);
+    // },
     subcommandTerm: (help) => {
       const cmdName = help.name();
-      const header = categories.find((x) => (!x.marked || x.marked === cmdName) && cmdName.includes(x.category));
-      // console.log(header);
-      if (header) {
-        header.marked = cmdName;
+      const usage = help.usage().replaceAll("[options] ", "").replaceAll("[options]", "");
+      if (usage.includes("Header")) {
+        return `\n${kleur.bold(cmdName)}`;
       }
-      const headerText = header ? `\n${bold(header.title)}\n` : "";
 
-      const usage = help.usage().replaceAll("[options] ", "");
       const params = setParamColor(` ${usage}`);
 
       const alias = help.alias() ? `${help.alias()}, ` : "";
 
-      // console.log(`${headerText}- ${bold(cmdName)}${params}`);
-      return `${headerText}- ${alias}${cmdName}${params}`;
+      let helpBreakLine = "\t";
+      if (cmdName === "help") {
+        helpBreakLine = `\n${kleur.bold("Help")}\n\t`;
+      }
+
+      return `${helpBreakLine}- ${alias}${cmdName}${params}`;
     },
-    subcommandDescription: (help) => {
-      const cmdName = help.name();
-      const header = categories.find((x) => (!x.marked || x.marked === cmdName) && cmdName.includes(x.category));
-      // const options = help.usage().includes("options") ? "" : "";
-      return `${header ? "      " : ""}${help.description()}`;
-    },
+    // subcommandDescription: (help) => {
+    //   const cmdName = help.name();
+    //   const header = categories.find((x) => (!x.marked || x.marked === cmdName) && cmdName.includes(x.category));
+    //   // const options = help.usage().includes("options") ? "" : "";
+    //   return `${header ? "      " : ""}${help.description()}`;
+    // },
     optionTerm: (help) => {
       let flags = help.flags;
       const paramIndex = !flags.includes("<") ? flags.indexOf("[") : flags.indexOf("<");
 
-      let params = cyan("");
+      let params = "";
       if (paramIndex !== -1) {
         params = flags.slice(paramIndex);
-        params = setParamColor(params);
+        // params = setParamColor(params);
         flags = flags.slice(0, paramIndex);
       }
 
-      return `${italic(flags)}${params}`;
+      return `${kleur.italic(flags)}${params}`;
     },
     argumentTerm: (help) => {
-      const name = help.required ? red(`<${help.name()}>`) : cyan(`[${help.name()}]`);
+      const name = help.required ? kleur.red(`<${help.name()}>`) : kleur.cyan(`[${help.name()}]`);
 
-      return `${bold(name)}`;
+      return `${kleur.bold(name)}`;
     },
     commandDescription: (help) => `Description:\n  ${help.description()}`,
-    commandUsage: (help) => yellow(`\n  tago-cli ${help.name()} ${help.usage()}`),
+    commandUsage: (help) => kleur.yellow(`\n  tago-cli ${help.name()} ${help.usage()}`),
   });
 }
 

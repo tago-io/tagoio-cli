@@ -1,22 +1,9 @@
 import { Account, Device } from "@tago-io/sdk";
 import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
-import prompts from "prompts";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG } from "../../lib/messages";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 import { mapDate, mapTags } from "./device-list";
-
-async function getDeviceIDFromPrompt(account: Account) {
-  const deviceList = await account.devices.list({ amount: 100, fields: ["id", "name"] });
-
-  const { id } = await prompts({
-    message: "You want to change run_on to?",
-    name: "id",
-    type: "autocomplete",
-    choices: deviceList.map((x) => ({ title: x.name, value: x.id })),
-  });
-
-  return id;
-}
 
 async function deviceInfo(idOrToken: string, options: { environment: string; raw: boolean; json: boolean; tokens: boolean }) {
   const config = getEnvironmentConfig(options.environment);
@@ -27,7 +14,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
 
   const account = new Account({ token: config.profileToken });
   if (!idOrToken) {
-    idOrToken = await getDeviceIDFromPrompt(account);
+    idOrToken = await pickDeviceIDFromTagoIO(account);
   }
   let deviceInfo = await account.devices.info(idOrToken).catch(() => null);
   if (!deviceInfo) {
@@ -99,4 +86,4 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   });
 }
 
-export { deviceInfo, getDeviceIDFromPrompt };
+export { deviceInfo };

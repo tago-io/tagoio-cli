@@ -1,6 +1,6 @@
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
-import { cyan, yellow } from "colors-cli";
+import kleur from "kleur";
 import prompts from "prompts";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
@@ -33,9 +33,9 @@ async function analysisSetMode(userInputName: string | void, options: { environm
     return;
   }
 
-  const renameAnalysis = (x: AnalysisInfo) => `${x.name} [${x.run_on === "tago" ? cyan(x.run_on) : yellow(x.run_on || "")}]`;
+  const renameAnalysis = (x: AnalysisInfo) => `${x.name} [${x.run_on === "tago" ? kleur.cyan(x.run_on) : kleur.yellow(x.run_on || "")}]`;
   const { selectedAnalysis } = await prompts({
-    message: "You want to change run_on to?",
+    message: "Select the analysis to update:",
     name: "selectedAnalysis",
     type: "autocompleteMultiselect",
     choices: analysisList.map((x) => ({ value: x, title: renameAnalysis(x) })),
