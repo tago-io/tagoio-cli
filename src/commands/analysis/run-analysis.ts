@@ -3,6 +3,7 @@ import { Account } from "@tago-io/sdk";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
+import { searchName } from "../../lib/search-name";
 
 async function runAnalysis(scriptName: string, options: { environment: string; debug: boolean; clear: boolean }) {
   const config = getEnvironmentConfig(options.environment);
@@ -13,8 +14,11 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
 
   scriptName = scriptName.toLowerCase();
 
-  const scriptToRun = config.analysisList.find((x) => x.name.toLowerCase().includes(scriptName));
-  // const scriptToRunName = scriptList.find((key) => cmd.find((x) => key.toLowerCase().includes(x)));
+  const scriptToRun = searchName(
+    scriptName,
+    config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+  );
+
   if (!scriptToRun) {
     errorHandler(`Analysis couldnt be found in your environment: ${scriptName}`);
     return process.exit();

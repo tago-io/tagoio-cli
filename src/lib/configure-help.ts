@@ -57,7 +57,7 @@ function configureHelp(program: Command) {
       return `${kleur.bold(name)}`;
     },
     commandDescription: (help) => `Description:\n  ${help.description()}`,
-    commandUsage: (help) => kleur.yellow(`\n  tago-cli ${help.name()} ${help.usage()}`),
+    commandUsage: (help) => kleur.yellow(`\n ${help.name()} ${help.usage()}`),
   });
 }
 

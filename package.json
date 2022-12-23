@@ -1,5 +1,5 @@
 {
-  "name": "tagoio-cli",
+  "name": "@tago-io/cli",
   "version": "1.0.0",
   "description": "TagoIO Application CLI Node.JS",
   "main": "build/index.js",
@@ -21,7 +21,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tago-cli": "./build/index.js"
+    "tagoio": "./build/index.js"
   },
   "jest": {
     "testPathIgnorePatterns": [

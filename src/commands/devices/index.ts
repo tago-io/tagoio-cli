@@ -4,6 +4,13 @@ import { deviceInfo } from "./device-info";
 import { deviceList } from "./device-list";
 import { inspectorConnection } from "./device-live-inspector";
 
+function handleNumber(value: any, _previous: any) {
+  if (Number.isNaN(Number(value))) {
+    throw `${value} is not a number`;
+  }
+  return Number(value);
+}
+
 function deviceCommands(program: Command) {
   program.command("Devices Header");
   program
@@ -66,12 +73,6 @@ Example:
        `
     );
 
-  function handleNumber(value: any, _previous: any) {
-    if (Number.isNaN(Number(value))) {
-      throw `${value} is not a number`;
-    }
-    return Number(value);
-  }
   program
     .command("data")
     .description("get data from a device.")

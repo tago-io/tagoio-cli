@@ -65,11 +65,15 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     return;
   }
 
+  // check if script has a file
   let scriptList = config.analysisList.filter((x) => x.fileName);
   if (!cmdScriptName || cmdScriptName === "all") {
     scriptList = await chooseAnalysisListFromConfig(scriptList);
   } else {
-    scriptList = scriptList.filter((x) => searchName(cmdScriptName, x.fileName, x.name));
+    scriptList = searchName(
+      cmdScriptName,
+      scriptList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+    );
 
     if (scriptList.length === 0) {
       errorHandler(`No analysis found containing name: ${cmdScriptName}`);

@@ -18,6 +18,7 @@ interface IOptions {
 }
 
 async function getDeviceData(idOrToken: string, options: IOptions) {
+  console.log(idOrToken);
   if (options.post) {
     await postDeviceData(idOrToken, options);
     return;
@@ -28,7 +29,6 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     errorHandler("Environment not found");
     return;
   }
-
   const account = new Account({ token: config.profileToken });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
@@ -61,8 +61,8 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   if (options.qty) {
     filter.qty = Number(options.qty);
   }
-
-  const dataList = await account.devices.getDeviceData(idOrToken, filter);
+  console.log(filter);
+  const dataList = await account.devices.getDeviceData(deviceInfo.id, filter);
 
   infoMSG(`Device Found: ${deviceInfo.name} [${idOrToken}].`);
   if (options.stringify) {

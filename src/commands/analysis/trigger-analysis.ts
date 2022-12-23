@@ -23,7 +23,10 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
   } else if (!scriptName) {
     script = await pickAnalysisFromConfig(analysisList, "Pick the analysis you want to trigger");
   } else {
-    script = config.analysisList.find((x) => searchName(scriptName, x.fileName, x.name));
+    script = searchName(
+      scriptName,
+      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+    );
   }
 
   if (!script) {

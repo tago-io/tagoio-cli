@@ -26,7 +26,10 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
   }
   let scriptObj: IEnvironment["analysisList"][0] | undefined;
   if (scriptName) {
-    scriptObj = config.analysisList.find((x) => searchName(x.name, scriptName));
+    scriptObj = searchName(
+      scriptName,
+      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+    );
   } else {
     scriptObj = await pickAnalysisFromConfig(config.analysisList);
   }
