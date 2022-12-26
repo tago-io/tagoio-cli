@@ -49,8 +49,7 @@
     "prompts": "^2.4.2",
     "socket.io-client": "4.5.4",
     "string-comparison": "^1.1.0",
-    "ts-node-dev": "2.0.0",
-    "when-exit": "^2.0.0"
+    "ts-node-dev": "2.0.0"
   },
   "devDependencies": {
     "@types/async": "^3.2.16",
