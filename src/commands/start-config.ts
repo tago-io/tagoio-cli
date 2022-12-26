@@ -3,9 +3,11 @@ import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
 import prompts, { Choice } from "prompts";
 import { cosine } from "string-comparison";
+import kleur from "kleur";
 import { getConfigFile, IEnvironment, writeConfigFileEnv } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
+import { promptTextToEnter } from "../prompt/text-prompt";
 import { tagoLogin } from "./login";
 
 interface ConfigOptions {
@@ -133,6 +135,14 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     }
   } else {
     writeToken(token, environment);
+  }
+
+  if (!configFile.analysisPath) {
+    configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
+  }
+
+  if (!configFile.buildPath) {
+    configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
   }
 
   if (!token) {

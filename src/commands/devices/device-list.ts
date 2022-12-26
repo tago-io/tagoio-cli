@@ -1,6 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import { TagsObj } from "@tago-io/sdk/out/common/common.types";
 import { DeviceQuery } from "@tago-io/sdk/out/modules/Account/devices.types";
+import kleur from "kleur";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";
 
@@ -19,10 +20,32 @@ const mapDate = (date: Date | null, opt: { [key: string]: any }) => {
   return date ? `${date?.toLocaleDateString()} ${date?.toLocaleTimeString()}` : undefined;
 };
 
+function repeatableTags(rawFilter: DeviceQuery, { keys, values }: { keys: string[]; values: string[] }) {
+  if (!rawFilter.filter) {
+    rawFilter.filter = {};
+  }
+
+  if (!rawFilter.filter.tags) {
+    rawFilter.filter.tags = [];
+  }
+
+  const maxRows = Math.max(keys.length, values.length);
+  for (let i = 0; i <= maxRows; i++) {
+    const newTag: Partial<TagsObj> = {};
+    if (keys[i]) {
+      newTag.key = keys[i];
+    }
+    if (values[i]) {
+      newTag.value = values[i];
+    }
+    rawFilter.filter.tags.push(newTag);
+  }
+}
+
 interface IOptions {
   environment?: string;
-  tagkey?: string;
-  tagvalue?: string;
+  tagkey: string[];
+  tagvalue: string[];
   name?: string;
   stringify?: boolean;
   json?: boolean;
@@ -37,21 +60,18 @@ async function deviceList(options: IOptions) {
   }
 
   const account = new Account({ token: config.profileToken });
-  const filter: DeviceQuery = { amount: 50, fields: ["id", "name", "tags", "active", "last_input"], filter: { tags: [{}] } };
-  if (filter.filter) {
-    if (options.name) {
-      filter.filter.name = `*${options.name}*`;
-    }
-    if (options.tagkey && filter.filter.tags) {
-      filter.filter.tags[0].key = options.tagkey;
-    }
-    if (options.tagvalue && filter.filter.tags) {
-      filter.filter.tags[0].value = options.tagvalue;
-    }
+  const filter: DeviceQuery = { amount: 50, fields: ["id", "name", "active", "last_input"], filter: { tags: [{}] } };
+  if (filter.filter && options.name) {
+    filter.filter.name = `*${options.name}*`;
   }
 
+  repeatableTags(filter, { keys: options.tagkey, values: options.tagvalue });
   const deviceList = await account.devices.list(filter);
-  const resultList = deviceList.map((x) => ({ ...x, tags: mapTags(x.tags, options), last_input: mapDate(x.last_input, options) }));
+  const resultList = deviceList.map((x) => ({
+    ...x,
+    tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
+    last_input: mapDate(x.last_input, options),
+  }));
 
   if (options.stringify) {
     console.info(JSON.stringify(resultList, null, 2));
@@ -60,7 +80,7 @@ async function deviceList(options: IOptions) {
   } else {
     console.table(resultList);
   }
-  successMSG(`${deviceList.length} devices found.`);
+  successMSG(`${kleur.cyan(deviceList.length)} devices found.`);
 }
 
 export { deviceList, mapDate, mapTags };

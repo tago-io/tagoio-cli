@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import { promises as fs } from "fs";
 import { Account } from "@tago-io/sdk";
-import { getEnvironmentConfig, IConfigFile } from "../../lib/config-file";
+import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, successMSG } from "../../lib/messages";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
@@ -70,18 +70,18 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   if (!cmdScriptName || cmdScriptName === "all") {
     scriptList = await chooseAnalysisListFromConfig(scriptList);
   } else {
-    scriptList = searchName(
+    const analysisFound: IEnvironment["analysisList"][0] = searchName(
       cmdScriptName,
       scriptList.map((x) => ({ names: [x.name, x.fileName], value: x }))
     );
 
-    if (scriptList.length === 0) {
+    if (!analysisFound) {
       errorHandler(`No analysis found containing name: ${cmdScriptName}`);
       return;
     }
 
     if (!options.silent) {
-      scriptList = await confirmAnalysisFromConfig(scriptList);
+      scriptList = await confirmAnalysisFromConfig([analysisFound]);
     }
   }
 

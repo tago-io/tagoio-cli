@@ -1,5 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from "fs";
 import { Command } from "commander";
+import dotenv from "dotenv";
 import kleur from "kleur";
 import { analysisCommands } from "./commands/analysis";
 import { deviceCommands } from "./commands/devices";
@@ -8,14 +10,17 @@ import { tagoLogin } from "./commands/login";
 import { profileCommands } from "./commands/profile";
 import { setEnvironment } from "./commands/set-env";
 import { startConfig } from "./commands/start-config";
-import { getConfigFile } from "./lib/config-file";
+import { getConfigFile, resolveCLIPath } from "./lib/config-file";
 import { configureHelp } from "./lib/configure-help";
+import { ENV_FILE_PATH } from "./lib/dotenv-config";
 import { highlightMSG } from "./lib/messages";
+import { updater } from "./lib/notify-update";
 
-const packageJSON = require("../package.json");
+const packageJSON = JSON.parse(readFileSync(resolveCLIPath("./package.json")).toString());
+dotenv.config({ path: ENV_FILE_PATH });
 
 const indexConfigFile = getConfigFile();
-const defaultEnvironment = indexConfigFile?.default || "prod";
+const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
 
 async function getAllCommands(program: Command) {
   analysisCommands(program);
@@ -29,8 +34,13 @@ function errorColor(str: string) {
 }
 
 async function initiateCMD() {
+  const updateLog = await updater({ name: packageJSON.name, version: packageJSON.version });
   const program = new Command();
-  program.version(packageJSON.version).description(`${kleur.bold("TagoIO Command Line Tools")}
+  program.exitOverride(async () => {
+    updateLog();
+  });
+
+  program.version(packageJSON.version).description(`${kleur.bold(`TagoIO Command Line Tools - v${packageJSON.version}`)}
   \tDefault Environment: ${highlightMSG(defaultEnvironment)}
   \tProfile ID: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.id || "N/A")}
   \tName: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.profileName || "N/A")}

@@ -1,25 +1,30 @@
 import { spawn, SpawnOptions } from "child_process";
 import { Account } from "@tago-io/sdk";
-import { getEnvironmentConfig } from "../../lib/config-file";
+import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
 
-async function runAnalysis(scriptName: string, options: { environment: string; debug: boolean; clear: boolean }) {
+async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
     return;
   }
 
-  scriptName = scriptName.toLowerCase();
+  let scriptToRun: IEnvironment["analysisList"][0];
+  if (scriptName) {
+    scriptName = scriptName.toLowerCase();
+    scriptToRun = searchName(
+      scriptName,
+      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+    );
+  } else {
+    scriptToRun = await pickAnalysisFromConfig(config.analysisList);
+  }
 
-  const scriptToRun = searchName(
-    scriptName,
-    config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
-  );
-
-  if (!scriptToRun) {
+  if (!scriptToRun || !scriptToRun.id) {
     errorHandler(`Analysis couldnt be found: ${scriptName}`);
     return process.exit();
   }
@@ -42,28 +47,23 @@ async function runAnalysis(scriptName: string, options: { environment: string; d
   };
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
-  let cmd: string = "";
-  if (scriptToRun.fileName.endsWith(".ts")) {
-    cmd += "ts-node-dev --quiet";
-  }
-  if (scriptToRun.fileName.endsWith(".js")) {
-    cmd += "node ";
-  }
+  let cmd: string = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
 
   if (!cmd) {
     errorHandler(`Couldn't run file ${scriptToRun.fileName}`);
     return;
   }
 
-  if (options.clear) {
-    cmd += " --clear";
-  }
   if (options.debug) {
-    cmd += " --inspect";
+    cmd += "--inspect ";
+  }
+
+  if (options.clear) {
+    cmd += "--clear ";
   }
 
   await account.analysis.edit(scriptToRun.id, { run_on: "external" });
-  const spawnProccess = spawn(`${cmd} -- ${scriptPath}`, spawnOptions);
+  const spawnProccess = spawn(`${cmd}${scriptPath}`, spawnOptions);
 
   const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" });
   spawnProccess.on("close", killAnalysis);

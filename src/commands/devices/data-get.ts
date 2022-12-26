@@ -1,13 +1,15 @@
 import { Account, Device } from "@tago-io/sdk";
+import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DataQuery } from "@tago-io/sdk/out/modules/Device/device.types";
+import kleur from "kleur";
 import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
+import { errorHandler, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 import { postDeviceData } from "./data-post";
 
 interface IOptions {
   environment?: string;
-  variable?: string;
+  variable?: string[];
   group?: string;
   stringify: boolean;
   startDate: string;
@@ -18,7 +20,6 @@ interface IOptions {
 }
 
 async function getDeviceData(idOrToken: string, options: IOptions) {
-  console.log(idOrToken);
   if (options.post) {
     await postDeviceData(idOrToken, options);
     return;
@@ -61,10 +62,14 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   if (options.qty) {
     filter.qty = Number(options.qty);
   }
-  console.log(filter);
-  const dataList = await account.devices.getDeviceData(deviceInfo.id, filter);
+  const dataList = await account.devices.getDeviceData(deviceInfo.id, filter).then((r) => {
+    return r.map((x) => {
+      // @ts-expect-error
+      delete x.device;
+      return x;
+    }) as Omit<Data, "device">[];
+  });
 
-  infoMSG(`Device Found: ${deviceInfo.name} [${idOrToken}].`);
   if (options.stringify) {
     console.log(JSON.stringify(dataList));
   } else if (options.json) {
@@ -73,7 +78,8 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     console.table(dataList);
   }
 
-  successMSG(`${dataList.length} data(s) found.`);
+  successMSG(`Device Found: ${kleur.cyan(deviceInfo.name)} - ${kleur.red((deviceInfo as any).type)} [${kleur.dim(idOrToken)}].`);
+  successMSG(`${kleur.cyan(dataList.length)} data(s) found.`);
 }
 
 export { getDeviceData };

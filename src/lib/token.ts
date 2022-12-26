@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+import { addOnGitIgnore } from "./add-to-gitignore";
 import { getCurrentFolder } from "./get-current-folder";
 
 function readToken(environment: string) {
@@ -31,31 +32,7 @@ function writeToken(token: string, environment: string) {
   const tokenFile = dirtyText + Buffer.from(token).toString("hex");
 
   writeFileSync(`${folder}/.tago-lock.${environment}.lock`, tokenFile, { encoding: "utf-8" });
-  addOnGitIgnore(folder, environment);
-}
-
-function addOnGitIgnore(folder: string, environment: string) {
-  const gitignorePath = `${folder}/.gitignore`;
-
-  try {
-    const tokenFile = readFileSync(gitignorePath, { encoding: "utf-8" });
-    if (tokenFile.includes(`.tago-lock.${environment}.lock`)) {
-      return;
-    }
-  } catch {
-    //any
-  }
-
-  try {
-    if (existsSync(gitignorePath)) {
-      appendFileSync(gitignorePath, `.tago-lock.${environment}.lock\n`, { encoding: "utf-8" });
-    } else {
-      writeFileSync(gitignorePath, `.tago-lock.${environment}.lock\n`, { encoding: "utf-8" });
-    }
-  } catch (error) {
-    console.error(error);
-    return;
-  }
+  addOnGitIgnore(folder, `.tago-lock.${environment}.lock`);
 }
 
 export { readToken, writeToken };

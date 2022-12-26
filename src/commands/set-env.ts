@@ -1,4 +1,5 @@
-import { getConfigFile, writeToConfigFile } from "../lib/config-file";
+import { getConfigFile } from "../lib/config-file";
+import { setEnvironmentVariables } from "../lib/dotenv-config";
 import { errorHandler, successMSG } from "../lib/messages";
 import { pickEnvironment } from "../prompt/pick-environment";
 
@@ -21,9 +22,7 @@ async function setEnvironment(arg?: string) {
     return;
   }
 
-  configFile.default = arg;
-
-  writeToConfigFile(configFile);
+  setEnvironmentVariables({ TAGOIO_DEFAULT: arg });
   successMSG(`Default environment is set to: ${arg}`);
 }
 

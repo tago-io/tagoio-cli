@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { cmdRepeteableValue } from "../../lib/commander-repeatable";
 import { getDeviceData } from "./data-get";
 import { deviceInfo } from "./device-info";
 import { deviceList } from "./device-list";
@@ -56,9 +57,10 @@ Example:
     .description("get the list of devices.")
     .option("-env, --environment [environment]", "environment from config.js")
     .option("-n, --name [deviceName]", "partial name of the device name")
-    .option("-k, --tagkey [key]", "tag key to filter in")
-    .option("-v, --tagvalue [value]", "tag value to filter in")
+    .option("-k, --tagkey [key]", "tag key to filter in", cmdRepeteableValue, [])
+    .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeteableValue, [])
     .option("-s, --stringify", "return list as text")
+    .option("--tags", "display tags")
     .option("-js, --json", "return json list")
     .option("-raw, --raw", "get object the same as stored")
     .action(deviceList)
@@ -78,7 +80,7 @@ Example:
     .description("get data from a device.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("-env, --environment [environment]", "environment from config.js")
-    .option("-v, --variable", "Filter by variable")
+    .option("-var, --variable", "Filter by variable", cmdRepeteableValue, [])
     .option("-g, --group", "Filter by group")
     .option("-qty, --qty <qty>", "Request a given set amount of data", handleNumber, "15")
     .option("-start, --start-date", "Get data after date")

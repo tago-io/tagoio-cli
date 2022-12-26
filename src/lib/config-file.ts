@@ -1,5 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
 import kleur from "kleur";
+import { setEnvironmentVariables } from "./dotenv-config";
 import { getCurrentFolder } from "./get-current-folder";
 import { errorHandler, highlightMSG, infoMSG } from "./messages";
 import { readToken } from "./token";
@@ -21,6 +23,14 @@ interface IConfigFile {
   default: string;
 }
 
+function resolveCLIPath(suffix: string) {
+  let path = __dirname;
+  while (!path.endsWith("tagoio-cli")) {
+    path = join(path, "..");
+  }
+  return join(path, suffix);
+}
+
 function getFilePath() {
   const folder = getCurrentFolder();
   return `${folder}/tagoconfig.json`;
@@ -28,11 +38,11 @@ function getFilePath() {
 
 function getConfigFile() {
   const configPath = getFilePath();
-  const defaultPaths = { analysisPath: "./src/analysis", buildPath: "./build" };
+  // const defaultPaths = { analysisPath: "./src/analysis", buildPath: "./build" };
 
   try {
     if (!existsSync(configPath)) {
-      writeFileSync(configPath, JSON.stringify(defaultPaths), { encoding: "utf-8" });
+      writeFileSync(configPath, JSON.stringify({}), { encoding: "utf-8" });
     }
   } catch (error) {
     errorHandler(error);
@@ -41,7 +51,7 @@ function getConfigFile() {
 
   try {
     const configFile = readFileSync(configPath, { encoding: "utf-8" });
-    return { ...defaultPaths, ...JSON.parse(configFile) } as IConfigFile & IConfigFileEnvs;
+    return { ...JSON.parse(configFile) } as IConfigFile & IConfigFileEnvs;
   } catch {
     //any
   }
@@ -65,12 +75,15 @@ function getEnvironmentConfig(environment?: string) {
     return { ...configFile[environment], ...defaultPaths, profileToken: readToken(environment) };
   }
 
-  if (configFile.default) {
-    const defaultEnvironment = configFile[configFile.default];
-    const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
-    infoMSG(`Using default environment: ${highlightMSG(configFile.default)} ${profileInfo}\n`);
-    return { ...defaultEnvironment, ...defaultPaths, profileToken: readToken(configFile.default) };
+  const defaultEnvName = process.env.TAGOIO_DEFAULT as string;
+  if (!defaultEnvName) {
+    errorHandler(`No environment found. Set one with ${kleur.italic("tagoio set-env <environment>")}`);
   }
+
+  const defaultEnvironment = configFile[defaultEnvName];
+  const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
+  infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}\n`);
+  return { ...defaultEnvironment, ...defaultPaths, profileToken: readToken(defaultEnvName) };
 }
 
 function writeConfigFileEnv(environment: string, data: IEnvironment) {
@@ -83,8 +96,8 @@ function writeConfigFileEnv(environment: string, data: IEnvironment) {
   // @ts-expect-error token is set by functions
   delete data.profileToken;
   configFile[environment] = data;
-  if (!configFile.default) {
-    configFile.default = environment;
+  if (!process.env.TAGOIO_DEFAULT) {
+    setEnvironmentVariables({ TAGOIO_DEFAULT: environment });
   }
 
   writeFileSync(configPath, JSON.stringify(configFile, null, 4), { encoding: "utf-8" });
@@ -112,4 +125,4 @@ function setDefault(environment: string) {
   writeFileSync(configPath, JSON.stringify(configFile), { encoding: "utf-8" });
 }
 
-export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, IConfigFile, IEnvironment };
+export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, IConfigFile, IEnvironment };

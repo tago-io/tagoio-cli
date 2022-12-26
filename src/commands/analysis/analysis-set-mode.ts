@@ -38,7 +38,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
     message: "Select the analysis to update:",
     name: "selectedAnalysis",
     type: "autocompleteMultiselect",
-    choices: analysisList.map((x) => ({ value: x, title: renameAnalysis(x) })),
+    choices: analysisList.sort((a) => (a.run_on === "external" ? -1 : 1)).map((x) => ({ value: x, title: renameAnalysis(x) })),
   });
 
   if (!selectedAnalysis || selectedAnalysis.length === 0) {

@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import kleur from "kleur";
 import { connectAnalysisConsole } from "./analysis-console";
 import { analysisSetMode } from "./analysis-set-mode";
 import { deployAnalysis } from "./deploy";
@@ -12,7 +13,12 @@ function analysisCommands(program: Command) {
   program
     .command("analysis-deploy")
     .alias("deploy")
-    .description("deploy your analysis to TagoIO")
+    .summary("deploy your analysis to TagoIO")
+    .description(
+      `deploy your analysis to TagoIO
+    Analysis must be registered in your tagoconfig.ts file first
+    You can register an analysis by using ${kleur.italic("tagoio init")}`
+    )
     .argument("[name]", "partial name of the analysis in config.js")
     .allowExcessArguments(true)
     .option("-env, --environment [environment]", "environment from config.js")
@@ -30,8 +36,15 @@ Example:
   program
     .command("analysis-run")
     .alias("run")
-    .description("run your analysis TagoIO if it's in External Mode")
-    .argument("<name>", "partial name of the analysis in config.js")
+    .summary("run your TagoIO analysis from your machine.")
+    .description(
+      `run your TagoIO analysis from your machine.
+    If name is not provided, you will be prompted to select which analysis you want to run.
+
+    Note: Analysis will automatically be edited to run in external at TagoIO side.
+    To change it back to run at tagoio, use ${kleur.italic("tagoio am")}`
+    )
+    .argument("[name]", "partial name of the analysis in config.js")
     .option("-env, --environment [environment]", "environment from config.js")
     .option("-d, --debug", "run with --inspector for debug")
     .option("-c, --clear", "Will clear screen on restart")
@@ -98,8 +111,14 @@ Example:
 
   program
     .command("analysis-mode")
-    .alias("an")
-    .description("change an analysis or group of analysis to run on tago/external")
+    .alias("am")
+    .summary("change an analysis or group of analysis to run on tago/external")
+    .description(
+      `change an analysis or group of analysis to run on tago/external
+
+    If name is not provided, you will be prompted to select which analysis you want to update.
+    Analysis in external mode are displayed first.`
+    )
     .argument("[name]", "partial analysis name to filter the list")
     .option("-env, --environment [environment]", "environment from config.js")
     .option("-f, --filterMode [external/tago]", "show only analysis in external/tago")
