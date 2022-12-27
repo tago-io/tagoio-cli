@@ -11,7 +11,7 @@ async function pickDeviceIDFromTagoIO(account: Account) {
     choices: deviceList.map((x) => ({ title: x.name, value: x.id })),
   });
 
-  return id;
+  return id as string;
 }
 
 export { pickDeviceIDFromTagoIO };
