@@ -83,7 +83,9 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
 
 async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
   infoMSG(`Searching for files at ${analysisPath}`);
-  let files: Choice[] = readdirSync(analysisPath).map((x) => ({ title: x }));
+  let files: Choice[] = readdirSync(analysisPath)
+    .filter((x) => x.endsWith(".ts") || x.endsWith(".js") || x.endsWith(".py"))
+    .map((x) => ({ title: x }));
 
   for (const analysis of analysisList) {
     files = files.sort((a, b) => (cosine.distance(analysis.name, a.title) > cosine.distance(analysis.name, b.title) ? 1 : -1));

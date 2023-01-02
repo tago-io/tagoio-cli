@@ -13,19 +13,20 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     return;
   }
 
+  const analysisList = config.analysisList.filter((x) => x.fileName);
   let scriptToRun: IEnvironment["analysisList"][0];
   if (scriptName) {
     scriptName = scriptName.toLowerCase();
     scriptToRun = searchName(
       scriptName,
-      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
     );
   } else {
-    scriptToRun = await pickAnalysisFromConfig(config.analysisList);
+    scriptToRun = await pickAnalysisFromConfig(analysisList);
   }
 
   if (!scriptToRun || !scriptToRun.id) {
-    errorHandler(`Analysis couldnt be found: ${scriptName}`);
+    errorHandler(`Analysis couldn't be found: ${scriptName}`);
     return process.exit();
   }
 

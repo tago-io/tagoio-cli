@@ -2,7 +2,8 @@ module.exports = {
   env: {
     node: true,
     jest: true,
-    es2021: true
+    es2021: true,
+    es2022: true,
   },
   root: true,
   ignorePatterns: [
@@ -10,7 +11,7 @@ module.exports = {
     "tsconfig.json"
   ],
   parserOptions: {
-    ecmaVersion: 2021,
+    ecmaVersion: 2022,
     sourceType: "module",
     ecmaFeatures: {
       jsx: false,
@@ -84,7 +85,7 @@ module.exports = {
     "unicorn/prefer-array-flat-map": 1,
     "unicorn/prefer-array-index-of": 1,
     "unicorn/prefer-array-some": 1,
-    "unicorn/prefer-at": 0,
+    "unicorn/prefer-at": 1,
     "unicorn/prefer-code-point": 1,
     "unicorn/prefer-date-now": 1,
     "unicorn/prefer-export-from": 1,

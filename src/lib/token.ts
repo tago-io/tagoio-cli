@@ -9,7 +9,7 @@ function readToken(environment: string) {
   try {
     const tokenFile = readFileSync(`${folder}/.tago-lock.${environment}.lock`, { encoding: "utf-8" });
     const tokenDirty = tokenFile.split("\n");
-    const token = Buffer.from(tokenDirty[tokenDirty.length - 1], "hex").toString();
+    const token = Buffer.from(tokenDirty.at(-1) as string, "hex").toString();
 
     return token;
   } catch {

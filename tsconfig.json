@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2021",
     "module": "CommonJS",
-    "lib": ["ES2021"],
+    "lib": ["ES2022"],
     "allowJs": true,
     "outDir": "./build",
     "noImplicitAny": true,
