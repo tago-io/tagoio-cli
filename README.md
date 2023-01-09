@@ -1,18 +1,16 @@
 ## TagoIO Command Line Tools
-It's a command line tool divided by Analysis and Devices.
+This project is a CLI Tool to be used with TagoIO. It's main functionality is to help with deployment within multiple profiles, as well as providing useful tools for developers.
 
-Analysis requires that you run **tago-cli init** to generate a tagoconfig.json
-Devices only requires you to have generate your profile-token or authenticated with **tago-cli login**
+To work with Analysis, the tool requires that you run **tagoio init** to generate a tagoconfig.json
+To connect to Devices, the CLI only requires you to have generate your profile-token with **tagoio login**
 
-# How to Install (while it is not in NPM yet)
-- Download this repository.
-- Run **npm install** to install dependecies
-- Run **npm run build** to create the build
-- Run **npm link** to install globally
-- Use it by running **tago-cli**
+# How to Install
+- Run **npm install -g @tago-io/cli** to install this package globally.
 
 ## Command List
 List of commands of the CLI
+**Usage**:
+- tagoio [options] [command]
 
 **Options**:
 -  -V, --version                          output the version number
@@ -22,19 +20,24 @@ List of commands of the CLI
 
 | Command | Description |
 | ---- | ---- |
-|  init [options] | create/update the config file for analysis in your current folder |
-|  login [options] \<environment> | login to your account and get a profile-token |
-|  set-environment \<environment> | set default environment |
-| | ... |
-|  **Analysis** | ... |
-|  deploy [options] \<name> | Deploy your analysis to TagoIO |
-|  run [options] \<name>   | Run your analysis TagoIO if it's in External Mode |
-|  analysis-trigger [options] \<name> | Send a signal to trigger your analysis TagoIO |
-|  analysis-console [options] \<name> | Connect to your Analysis Console |
-|  analysis-duplicate [options] \<ID> | Duplicate your Analysis |
-| | ... |
-|  **Devices** | ... |
-|  device-inspector [options] \<ID/Token> | Connect to your Device Live Inspector |
-|  device-info [options] \<ID/Token> | Get information about a device and it's configuration parameters. |
-|  device-list [options] | List devices in your account. |
-|  help [command] | display help for command |
+| init [environment] | create/update the config file for analysis in your current folder |
+| login [environment] | login to your account and store profile_token in the .tago/tago-lock |
+| set-env [environment] | set your default environment from tagoconfig.ts |
+| list-env | list all your environment and show current default |
+| | |
+| **Analysis** | |
+| deploy, analysis-deploy [name] | deploy your analysis to TagoIO |
+| run, analysis-run [name] | run your TagoIO analysis from your machine. |
+| at, analysis-trigger [name] | send a signal to trigger your analysis TagoIO |
+| ac, analysis-console [name] | connect to your Analysis Console |
+| ad, analysis-duplicate [ID] | duplicate your Analysis |
+| am, analysis-mode [name] | change an analysis or group of analysis to run on tago/external |
+| | |
+| **Devices** | |
+| inspect, device-inspector [ID/Token] | connect to your Device Live Inspector |
+| info, device-info [ID/Token] | get information about a device and it's configuration parameters |
+| dl, device-list  | get the list of devices |
+| data [ID/Token] | get data from a device |
+| |
+| **Profiles** | |
+| export, app-export | export application from one profile to another |
