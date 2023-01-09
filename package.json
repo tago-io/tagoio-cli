@@ -15,9 +15,13 @@
     "analysis",
     "device"
   ],
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=6.0.0"
+  },
   "scripts": {
     "start": "node -r @swc-node/register ./src/index.ts",
-    "build": "rm -rf ./out; tsc --build",
+    "build": "rm -rf ./build; tsc --build",
     "linter": "eslint .",
     "test": "jest"
   },
