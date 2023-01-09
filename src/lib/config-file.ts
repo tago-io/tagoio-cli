@@ -25,9 +25,9 @@ interface IConfigFile {
 
 function resolveCLIPath(suffix: string) {
   let path = __dirname;
-  while (!path.endsWith("tagoio-cli")) {
-    path = join(path, "..");
-  }
+  const pathSlices = path.split("/");
+  const cliWordPosition = pathSlices.findIndex((x) => x.includes("cli")) + 1;
+  path = pathSlices.slice(0, cliWordPosition).join("/");
   return join(path, suffix);
 }
 
