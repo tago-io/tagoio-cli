@@ -1,0 +1,17 @@
+nodemon.json
+examples/
+__tests__/
+docs/
+.github/
+.editorconfig
+.eslintignore
+.prettierrc
+.eslintrc.js
+*.tgz
+*.local.**
+.DS_Store
+jest.config.js
+typedoc.json
+assets/
+*.lock
+tagoconfig*

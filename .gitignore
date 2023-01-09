@@ -53,7 +53,6 @@ yarn.lock
 *.local.*
 .tago-lock.test.lock
 .tago-lock.prod.lock
-tagoconfig.json
-tagoconfig.user.json
+tagoconfig*
 src/analysis
 .tago-lock.ty.lock
