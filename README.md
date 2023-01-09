@@ -41,3 +41,8 @@ List of commands of the CLI
 | |
 | **Profiles** | |
 | export, app-export | export application from one profile to another |
+
+
+## License
+
+TagoIO SDK for JavaScript in the browser and Node.js is released under the [Apache-2.0 License](https://github.com/tagoio-cli/blob/master/LICENSE.md).
