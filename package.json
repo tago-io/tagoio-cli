@@ -17,8 +17,9 @@
   ],
   "scripts": {
     "start": "node -r @swc-node/register ./src/index.ts",
-    "build": "tsc --build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf ./out; tsc --build",
+    "linter": "eslint .",
+    "test": "jest"
   },
   "bin": {
     "tagoio": "./build/index.js"
