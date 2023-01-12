@@ -42,6 +42,16 @@ List of commands of the CLI
 | **Profiles** | |
 | export, app-export | export application from one profile to another |
 
+## Analysis Runner
+When writing up your analysis, make sure you have the following lines at end of the code:
+
+```javascript
+if (!process.env.T_TEST) {
+  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
+}
+
+export { startAnalysis };
+```
 
 ## License
 
