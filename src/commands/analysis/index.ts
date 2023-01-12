@@ -28,9 +28,9 @@ function analysisCommands(program: Command) {
       "after",
       `
 Example:
-    $ tago-cli deploy all
-    $ tago-cli deploy all -e stage
-    $ tago-cli deploy dashboard-handler`
+    $ tagoio deploy all
+    $ tagoio deploy all -e stage
+    $ tagoio deploy dashboard-handler`
     );
 
   program
@@ -54,10 +54,10 @@ Example:
       `
 
 Example:
-    $ tago-cli run dashboard-handler
-    $ tago-cli run dash
-    $ tago-cli run dashboard-handler -d
-    $ tago-cli run dashboard-handler -d -c
+    $ tagoio run dashboard-handler
+    $ tagoio run dash
+    $ tagoio run dashboard-handler -d
+    $ tagoio run dashboard-handler -d -c
        `
     );
 
@@ -74,8 +74,8 @@ Example:
       "after",
       `
 Example:
-    $ tago-cli analysis-trigger dash
-    $ tago-cli analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`
+    $ tagoio analysis-trigger dash
+    $ tagoio analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`
     );
 
   program
@@ -90,7 +90,7 @@ Example:
       `
 
 Example:
-    $ tago-cli analysis-console 62151835435d540010b768c4`
+    $ tagoio analysis-console 62151835435d540010b768c4`
     );
 
   program
@@ -106,7 +106,7 @@ Example:
       `
 
 Example:
-    $ tago-cli analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+    $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
     );
 
   program
@@ -129,7 +129,7 @@ Example:
       `
 
 Example:
-     $ tago-cli analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+     $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
     );
 
   return program;

@@ -30,7 +30,7 @@ async function createEnvironmentToken(environment: string) {
   if (!tryLogin) {
     return;
   }
-  infoMSG(`You can create a token by running: ${highlightMSG("tagoio-cli login")}`);
+  infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
 
   const options = { token: undefined };
   await tagoLogin(environment, options);

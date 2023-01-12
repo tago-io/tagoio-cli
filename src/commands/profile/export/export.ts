@@ -38,7 +38,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
   if (options.from) {
     const token = readToken(options.from);
     if (!token) {
-      errorHandler(`Token for environment ${options.from} not found. Did you try "tago-cli login ${options.from}" ?`);
+      errorHandler(`Token for environment ${options.from} not found. Did you try "tagoio login ${options.from}" ?`);
       process.exit(0);
     }
     userConfig.export.token = token;
@@ -48,7 +48,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
   if (options.to) {
     const token = readToken(options.to);
     if (!token) {
-      errorHandler(`Token for environment ${options.to} not found. Did you try "tago-cli login ${options.to}" ?`);
+      errorHandler(`Token for environment ${options.to} not found. Did you try "tagoio login ${options.to}" ?`);
       process.exit(0);
     }
     userConfig.import.token = token;
@@ -147,6 +147,7 @@ async function startExport(options: IExportOptions) {
     await setupExport(options);
     return;
   }
+
   const userConfig = await collectParameters(options);
   if (!userConfig) {
     return;

@@ -61,12 +61,12 @@ async function initiateCMD() {
     .addHelpText(
       "after",
       `
-    Note: If you don't store credentials in this command, you must run tago-cli login
+    Note: If you don't store credentials in this command, you must run tagoio login
 
 Example:
-    $ tago-cli init
-    $ tago-cli init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
-    $ tago-cli init -env dev`
+    $ tagoio init
+    $ tagoio init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
+    $ tagoio init -env dev`
     );
 
   program
@@ -80,12 +80,12 @@ Example:
     .addHelpText(
       "after",
       `
-    Note: No need to login again if you already stored credentials with tago-cli init
+    Note: No need to login again if you already stored credentials with tagoio init
 
 Example:
-    $ tago-cli login
-    $ tago-cli login -u tago@tago.io -p 12345678
-    $ tago-cli login -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0`
+    $ tagoio login
+    $ tagoio login -u tago@tago.io -p 12345678
+    $ tagoio login -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0`
     );
 
   program
@@ -97,8 +97,8 @@ Example:
       "after",
       `
 Example:
-     $ tago-cli set-env
-     $ tago-cli set-env dev`
+     $ tagoio set-env
+     $ tagoio set-env dev`
     );
 
   program
@@ -109,7 +109,7 @@ Example:
       "after",
       `
 Example:
-   $ tago-cli list-env`
+   $ tagoio list-env`
     );
 
   await getAllCommands(program);

@@ -111,6 +111,7 @@ async function updateEntitySetting({ exportTag, entity, entityItemList, nameFiel
 }
 
 async function setupExport(options: { setup: string }) {
+  infoMSG("Setting up export");
   const config = getEnvironmentConfig(options.setup);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

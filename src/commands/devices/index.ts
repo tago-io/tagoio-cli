@@ -28,8 +28,8 @@ function deviceCommands(program: Command) {
       `
 
 Example:
-    $ tago-cli device-inspector 62151835435d540010b768c4
-    $ tago-cli device-inspector 62151835435d540010b768c4 --env dev
+    $ tagoio device-inspector 62151835435d540010b768c4
+    $ tagoio device-inspector 62151835435d540010b768c4 --env dev
        `
     );
 
@@ -48,7 +48,7 @@ Example:
       `
 
 Example:
-    $ tago-cli device-info 62151835435d540010b768c4`
+    $ tagoio device-info 62151835435d540010b768c4`
     );
 
   program
@@ -69,9 +69,9 @@ Example:
       `
 
 Example:
-    $ tago-cli device-list
-    $ tago-cli device-list --name Device -s
-    $ tago-cli device-list -t device_type -v sensor
+    $ tagoio device-list
+    $ tagoio device-list --name Device -s
+    $ tagoio device-list -t device_type -v sensor
        `
     );
 
@@ -95,11 +95,11 @@ Example:
       `
 
 Example:
-     $ tago-cli data
-     $ tago-cli data -v temperature -qty 1 --json
-     $ tago-cli data 62151835435d540010b768c4 --post '{ "variable": "temperature", "value": 32 }'
-     $ tago-cli data 62151835435d540010b768c4
-     $ tago-cli data 62151835435d540010b768c4 -v temperature -qty 1
+     $ tagoio data
+     $ tagoio data -v temperature -qty 1 --json
+     $ tagoio data 62151835435d540010b768c4 --post '{ "variable": "temperature", "value": 32 }'
+     $ tagoio data 62151835435d540010b768c4
+     $ tagoio data 62151835435d540010b768c4 -v temperature -qty 1
      `
     );
 }

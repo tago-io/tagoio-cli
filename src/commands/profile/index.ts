@@ -24,11 +24,7 @@ function profileCommands(program: Command, defaultEnvironment: string) {
     .addOption(new Option("-ft, --from-token <profile-token>", "profile token of the environment").conflicts("from"))
     .addOption(new Option("-tt, --to-token <profile-token>", "profile token of the environment").conflicts("to"))
     .option("-e, --entity <entity>", "entities that will be exported (repeatable)", handleEntities, [])
-    .addOption(
-      new Option("--setup [environment]", "setup a profile to be exported")
-        .default(defaultEnvironment, "Default Environment")
-        .conflicts(["to", "from", "from-token", "to-token"])
-    )
+    .addOption(new Option("--setup [environment]", "setup a profile to be exported").conflicts(["to", "from", "from-token", "to-token"]))
     .action(startExport)
     .addHelpText(
       "after",
@@ -51,11 +47,11 @@ function profileCommands(program: Command, defaultEnvironment: string) {
     - ${highlightMSG("dictionaries")}: Export all the dictionaries slugs.
 
 Example:
-    $ tago-cli export
-    $ tago-cli export --setup dev
-    $ tago-cli export --from dev --to prod
-    $ tago-cli export --from dev --to prod -e dashboards -e actions -e analysis
-    $ tago-cli export -ft cb8a1d42-0f28-4ee7-9862-839920eb1cb1 -tt eb8a1d42-0f28-4ee7-9862-839920eb1cb0
+    $ tagoio export
+    $ tagoio export --setup dev
+    $ tagoio export --from dev --to prod
+    $ tagoio export --from dev --to prod -e dashboards -e actions -e analysis
+    $ tagoio export -ft cb8a1d42-0f28-4ee7-9862-839920eb1cb1 -tt eb8a1d42-0f28-4ee7-9862-839920eb1cb0
   `
     );
 }
