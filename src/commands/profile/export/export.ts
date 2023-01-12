@@ -42,6 +42,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
       process.exit(0);
     }
     userConfig.export.token = token;
+    infoMSG(`Export from ${kleur.cyan(options.from)} environment selected.`);
   }
 
   if (options.to) {
@@ -51,6 +52,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
       process.exit(0);
     }
     userConfig.import.token = token;
+    infoMSG(`Export to ${kleur.cyan(options.to)} environment selected.`);
   }
 
   if (userConfig.import.token === userConfig.export.token) {
