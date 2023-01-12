@@ -12,7 +12,7 @@ function handleEntities(value: any, previous: any) {
   return previous.concat([value]);
 }
 
-function profileCommands(program: Command, defaultEnvironment: string) {
+function profileCommands(program: Command, _defaultEnvironment: string) {
   program.command("Profiles Header");
 
   program
