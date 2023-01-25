@@ -228,7 +228,10 @@ async function startExport(options: IExportOptions) {
           idCollection.push("dashboards");
           export_holder = await collectIDs(account, import_account, "dashboards", export_holder);
         }
-        export_holder = await runButtonsExport(account, import_account, export_holder);
+        export_holder = await runButtonsExport(account, import_account, export_holder).catch((error) => {
+          console.error(error);
+          throw error;
+        });
         idCollection.push("run");
         break;
       default:

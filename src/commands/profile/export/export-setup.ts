@@ -88,8 +88,12 @@ async function updateEntitySetting({ exportTag, entity, entityItemList, nameFiel
     choices: analysisListWithTag,
   });
 
-  if (!choices || choices.length === 0) {
+  if (!choices) {
     errorHandler("Stopped");
+    return;
+  }
+
+  if (choices.length === 0) {
     return;
   }
 

@@ -1,6 +1,6 @@
 import { Account } from "@tago-io/sdk";
 import { RunInfo } from "@tago-io/sdk/out/modules/Account/run.types";
-import { errorHandler } from "../../../../lib/messages";
+import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 
@@ -42,7 +42,7 @@ function updateSideBarButtons(runInfo: RunInfo, targetRunInfo: RunInfo, exportHo
 }
 
 async function runButtonsExport(account: Account, import_account: Account, export_holder: IExportHolder) {
-  console.info("Run Buttons: started");
+  infoMSG("Run Buttons: started");
 
   const runInfo = await account.run.info();
   const targetRunInfo = await import_account.run.info();
@@ -59,7 +59,13 @@ async function runButtonsExport(account: Account, import_account: Account, expor
     targetRunInfo.email_templates[template_name] = email_obj;
   }
 
-  await import_account.run.edit(targetRunInfo).catch(errorHandler);
+  // @ts-expect-error
+  delete targetRunInfo.created_at;
+
+  await import_account.run.edit(targetRunInfo).catch((error) => {
+    console.dir(JSON.stringify(error, null, 5));
+    throw error;
+  });
 
   console.info("Run Buttons: finished");
   return export_holder;

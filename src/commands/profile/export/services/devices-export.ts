@@ -1,10 +1,10 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
-import { errorHandler } from "../../../../lib/messages";
+import { errorHandler, infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExport, IExportHolder } from "../types";
 
 async function deviceExport(account: Account, import_account: Account, export_holder: IExportHolder, config: IExport) {
-  console.info("Exporting devices: started");
+  infoMSG("Exporting devices: started");
 
   const list = await account.devices.list({
     amount: 99,

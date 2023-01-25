@@ -14,7 +14,7 @@ async function analysisExport(account: Account, import_account: Account, export_
   const import_list = await import_account.analysis.list({ amount: 99, fields: ["id", "tags"], filter: { tags: [{ key: "export_id" }] } });
 
   for (const { id: analysis_id, name } of list) {
-    infoMSG(`Exporting dashboard ${name}...`);
+    console.info(`Exporting analysis ${name}...`);
     const analysis = await account.analysis.info(analysis_id);
     const export_id = analysis.tags?.find((tag) => tag.key === "export_id")?.value;
 
