@@ -90,7 +90,7 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
   for (const { id, fileName } of scriptList) {
     await buildScript(account, fileName, id, config);
   }

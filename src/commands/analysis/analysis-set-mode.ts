@@ -13,7 +13,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
   const analysisFilterName = userInputName ? `*${userInputName}*` : undefined;
 
   const analysisList = await account.analysis

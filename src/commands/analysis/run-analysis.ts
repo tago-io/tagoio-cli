@@ -30,7 +30,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     return process.exit();
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
 
   const { token: analysisToken } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} [${highlightMSG(analysisToken)}].`);
