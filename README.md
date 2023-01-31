@@ -38,6 +38,8 @@ List of commands of the CLI
 | info, device-info [ID/Token] | get information about a device and it's configuration parameters |
 | dl, device-list  | get the list of devices |
 | data [ID/Token] | get data from a device |
+| bkp, device-backup [ID/Token] | backup data from a Device. Store on TagoIO Cloud by defaul |
+| device-type [ID/Token] | change the bucket type to immutable or mutable |
 | |
 | **Profiles** | |
 | export, app-export | export application from one profile to another |
