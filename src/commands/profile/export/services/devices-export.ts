@@ -34,7 +34,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
       if (config.data && config.data.length > 0) {
-        const device = new Device({ token: new_token });
+        const device = new Device({ token: new_token, region: "usa-1" });
         const old_device = new Device({ token });
 
         const data = await old_device.getData({

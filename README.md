@@ -2,7 +2,8 @@
 This project is a CLI Tool to be used with TagoIO. It's main functionality is to help with deployment within multiple profiles, as well as providing useful tools for developers.
 
 To work with Analysis, the tool requires that you run **tagoio init** to generate a tagoconfig.json
-To connect to Devices, the CLI only requires you to have generate your profile-token with **tagoio login**
+
+To connect to Devices, the CLI only requires you to generate your profile-token with **tagoio login**
 
 # How to Install
 - Run **npm install -g @tago-io/cli** to install this package globally.
@@ -38,9 +39,11 @@ List of commands of the CLI
 | info, device-info [ID/Token] | get information about a device and it's configuration parameters |
 | dl, device-list  | get the list of devices |
 | data [ID/Token] | get data from a device |
+| bkp, device-backup [ID/Token] | backup data from a Device. Store it on the TagoIO Cloud by default |
+| device-type [ID/Token] | change the bucket type to immutable or mutable |
 | |
 | **Profiles** | |
-| export, app-export | export application from one profile to another |
+| export, app-export | export an application from one profile to another |
 
 ## Analysis Runner
 When writing up your analysis, make sure you have the following lines at end of the code:
@@ -52,6 +55,33 @@ if (!process.env.T_TEST) {
 
 export { startAnalysis };
 ```
+
+When running tests, make sure to set T_TEST environment variable on your terminal.
+
+## Credentials Storage
+When running **tagoio login** or **tagoio init**, the CLI will store your Profile-Token in the current folder on your terminal.
+
+The Profile-Token credential is encrypted under a *.tago-lock.{env}.lock* file.
+
+## tagoconfig.json
+The tagoconfig.json file stores information about your current javascript/typescript project. It will contain information about your analysis, their ID's and names.
+
+- Run the command **tagoio init** in order to create the tagoconfig.json.
+
+Having a tagoconfig.json is required in order to run the following cmds:
+* tagoio deploy
+* tagoio trigger
+* tagoio run
+
+You will also be required to have the .tago-lock file for a given environment.
+
+
+## Working with Environments
+The CLI is optimized to work within multiple environments. That makes it easier to alternate environments for deployment and management of your analysis.
+
+You can create new environments by running the **tagoio init** cmd.
+
+You can change your current environment by running the **tagoio set-env** cmd.
 
 ## License
 

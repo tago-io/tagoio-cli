@@ -39,7 +39,7 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
   const analysis_info = await account.analysis.info(scriptObj.id).catch(() => null);
   if (!analysis_info) {
     errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);

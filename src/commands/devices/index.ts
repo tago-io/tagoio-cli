@@ -1,6 +1,8 @@
 import { Command } from "commander";
 import { cmdRepeteableValue } from "../../lib/commander-repeatable";
+import { changeBucketType } from "./change-bucket-type";
 import { getDeviceData } from "./data-get";
+import { bkpDeviceData } from "./device-bkp";
 import { deviceInfo } from "./device-info";
 import { deviceList } from "./device-list";
 import { inspectorConnection } from "./device-live-inspector";
@@ -100,6 +102,46 @@ Example:
      $ tagoio data 62151835435d540010b768c4 --post '{ "variable": "temperature", "value": 32 }'
      $ tagoio data 62151835435d540010b768c4
      $ tagoio data 62151835435d540010b768c4 -v temperature -qty 1
+     `
+    );
+
+  program
+    .command("device-backup")
+    .alias("bkp")
+    .description("backup data from a Device. Store it on TagoIO Cloud by default")
+    .argument("[ID/Token]", "ID/Token of your device")
+    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--local", "store file locally")
+    .option("--restore", "restore a backup file")
+    .action(bkpDeviceData)
+    .addHelpText(
+      "after",
+      `
+
+Example:
+   $ tagoio bkp
+   $ tagoio bkp 62151835435d540010b768c4
+   $ tagoio bkp 62151835435d540010b768c4 --local
+   `
+    );
+
+  program
+    .command("device-type")
+    .description(`change the bucket type to immutable or mutable`)
+    .argument("[ID/Token]", "ID/Token of your device")
+    .option("-env, --environment [environment]", "environment from config.js")
+    .action(changeBucketType)
+    .addHelpText(
+      "after",
+      `
+      It's Recommended to backup data before changing the type, using:
+        - tagoio bkp
+      Then restore the data after changing the type, using:
+        - tagoio bkp --restore
+
+  Example:
+     $ tagoio device-type
+     $ tagoio device-type 62151835435d540010b768c4
      `
     );
 }

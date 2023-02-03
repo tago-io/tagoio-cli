@@ -56,3 +56,5 @@ yarn.lock
 tagoconfig*
 src/analysis
 .tago-lock.ty.lock
+.tagoio
+.tago-lock.dev.lock

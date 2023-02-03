@@ -30,14 +30,14 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     errorHandler("Environment not found");
     return;
   }
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }
   const deviceInfo = await account.devices
     .info(idOrToken)
     .catch(() => {
-      const device = new Device({ token: idOrToken });
+      const device = new Device({ token: idOrToken, region: "usa-1" });
       return device.info();
     })
     .catch(errorHandler);

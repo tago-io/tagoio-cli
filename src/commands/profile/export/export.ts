@@ -90,8 +90,8 @@ async function enterExportTag(defaultTag: string) {
 }
 
 async function confirmEnvironments(userConfig: IExport) {
-  const exportAcc = new Account({ token: userConfig.export.token });
-  const importAcc = new Account({ token: userConfig.import.token });
+  const exportAcc = new Account({ token: userConfig.export.token, region: "usa-1" });
+  const importAcc = new Account({ token: userConfig.import.token, region: "usa-1" });
 
   const errorWhenReading = (error: any, type: string) => {
     errorHandler(`${type} profile: ${error}`);
@@ -153,8 +153,8 @@ async function startExport(options: IExportOptions) {
     return;
   }
 
-  const account = new Account({ token: userConfig.export.token });
-  const import_account = new Account({ token: userConfig.import.token });
+  const account = new Account({ token: userConfig.export.token, region: "usa-1" });
+  const import_account = new Account({ token: userConfig.import.token, region: "usa-1" });
 
   const import_rule = ENTITY_ORDER.filter((entity) => userConfig.entities.includes(entity));
   let export_holder: IExportHolder = {
