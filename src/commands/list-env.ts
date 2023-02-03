@@ -10,9 +10,9 @@ async function fixEnvironments(configFile: ReturnType<typeof getConfigFile>, env
 
   for (const env of envList) {
     const environment = configFile[env];
-    if (environment.id && environment.profileName) {
-      continue;
-    }
+    // if (environment.id && environment.profileName) {
+    //   continue;
+    // }
 
     const token = readToken(env);
     if (!token) {

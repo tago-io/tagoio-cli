@@ -53,14 +53,14 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
   if (!deviceIdOrToken) {
     deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
   }
 
   let device_info = await account.devices.info(deviceIdOrToken).catch(() => null);
   if (!device_info) {
-    const device = new Device({ token: deviceIdOrToken });
+    const device = new Device({ token: deviceIdOrToken, region: "usa-1" });
     device_info = await device
       .info()
       .then((r) => r as DeviceInfo)

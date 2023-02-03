@@ -13,7 +13,7 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: "usa-1" });
 
   const analysisList = config.analysisList.filter((x) => x.fileName);
   let script: IEnvironment["analysisList"][0] | undefined;
