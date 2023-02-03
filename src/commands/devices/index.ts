@@ -108,7 +108,7 @@ Example:
   program
     .command("device-backup")
     .alias("bkp")
-    .description("backup data from a Device. Store on TagoIO Cloud by default")
+    .description("backup data from a Device. Store it on TagoIO Cloud by default")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("-env, --environment [environment]", "environment from config.js")
     .option("--local", "store file locally")
@@ -134,7 +134,7 @@ Example:
     .addHelpText(
       "after",
       `
-      Recommended to backup data before changing the type, using:
+      It's Recommended to backup data before changing the type, using:
         - tagoio bkp
       Then restore the data after changing the type, using:
         - tagoio bkp --restore
