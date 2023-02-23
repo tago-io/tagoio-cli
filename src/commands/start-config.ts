@@ -1,10 +1,11 @@
 import { readdirSync } from "fs";
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
+import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import { cosine } from "string-comparison";
-import kleur from "kleur";
-import { getConfigFile, IEnvironment, writeConfigFileEnv } from "../lib/config-file";
+
+import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
@@ -158,6 +159,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
   const newEnv: IEnvironment = { analysisList: analysisList, id: profile.info.id, profileName: profile.info.name, email: accountInfo.email };
+  writeToConfigFile(configFile);
   writeConfigFileEnv(environment, newEnv);
 }
 
