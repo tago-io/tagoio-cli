@@ -4,10 +4,9 @@ function questionMSG(str: any) {
   return `[${kleur.magenta("PROMPT")}] ${str}`;
 }
 
-function errorHandler(str: any): void {
+function errorHandler(str: any) {
   console.error(`[${kleur.red("ERROR")}] ${kleur.bold(str)}`);
   process.exit(0);
-  throw new Error(str);
 }
 
 function highlightMSG(str: any) {

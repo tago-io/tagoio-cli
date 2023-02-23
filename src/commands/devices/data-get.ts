@@ -1,4 +1,4 @@
-import { Account, Device } from "@tago-io/sdk";
+import { Account, Device, Utils } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DataQuery } from "@tago-io/sdk/out/modules/Device/device.types";
 import kleur from "kleur";
@@ -8,9 +8,38 @@ import { errorHandler, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 import { postDeviceData } from "./data-post";
 
+async function getDevice(idOrToken: string, account: Account) {
+  if (idOrToken.length === 36) {
+    const device = new Device({ token: idOrToken });
+    const info = await device.info().catch(errorHandler);
+    if (!info) {
+      return;
+    }
+    return {
+      device,
+      info,
+    };
+  }
+
+  const info = await account.devices.info(idOrToken).catch(errorHandler);
+  if (!info) {
+    return;
+  }
+
+  const device = await Utils.getDevice(account, info.id).catch(errorHandler);
+  if (!device) {
+    return;
+  }
+
+  return {
+    device,
+    info,
+  };
+}
+
 interface IOptions {
   environment?: string;
-  variable?: string[];
+  var?: string[];
   group?: string;
   stringify: boolean;
   startDate: string;
@@ -36,21 +65,16 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }
-  const deviceInfo = await account.devices
-    .info(idOrToken)
-    .catch(() => {
-      const device = new Device({ token: idOrToken, region: "usa-1" });
-      return device.info();
-    })
-    .catch(errorHandler);
-
-  if (!deviceInfo) {
+  const deviceResult = await getDevice(idOrToken, account).catch(errorHandler);
+  if (!deviceResult) {
     return;
   }
 
+  const { device, info: deviceInfo } = deviceResult;
+
   const filter: DataQuery = {};
-  if (options.variable) {
-    filter.variables = options.variable;
+  if (options.var) {
+    filter.variables = options.var;
   }
   if (options.group) {
     filter.groups = options.group;
@@ -64,13 +88,19 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   if (options.qty) {
     filter.qty = Number(options.qty);
   }
-  const dataList = await account.devices.getDeviceData(deviceInfo.id, filter).then((r) => {
-    return r.map((x) => {
-      // @ts-expect-error
-      delete x.device;
-      return x;
-    }) as Omit<Data, "device">[];
-  });
+  const dataList = await device
+    .getData(filter)
+    .then((r) => {
+      return r.map((x) => {
+        // @ts-expect-error
+        delete x.device;
+        return x;
+      }) as Omit<Data, "device">[];
+    })
+    .catch((error) => {
+      errorHandler(error);
+      throw error;
+    });
 
   if (options.stringify) {
     console.log(JSON.stringify(dataList));
