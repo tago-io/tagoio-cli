@@ -2,6 +2,7 @@ import { Account, Device } from "@tago-io/sdk";
 import { Data } from "@tago-io/sdk/out/common/common.types";
 import { DataQuery } from "@tago-io/sdk/out/modules/Device/device.types";
 import kleur from "kleur";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
@@ -20,6 +21,7 @@ interface IOptions {
 }
 
 async function getDeviceData(idOrToken: string, options: IOptions) {
+  console.log(options);
   if (options.post) {
     await postDeviceData(idOrToken, options);
     return;

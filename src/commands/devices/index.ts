@@ -1,4 +1,5 @@
 import { Command } from "commander";
+
 import { cmdRepeteableValue } from "../../lib/commander-repeatable";
 import { changeBucketType } from "./change-bucket-type";
 import { getDeviceData } from "./data-get";
@@ -82,15 +83,15 @@ Example:
     .description("get data from a device.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("-env, --environment [environment]", "environment from config.js")
-    .option("-var, --variable", "Filter by variable", cmdRepeteableValue, [])
-    .option("-g, --group", "Filter by group")
-    .option("-qty, --qty <qty>", "Request a given set amount of data", handleNumber, "15")
-    .option("-start, --start-date", "Get data after date")
-    .option("-end, --end-date", "Get data previous of date")
+    .option("-g, --group <group>", "Filter by group")
+    .option("-qty, --qty <qty>", "Request a given set amount of data", handleNumber, 15)
+    .option("-start, --start-date <date>", "Get data after date")
+    .option("-end, --end-date <date>", "Get data previous of date")
     .option("-js, --json", "return json list")
     .option("--stringify", "return as text")
     .option("--json", "return as json")
     .option("-p, --post <dataJSON>", "send data to the device")
+    .option("-v, --var <variable>", "Filter by variable", cmdRepeteableValue, [])
     .action(getDeviceData)
     .addHelpText(
       "after",
