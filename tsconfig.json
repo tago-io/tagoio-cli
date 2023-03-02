@@ -14,7 +14,8 @@
     "removeComments": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "inlineSourceMap": true
   },
   "include": ["src/**/*"],
   "rules": {

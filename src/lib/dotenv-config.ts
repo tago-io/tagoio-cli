@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { dirname } from "path";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { stringify } from "envfile";
-import { getCurrentFolder } from "./get-current-folder";
+
 import { addOnGitIgnore } from "./add-to-gitignore";
+import { getCurrentFolder } from "./get-current-folder";
 
 interface IEnvFile {
   TAGOIO_DEFAULT?: string;
@@ -32,4 +33,4 @@ function setEnvironmentVariables(params: IEnvFile) {
   addOnGitIgnore(folder, `.tagoio`);
 }
 
-export { setEnvironmentVariables, ENV_FILE_PATH };
+export { setEnvironmentVariables, ensureDirectoryExistence, ENV_FILE_PATH };

@@ -1,8 +1,11 @@
+import { queue } from "async";
+
 import { Account } from "@tago-io/sdk";
 import { DashboardInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
-import { queue } from "async";
+
 import { errorHandler } from "../../../../lib/messages";
 import { IExportHolder } from "../types";
+import { storeExportBackup } from "./export-backup/export-backup";
 import { insertWidgets, removeAllWidgets } from "./widgets-export";
 
 interface IQueue {
@@ -10,64 +13,80 @@ interface IQueue {
   dash_id: string;
   import_list: DashboardInfo[];
   export_holder: IExportHolder;
-  import_account: Account;
-  account: Account;
+  importAccount: Account;
+  exportAccount: Account;
 }
-async function updateDashboard({ label, dash_id, import_list, export_holder, account, import_account }: IQueue) {
+async function updateDashboard({ label, dash_id, import_list, export_holder, exportAccount, importAccount }: IQueue) {
   console.info(`Exporting dashboard ${label}...`);
-  const dashboard = await account.dashboards.info(dash_id);
-  const export_id = dashboard.tags?.find((tag) => tag.key === "export_id")?.value;
+  const exportDash = await exportAccount.dashboards.info(dash_id).catch((error) => {
+    throw `Error on dashboard ${label} in export account: ${error}`;
+  });
+  const export_id = exportDash.tags?.find((tag) => tag.key === "export_id")?.value;
   if (!export_id) {
     return;
   }
+  await storeExportBackup("original", "dashboards", exportDash);
 
-  const dash_target = await resolveDashboardTarget(import_account, export_id, import_list, dashboard);
+  const importDash = await resolveDashboardTarget(importAccount, export_id, import_list, exportDash);
+  if (importDash.id === exportDash.id) {
+    throw `Dashboard ${label} ID is the same as the export account`;
+  }
 
-  await removeAllWidgets(import_account, dash_target).catch(errorHandler);
-  dash_target.arrangement = [];
-  await insertWidgets(account, import_account, dashboard, dash_target, export_holder).catch(errorHandler);
-  export_holder.dashboards[dash_id] = dash_target.id;
+  await storeExportBackup("target", "dashboards", importDash);
+
+  await removeAllWidgets(importAccount, importDash).catch(errorHandler);
+  importDash.arrangement = [];
+  await insertWidgets(exportAccount, importAccount, exportDash, importDash, export_holder).catch(errorHandler);
+  export_holder.dashboards[dash_id] = importDash.id;
 }
 
-async function resolveDashboardTarget(import_account: Account, export_id: string, import_list: DashboardInfo[], content: DashboardInfo) {
+async function resolveDashboardTarget(importAccount: Account, export_id: string, import_list: DashboardInfo[], content: DashboardInfo) {
   const import_dashboard = import_list.find((dash) => {
     const import_id = dash.tags?.find((tag) => tag.key === "export_id")?.value;
     return import_id && import_id === export_id;
   });
 
   if (import_dashboard) {
-    const dashboard = await import_account.dashboards.info(import_dashboard.id);
-    await import_account.dashboards.edit(import_dashboard.id, {
+    const importDashInfo = await importAccount.dashboards.info(import_dashboard.id).catch((error) => {
+      throw `Error on dashboard ${import_dashboard.label} in import account: ${error}`;
+    });
+
+    const dashEditParams = {
       blueprint_device_behavior: content.blueprint_device_behavior,
       blueprint_devices: content.blueprint_devices,
       blueprint_selector_behavior: content.blueprint_selector_behavior,
       tabs: content.tabs,
       tags: content.tags,
       label: content.label,
+    };
+
+    await importAccount.dashboards.edit(importDashInfo.id, dashEditParams).catch((error) => {
+      throw `Error on editing dashboard ${import_dashboard.label} in import account: ${error}`;
     });
-    return dashboard;
+
+    return { ...importDashInfo, ...dashEditParams };
   }
 
-  const { dashboard: dashboard_id } = await import_account.dashboards.create({ ...content, arrangement: undefined });
-  await new Promise((resolve) => setTimeout(resolve, 800)); // sleep
-  await import_account.dashboards.edit(dashboard_id, { ...content, arrangement: undefined });
+  const { dashboard: dashboard_id } = await importAccount.dashboards.create({ ...content, arrangement: undefined });
+  await new Promise((resolve) => setTimeout(resolve, 500)); // sleep
+  await importAccount.dashboards.edit(dashboard_id, { ...content, arrangement: undefined });
 
-  return import_account.dashboards.info(dashboard_id);
+  return importAccount.dashboards.info(dashboard_id);
 }
 
-async function dashboardExport(account: Account, import_account: Account, export_holder: IExportHolder) {
+async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder) {
   console.info("Exporting dashboard: started");
 
   // @ts-expect-error we are looking only for keys
-  const list = await account.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
+  const exportList = await exportAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
   // @ts-expect-error we are looking only for keys
-  const import_list = await import_account.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
+  const import_list = await importAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
 
   const dashboardQueue = queue(updateDashboard, 3);
   dashboardQueue.error(errorHandler);
 
-  for (const { id: dash_id, label } of list) {
-    dashboardQueue.push({ dash_id, label, import_list, import_account, export_holder, account }).catch(null);
+  for (const { id: dash_id, label } of exportList) {
+    dashboardQueue.push({ dash_id, label, import_list, importAccount, export_holder, exportAccount }).catch(null);
   }
 
   await dashboardQueue.drain();

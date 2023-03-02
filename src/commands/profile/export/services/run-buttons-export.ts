@@ -1,8 +1,10 @@
 import { Account } from "@tago-io/sdk";
 import { RunInfo } from "@tago-io/sdk/out/modules/Account/run.types";
+
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
+import { storeExportBackup } from "./export-backup/export-backup";
 
 interface ISidebarButton {
   color: string;
@@ -45,7 +47,10 @@ async function runButtonsExport(account: Account, import_account: Account, expor
   infoMSG("Run Buttons: started");
 
   const runInfo = await account.run.info();
+  await storeExportBackup("original", "run", runInfo);
+
   const targetRunInfo = await import_account.run.info();
+  await storeExportBackup("target", "run", targetRunInfo);
 
   export_holder.dashboards[runInfo.url] = targetRunInfo.url;
   export_holder.dashboards[runInfo.anonymous_token] = targetRunInfo.anonymous_token;

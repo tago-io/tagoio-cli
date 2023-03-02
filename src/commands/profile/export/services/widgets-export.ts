@@ -1,17 +1,25 @@
+import { queue } from "async";
+
 import { Account } from "@tago-io/sdk";
 import { DashboardInfo, WidgetInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
-import { queue } from "async";
+
 import { errorHandler } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
+import { storeExportBackup } from "./export-backup/export-backup";
 
-async function insertWidgets(account: Account, import_account: Account, dashboard: DashboardInfo, target: DashboardInfo, export_holder: IExportHolder) {
+async function insertWidgets(exportAccount: Account, importAccount: Account, dashboard: DashboardInfo, target: DashboardInfo, export_holder: IExportHolder) {
   const widget_ids = dashboard.arrangement?.map((x) => x.widget_id);
 
   const widgets: WidgetInfo[] = [];
   const newWidgetQueue = queue(async (widget_id: string) => {
-    const info = await account.dashboards.widgets.info(dashboard.id, widget_id);
+    const info = await exportAccount.dashboards.widgets.info(dashboard.id, widget_id).catch((error) => {
+      throw `Error on widget ${widget_id} from dashboard ${dashboard.label} in export account: ${error}`;
+    });
+    await storeExportBackup("original", "widgets", info);
+
     await new Promise((resolve) => setTimeout(resolve, 200)); // sleep
+
     if (info) {
       widgets.push(info);
     }
@@ -48,22 +56,24 @@ async function insertWidgets(account: Account, import_account: Account, dashboar
       });
     }
 
-    const { widget: new_id } = await import_account.dashboards.widgets.create(target.id, new_widget);
+    const { widget: new_id } = await importAccount.dashboards.widgets.create(target.id, new_widget).catch((error) => {
+      throw `Error on widget ${widget.id} from dashboard ${dashboard.label} in import account: ${error}`;
+    });
     new_arrangement.push({ ...widget_arrangement, widget_id: new_id });
 
     widget_holder[widget.id] = new_id;
   }
 
-  await import_account.dashboards.edit(target.id, { arrangement: new_arrangement });
+  await importAccount.dashboards.edit(target.id, { arrangement: new_arrangement });
 }
 
-async function removeAllWidgets(import_account: Account, dashboard: DashboardInfo) {
+async function removeAllWidgets(importAccount: Account, dashboard: DashboardInfo) {
   if (!dashboard.arrangement || dashboard.arrangement?.length === 0) {
     return;
   }
 
   const widgetQueue = queue(async (widget_id: string) => {
-    await import_account.dashboards.widgets.delete(dashboard.id, widget_id).catch(() => null);
+    await importAccount.dashboards.widgets.delete(dashboard.id, widget_id).catch(() => null);
     await new Promise((resolve) => setTimeout(resolve, 50)); // sleep
     return;
   }, 5);

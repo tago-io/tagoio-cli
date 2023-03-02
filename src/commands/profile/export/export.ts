@@ -1,11 +1,14 @@
 import { Account } from "@tago-io/sdk";
-import prompts from "prompts";
 import kleur from "kleur";
+import prompts from "prompts";
+
+import { addOnGitIgnore } from "../../../lib/add-to-gitignore";
+import { getCurrentFolder } from "../../../lib/get-current-folder";
 import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
 import { readToken } from "../../../lib/token";
-import { pickEnvironment } from "../../../prompt/pick-environment";
 import { confirmPrompt } from "../../../prompt/confirm";
-import { EntityType, IExport, IExportHolder } from "./types";
+import { pickEnvironment } from "../../../prompt/pick-environment";
+import { setupExport } from "./export-setup";
 import { accessExport } from "./services/access-export";
 import { actionsExport } from "./services/actions-export";
 import { analysisExport } from "./services/analysis-export";
@@ -14,7 +17,7 @@ import { dashboardExport } from "./services/dashboards-export";
 import { deviceExport } from "./services/devices-export";
 import { dictionaryExport } from "./services/dictionary-export";
 import { runButtonsExport } from "./services/run-buttons-export";
-import { setupExport } from "./export-setup";
+import { EntityType, IExport, IExportHolder } from "./types";
 
 const ENTITY_ORDER: EntityType[] = ["devices", "analysis", "dashboards", "access", "run", "actions", "dictionaries"];
 interface IExportOptions {
@@ -53,11 +56,6 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
     }
     userConfig.import.token = token;
     infoMSG(`Export to ${kleur.cyan(options.to)} environment selected.`);
-  }
-
-  if (userConfig.import.token === userConfig.export.token) {
-    errorHandler("Don't export application to the same profile!");
-    process.exit(0);
   }
 }
 
@@ -99,12 +97,17 @@ async function confirmEnvironments(userConfig: IExport) {
   };
 
   const {
-    info: { name: exportName },
+    info: { name: exportName, id: exportID },
   } = await exportAcc.profiles.info("current").catch((error) => errorWhenReading(error, "Export"));
 
   const {
-    info: { name: importName },
+    info: { name: importName, id: importID },
   } = await importAcc.profiles.info("current").catch((error) => errorWhenReading(error, "Import"));
+
+  if (exportID === importID) {
+    errorHandler("Don't export application to the same profile!");
+    process.exit(0);
+  }
 
   const confirmed = await confirmPrompt(`You will be exporting profile ${kleur.cyan(exportName)} to ${kleur.green(importName)}. Do you confirm ?`);
   if (!confirmed) {
@@ -134,6 +137,11 @@ async function collectParameters(options: IExportOptions) {
   };
 
   await resolveTokens(userConfig, options);
+  if (userConfig.import.token === userConfig.export.token) {
+    errorHandler("Don't export application to the same profile!");
+    process.exit(0);
+  }
+
   userConfig.entities = await chooseEntities(options.entity);
   userConfig.export_tag = await enterExportTag(userConfig.export_tag);
 
@@ -239,6 +247,7 @@ async function startExport(options: IExportOptions) {
     }
   }
   successMSG("====Exporting ended with success====");
+  addOnGitIgnore(getCurrentFolder(), `exportBackup`);
 }
 
 export { startExport, ENTITY_ORDER, chooseEntities, enterExportTag };
