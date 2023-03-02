@@ -1,5 +1,6 @@
 import { Command, Option } from "commander";
 import kleur from "kleur";
+
 import { errorHandler, highlightMSG } from "../../lib/messages";
 import { startExport } from "./export/export";
 import { ENTITY_ORDER } from "./export/types";
@@ -45,6 +46,10 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
     - ${highlightMSG("run")}: Export sidebar buttons, signin buttons and email templates
     - ${highlightMSG("actions")}: Export actions.
     - ${highlightMSG("dictionaries")}: Export all the dictionaries slugs.
+
+    ${kleur.bold("Backup")}:
+    - Script will automatically create a backup under exportBackup folder inside your project.
+    - You can use the backup to restore your profile/environment in case of any issues.
 
 Example:
     $ tagoio export
