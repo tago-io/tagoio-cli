@@ -1,3 +1,8 @@
+<br/>
+<p align="center">
+  <img src="https://assets.tago.io/tagoio/tagoio.png" width="200px" alt="TODO"></img>
+</p>
+
 ## TagoIO Command Line Tools
 This project is a CLI Tool to be used with TagoIO. It's main functionality is to help with deployment within multiple profiles, as well as providing useful tools for developers.
 
