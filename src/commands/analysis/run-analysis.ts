@@ -1,5 +1,7 @@
 import { spawn, SpawnOptions } from "child_process";
+
 import { Account } from "@tago-io/sdk";
+
 import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
@@ -48,7 +50,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
   };
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
-  let cmd: string = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+  let cmd: string = `SWCRC=true node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
 
   if (!cmd) {
     errorHandler(`Couldn't run file ${scriptToRun.fileName}`);

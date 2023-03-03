@@ -63,6 +63,14 @@ export { startAnalysis };
 
 When running tests, make sure to set T_TEST environment variable on your terminal.
 
+If you want to use the Debugger with -D, make sure you have a **.swcrc** file with sourceMaps activated
+
+```
+{
+  "sourceMaps": true
+}
+```
+
 ## Credentials Storage
 When running **tagoio login** or **tagoio init**, the CLI will store your Profile-Token in the current folder on your terminal.
 
