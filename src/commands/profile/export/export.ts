@@ -35,7 +35,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
   }
 
   if (!userConfig.import.token && !options.to) {
-    options.from = await pickEnvironment("Select the environment that will be receiving the application");
+    options.to = await pickEnvironment("Select the environment that will be receiving the application");
   }
 
   if (options.from) {
