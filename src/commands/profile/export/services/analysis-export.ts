@@ -9,7 +9,10 @@ import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 
-async function choice_variable(key: string, values: string[]) {
+/**
+ * Choose one of the values for your Environment Variable
+ */
+async function choose_variable(key: string, values: string[]) {
   const choices: { title: string }[] = [];
 
   for (const value of values) {
@@ -62,7 +65,7 @@ async function fixEnvironmentVariables(
     if (!variable) {
       continue;
     }
-    const variable_value = await choice_variable(variable.key, variable.value);
+    const variable_value = await choose_variable(variable.key, variable.value);
     variable.value = variable_value;
   }
 
