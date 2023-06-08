@@ -12,6 +12,7 @@ To connect to Devices, the CLI only requires you to generate your profile-token 
 
 # How to Install
 - Run **npm install -g @tago-io/cli** to install this package globally.
+- Run **npm install -g @tago-io/builder** to install the builder dependecy.
 
 ## Command List
 List of commands of the CLI
