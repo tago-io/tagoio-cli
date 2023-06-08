@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import kleur from "kleur";
+
 import { connectAnalysisConsole } from "./analysis-console";
 import { analysisSetMode } from "./analysis-set-mode";
 import { deployAnalysis } from "./deploy";
@@ -30,6 +31,7 @@ function analysisCommands(program: Command) {
 Example:
     $ tagoio deploy all
     $ tagoio deploy all -e stage
+    $ tagoio deploy select-all
     $ tagoio deploy dashboard-handler`
     );
 

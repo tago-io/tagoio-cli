@@ -1,12 +1,14 @@
 import { execSync } from "child_process";
 import { promises as fs } from "fs";
+
 import { Account } from "@tago-io/sdk";
+
 import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, successMSG } from "../../lib/messages";
+import { searchName } from "../../lib/search-name";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
 import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list";
-import { searchName } from "../../lib/search-name";
 
 type EnvConfig = Omit<IConfigFile, "default">;
 function getPaths(config: EnvConfig) {
@@ -69,6 +71,8 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   let scriptList = config.analysisList.filter((x) => x.fileName);
   if (!cmdScriptName || cmdScriptName === "all") {
     scriptList = await chooseAnalysisListFromConfig(scriptList);
+  } else if (cmdScriptName === "select-all") {
+    /* istanbul ignore next */
   } else {
     const analysisFound: IEnvironment["analysisList"][0] = searchName(
       cmdScriptName,
