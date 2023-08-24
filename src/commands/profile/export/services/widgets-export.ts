@@ -1,7 +1,7 @@
 import { queue } from "async";
 
 import { Account } from "@tago-io/sdk";
-import { DashboardInfo, WidgetInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
+import { DashboardInfo, WidgetInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";

@@ -1,8 +1,9 @@
 import { cloneDeep } from "lodash";
-import { updateSideBarButtons, updateSigninButtons } from "./run-buttons-export";
+
+import exportHolder from "./mock/exportHolder.json";
 import runInfo from "./mock/run.json";
 import targetRunInfo from "./mock/targetRun.json";
-import exportHolder from "./mock/exportHolder.json";
+import { updateSideBarButtons, updateSigninButtons } from "./run-buttons-export";
 
 describe("Collect ID", () => {
   test("Update Signin Buttons", () => {
@@ -11,7 +12,7 @@ describe("Collect ID", () => {
     expect(runInfo.signin_buttons[0].url).toBe(
       "originTest.run.tago.io/dashboards/info/6387b32e5b570000112303fe?anonymousToken=00000000-6386-4535-8ccb-e400205c3058"
     );
-    // @ts-expect-error
+    // @ts-expect-error ignore the error
     updateSigninButtons(runInfo, copyTargetRun, exportHolder);
 
     expect(copyTargetRun.signin_buttons.length).toBe(1);

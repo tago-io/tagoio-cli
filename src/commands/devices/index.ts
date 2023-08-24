@@ -42,7 +42,7 @@ Example:
     .description("get information about a device and it's configuration parameters.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("-env, --environment [environment]", "environment from config.js")
-    .option("-js, --json", "return json list")
+    .option("-js, --json", "return json list", true)
     .option("-raw, --raw", "get object the same as stored")
     .option("-tk, --tokens", "get tokens")
     .action(deviceInfo)
@@ -64,7 +64,7 @@ Example:
     .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeteableValue, [])
     .option("-s, --stringify", "return list as text")
     .option("--tags", "display tags")
-    .option("-js, --json", "return json list")
+    .option("-js, --json", "return json list", true)
     .option("-raw, --raw", "get object the same as stored")
     .action(deviceList)
     .addHelpText(
@@ -78,6 +78,7 @@ Example:
        `
     );
 
+  const isValidQuery = (query: any) => ["count", "sum", "avg", "min", "max", "first", "last"].includes(query);
   program
     .command("data")
     .description("get data from a device.")
@@ -87,9 +88,10 @@ Example:
     .option("-qty, --qty <qty>", "Request a given set amount of data", handleNumber, 15)
     .option("-start, --start-date <date>", "Get data after date")
     .option("-end, --end-date <date>", "Get data previous of date")
+    .option("-q, --query [queryType]", "Perform an specific query", (value) => (isValidQuery(value) ? value : null))
     .option("-js, --json", "return json list")
     .option("--stringify", "return as text")
-    .option("--json", "return as json")
+    .option("--json", "return as json", true)
     .option("-p, --post <dataJSON>", "send data to the device")
     .option("-v, --var <variable>", "Filter by variable", cmdRepeteableValue, [])
     .action(getDeviceData)

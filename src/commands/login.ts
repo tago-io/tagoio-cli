@@ -1,6 +1,8 @@
-import { Account } from "@tago-io/sdk";
-import { OTPType } from "@tago-io/sdk/out/modules/Account/account.types";
 import prompts from "prompts";
+
+import { Account } from "@tago-io/sdk";
+import { OTPType } from "@tago-io/sdk/lib/types";
+
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 

@@ -34,7 +34,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   const account = new Account({ token: config.profileToken, region: "usa-1" });
 
-  const { token: analysisToken } = await account.analysis.info(scriptToRun.id);
+  let { token: analysisToken, run_on } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} [${highlightMSG(analysisToken)}].`);
 
   const spawnOptions: SpawnOptions = {
@@ -65,7 +65,10 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     cmd += "--clear ";
   }
 
-  await account.analysis.edit(scriptToRun.id, { run_on: "external" });
+  if (run_on === "tago") {
+    await account.analysis.edit(scriptToRun.id, { run_on: "external" });
+    ({ token: analysisToken, run_on } = await account.analysis.info(scriptToRun.id));
+  }
   const spawnProccess = spawn(`${cmd}${scriptPath}`, spawnOptions);
 
   const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" });

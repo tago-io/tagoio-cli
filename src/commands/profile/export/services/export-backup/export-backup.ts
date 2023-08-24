@@ -1,6 +1,6 @@
 import { writeFileSync } from "fs";
 
-import { WidgetInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
+import { WidgetInfo } from "@tago-io/sdk/lib/types";
 
 import { ensureDirectoryExistence } from "../../../../../lib/dotenv-config";
 import { getCurrentFolder } from "../../../../../lib/get-current-folder";

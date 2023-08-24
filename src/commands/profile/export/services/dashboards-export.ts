@@ -1,7 +1,7 @@
 import { queue } from "async";
 
 import { Account } from "@tago-io/sdk";
-import { DashboardInfo } from "@tago-io/sdk/out/modules/Account/dashboards.types";
+import { DashboardInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../../../../lib/messages";
 import { IExportHolder } from "../types";
@@ -86,7 +86,7 @@ async function dashboardExport(exportAccount: Account, importAccount: Account, e
   dashboardQueue.error(errorHandler);
 
   for (const { id: dash_id, label } of exportList) {
-    dashboardQueue.push({ dash_id, label, import_list, importAccount, export_holder, exportAccount }).catch(null);
+    void dashboardQueue.push({ dash_id, label, import_list, importAccount, export_holder, exportAccount }).catch(null);
   }
 
   await dashboardQueue.drain();

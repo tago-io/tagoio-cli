@@ -1,6 +1,6 @@
 import { Account, Utils } from "@tago-io/sdk";
-import { TagsObj } from "@tago-io/sdk/out/common/common.types";
-import { DeviceListItem } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { DeviceListItem, TagsObj } from "@tago-io/sdk/lib/types";
+
 import { Entity, IExportHolder } from "../types";
 
 function getExportHolder(list: any[], import_list: any[], entity: Entity, export_holder: IExportHolder) {

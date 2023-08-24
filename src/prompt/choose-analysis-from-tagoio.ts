@@ -1,6 +1,8 @@
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
 import prompts from "prompts";
+
+import { Account } from "@tago-io/sdk";
+import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+
 import { errorHandler } from "../lib/messages";
 
 async function chooseAnalysisFromTagoIO(account: Account, message: string = "Choose the analysis") {

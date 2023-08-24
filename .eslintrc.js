@@ -59,6 +59,7 @@ module.exports = {
     "@typescript-eslint/no-floating-promises": 1,
     "@typescript-eslint/restrict-template-expressions": 0,
     "@typescript-eslint/require-await": 0,
+    "@typescript-eslint/no-unnecessary-type-assertion": 0,
     "functional/prefer-tacit": 0,
     "unicorn/catch-error-name": 1,
     "unicorn/consistent-destructuring": 1,

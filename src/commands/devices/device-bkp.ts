@@ -1,15 +1,16 @@
 import { readFileSync, writeFileSync } from "fs";
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DeviceInfo } from "@tago-io/sdk/out/modules/Device/device.types";
-import { DateTime } from "luxon";
-import kleur from "kleur";
 import axios from "axios";
+import kleur from "kleur";
+import { DateTime } from "luxon";
+
+import { Account, Device, Utils } from "@tago-io/sdk";
+import { Data, DeviceInfo, DeviceItem } from "@tago-io/sdk/lib/types";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG, infoMSG } from "../../lib/messages";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { promptTextToEnter } from "../../prompt/text-prompt";
 import { pickFileFromTagoIO } from "../../prompt/pick-files-from-tagoio";
+import { promptTextToEnter } from "../../prompt/text-prompt";
 
 interface IOptions {
   environment?: string;
@@ -23,7 +24,7 @@ async function getJSON(url: string, authorization: string) {
   return data;
 }
 
-async function restoreBKP(account: Account, profileToken: string, device: Device, deviceInfo: DeviceInfo, local: boolean) {
+async function restoreBKP(account: Account, profileToken: string, device: Device, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
   const { name, id } = deviceInfo;
 
   let dataList: Data[] = [];
@@ -49,7 +50,7 @@ async function restoreBKP(account: Account, profileToken: string, device: Device
   successMSG(`> ${name} - ${dataList.length} data points`);
 }
 
-async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo, local: boolean) {
+async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
   const { created_at, name, id } = deviceInfo;
 
   // Start date with luxon at created_at and increase 1 month on a loop until today
@@ -63,8 +64,8 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
     const monthName = month.toFormat("yyyy-MM");
     const monthData = await device
       .getData({
-        start_date: month.toISODate(),
-        end_date: month.plus({ months: 1 }).toISODate(),
+        start_date: month.toISODate() as string,
+        end_date: month.plus({ months: 1 }).toISODate() as string,
         qty: 10_000,
       })
       .catch(errorHandler);
