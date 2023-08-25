@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "start": "node -r @swc-node/register ./src/index.ts",
-    "build": "rm -rf ./build; tsc --build",
+    "build": "rm -rf ./build; tsc --build; chmod +x ./build/index.js",
     "linter": "eslint .",
     "test": "jest"
   },
