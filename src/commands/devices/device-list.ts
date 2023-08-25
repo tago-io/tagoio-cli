@@ -1,7 +1,8 @@
-import { Account } from "@tago-io/sdk";
-import { TagsObj } from "@tago-io/sdk/out/common/common.types";
-import { DeviceQuery } from "@tago-io/sdk/out/modules/Account/devices.types";
 import kleur from "kleur";
+
+import { Account } from "@tago-io/sdk";
+import { DeviceQuery, TagsObj } from "@tago-io/sdk/lib/types";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";
 

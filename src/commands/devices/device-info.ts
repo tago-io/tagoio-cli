@@ -1,5 +1,6 @@
 import { Account, Device } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
+import { DeviceInfo } from "@tago-io/sdk/lib/types";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
@@ -37,19 +38,19 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
 
   if (options.tokens) {
     const tokenList = await account.devices.tokenList(idOrToken, { fields: ["name", "token", "last_authorization", "serie_number"] });
-    //@ts-expect-error
+    //@ts-expect-error ignore error
     deviceInfo.tokens = tokenList;
   }
 
-  //@ts-expect-error
+  //@ts-expect-error ignore error
   delete deviceInfo.payload_decoder;
-  //@ts-expect-error
+  //@ts-expect-error ignore error
   delete deviceInfo.bucket;
-  //@ts-expect-error
+  //@ts-expect-error ignore error
   delete deviceInfo.description;
-  //@ts-expect-error
+  //@ts-expect-error ignore error
   deviceInfo.tags = mapTags(deviceInfo.tags, options);
-  //@ts-expect-error
+  //@ts-expect-error ignore error
   deviceInfo.params = mapTags(paramList, options);
 
   if (options.json) {

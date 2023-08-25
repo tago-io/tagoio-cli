@@ -1,6 +1,8 @@
-import { Account, Device } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk/out/modules/Account/devices.types";
 import { io } from "socket.io-client";
+
+import { Account, Device } from "@tago-io/sdk";
+import { DeviceInfo } from "@tago-io/sdk/lib/types";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";

@@ -8,7 +8,7 @@ import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
 
-async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean }) {
+async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
@@ -34,8 +34,8 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   const account = new Account({ token: config.profileToken, region: "usa-1" });
 
-  const { token: analysisToken } = await account.analysis.info(scriptToRun.id);
-  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} [${highlightMSG(analysisToken)}].`);
+  let { token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id);
+  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
 
   const spawnOptions: SpawnOptions = {
     shell: true,
@@ -51,13 +51,19 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
   let cmd: string = `SWCRC=true node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+  if (options.tsnd) {
+    cmd = `tsnd `;
+    if (options.debug) {
+      cmd += "--inspect -- ";
+    }
+  }
 
   if (!cmd) {
     errorHandler(`Couldn't run file ${scriptToRun.fileName}`);
     return;
   }
 
-  if (options.debug) {
+  if (options.debug && !options.tsnd) {
     cmd += "--inspect ";
   }
 
@@ -65,7 +71,14 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     cmd += "--clear ";
   }
 
-  await account.analysis.edit(scriptToRun.id, { run_on: "external" });
+  if (run_on === "tago") {
+    await account.analysis.edit(scriptToRun.id, { run_on: "external" });
+    await new Promise((resolve) => setTimeout(resolve, 200)); // sleep
+    ({ token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id));
+    if (spawnOptions?.env) {
+      spawnOptions.env.T_ANALYSIS_TOKEN = analysisToken;
+    }
+  }
   const spawnProccess = spawn(`${cmd}${scriptPath}`, spawnOptions);
 
   const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" });

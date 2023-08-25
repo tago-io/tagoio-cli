@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import kleur from "kleur";
+
 import { connectAnalysisConsole } from "./analysis-console";
 import { analysisSetMode } from "./analysis-set-mode";
 import { deployAnalysis } from "./deploy";
@@ -48,6 +49,7 @@ Example:
     .option("-env, --environment [environment]", "environment from config.js")
     .option("-d, --debug", "run with --inspector for debug")
     .option("-c, --clear", "Will clear screen on restart")
+    .option("-tsnd, --tsnd", "run with ts-node-dev if installed globally")
     .action(runAnalysis)
     .addHelpText(
       "after",

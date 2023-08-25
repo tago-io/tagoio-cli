@@ -1,5 +1,5 @@
 import { Account } from "@tago-io/sdk";
-import { RunInfo } from "@tago-io/sdk/out/modules/Account/run.types";
+import { RunInfo } from "@tago-io/sdk/lib/types";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
@@ -64,7 +64,7 @@ async function runButtonsExport(account: Account, import_account: Account, expor
     targetRunInfo.email_templates[template_name] = email_obj;
   }
 
-  // @ts-expect-error
+  // @ts-expect-error ignore error
   delete targetRunInfo.created_at;
 
   await import_account.run.edit(targetRunInfo).catch((error) => {

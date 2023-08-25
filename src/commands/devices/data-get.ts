@@ -1,10 +1,11 @@
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data } from "@tago-io/sdk/out/common/common.types";
-import { DataQuery } from "@tago-io/sdk/out/modules/Device/device.types";
 import kleur from "kleur";
 
+import { Account, Device, Utils } from "@tago-io/sdk";
+import { Data, DataQuery } from "@tago-io/sdk/lib/types";
+
+// import { DataQuery } from "@tago-io/sdk/lib/types";
 import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG } from "../../lib/messages";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 import { postDeviceData } from "./data-post";
 
@@ -47,10 +48,10 @@ interface IOptions {
   qty: string;
   post: string;
   json?: boolean;
+  query: "count" | "sum" | "avg" | "min" | "max" | "first" | "last";
 }
 
 async function getDeviceData(idOrToken: string, options: IOptions) {
-  console.log(options);
   if (options.post) {
     await postDeviceData(idOrToken, options);
     return;
@@ -88,11 +89,15 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   if (options.qty) {
     filter.qty = Number(options.qty);
   }
+  if (options.query) {
+    filter.query = options.query as any;
+  }
+  infoMSG(`Query Filter: ${kleur.cyan(JSON.stringify(filter))}`);
   const dataList = await device
     .getData(filter)
     .then((r) => {
       return r.map((x) => {
-        // @ts-expect-error
+        // @ts-expect-error ignore error
         delete x.device;
         return x;
       }) as Omit<Data, "device">[];

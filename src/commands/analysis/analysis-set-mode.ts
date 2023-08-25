@@ -1,6 +1,8 @@
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
 import kleur from "kleur";
+
+import { Account } from "@tago-io/sdk";
+import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
 import { chooseFromList } from "../../prompt/choose-from-list";

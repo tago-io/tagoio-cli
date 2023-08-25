@@ -1,9 +1,10 @@
 import { readdirSync } from "fs";
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import { cosine } from "string-comparison";
+
+import { Account } from "@tago-io/sdk";
+import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
 import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
