@@ -2,6 +2,7 @@ import { Command } from "commander";
 
 import { cmdRepeteableValue } from "../../lib/commander-repeatable";
 import { changeBucketType } from "./change-bucket-type";
+import { copyDeviceData } from "./copy-data";
 import { getDeviceData } from "./data-get";
 import { bkpDeviceData } from "./device-bkp";
 import { deviceInfo } from "./device-info";
@@ -146,6 +147,24 @@ Example:
      $ tagoio device-type
      $ tagoio device-type 62151835435d540010b768c4
      `
+    );
+
+  program
+    .command("device-copy")
+    .description(`copy data from one device to another`)
+    .option("-from, --from [token/id]", "token/id of the device where data will be copied from")
+    .option("-to, --to [token/id]", "token/id of the device where data will be copied to")
+    .option("-qty, --qty <number>", "amount of data to be copy", handleNumber, 10_000)
+    .option("-env, --environment [environment]", "environment from config.js")
+    .action(copyDeviceData)
+    .addHelpText(
+      "after",
+      `
+
+Example:
+   $ tagoio device-copy
+   $ tagoio device-copy --to 62151835435d540010b768c4 --from 78151835435d540010b768c4
+   `
     );
 }
 
