@@ -64,6 +64,12 @@ async function runButtonsExport(account: Account, import_account: Account, expor
     targetRunInfo.email_templates[template_name] = email_obj;
   }
 
+  // Custom Fields
+  // @ts-expect-error SDK doesn't have custom fields property yet
+  targetRunInfo.custom_fields = runInfo.custom_fields;
+
+  targetRunInfo.signin_buttons = runInfo.signin_buttons;
+
   // @ts-expect-error ignore error
   delete targetRunInfo.created_at;
 
