@@ -1,4 +1,5 @@
 import { Account } from "@tago-io/sdk";
+
 import { getConfigFile, writeToConfigFile } from "../lib/config-file";
 import { infoMSG } from "../lib/messages";
 import { readToken } from "../lib/token";
@@ -20,11 +21,20 @@ async function fixEnvironments(configFile: ReturnType<typeof getConfigFile>, env
     }
 
     const account = new Account({ token });
-    const profile = await account.profiles.info("current");
-    const accInfo = await account.info();
-    environment.id = profile.info.id;
-    environment.profileName = profile.info.name;
-    environment.email = accInfo.email;
+    const profile = await account.profiles.info("current").catch((error) => {
+      console.error(`Error getting profile info for ${env}: ${error.message}`);
+      return;
+    });
+
+    if (profile) {
+      const accInfo = await account.info();
+      environment.id = profile.info.id;
+      environment.profileName = profile.info.name;
+      environment.email = accInfo.email;
+    } else if (!environment.id && !environment.profileName) {
+      environment.id = "N/A";
+      environment.profileName = "N/A";
+    }
   }
 
   writeToConfigFile(configFile);
