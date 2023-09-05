@@ -3,7 +3,9 @@ import { readFileSync } from "fs";
 import { Command } from "commander";
 import dotenv from "dotenv";
 import kleur from "kleur";
+
 import { analysisCommands } from "./commands/analysis";
+import { dashboardCommands } from "./commands/dashboard";
 import { deviceCommands } from "./commands/devices";
 import { listEnvironment } from "./commands/list-env";
 import { tagoLogin } from "./commands/login";
@@ -25,6 +27,7 @@ const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
 async function getAllCommands(program: Command) {
   analysisCommands(program);
   deviceCommands(program);
+  dashboardCommands(program);
   profileCommands(program, defaultEnvironment);
 }
 

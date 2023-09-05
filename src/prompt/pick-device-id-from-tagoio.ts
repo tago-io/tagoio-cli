@@ -1,11 +1,12 @@
-import { Account } from "@tago-io/sdk";
 import prompts from "prompts";
 
-async function pickDeviceIDFromTagoIO(account: Account) {
+import { Account } from "@tago-io/sdk";
+
+async function pickDeviceIDFromTagoIO(account: Account, message: string = "Which device you want to choose?") {
   const deviceList = await account.devices.list({ amount: 100, fields: ["id", "name"] });
 
   const { id } = await prompts({
-    message: "Which device you want to pick?",
+    message,
     name: "id",
     type: "autocomplete",
     choices: deviceList.map((x) => ({ title: x.name, value: x.id })),
