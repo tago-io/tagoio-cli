@@ -1,10 +1,10 @@
-import { cosine } from "string-comparison";
+import stringComparison from "string-comparison";
 
 function orderNames(key: string, names: string[]) {
   const similarity = Math.max(
     ...names.map((x) => {
       const argValue = x.toLowerCase().replace(".ts", "");
-      return cosine.similarity(key, argValue);
+      return stringComparison.cosine.similarity(key, argValue);
     })
   );
 

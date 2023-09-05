@@ -1,7 +1,7 @@
 import { readdirSync } from "fs";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
-import { cosine } from "string-comparison";
+import stringComparison from "string-comparison";
 
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/lib/types";
@@ -90,7 +90,9 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
     .map((x) => ({ title: x }));
 
   for (const analysis of analysisList) {
-    files = files.sort((a, b) => (cosine.distance(analysis.name, a.title) > cosine.distance(analysis.name, b.title) ? 1 : -1));
+    files = files.sort((a, b) =>
+      stringComparison.cosine.distance(analysis.name, a.title) > stringComparison.cosine.distance(analysis.name, b.title) ? 1 : -1
+    );
 
     const editFile = files.find((x) => x.title === analysis.fileName);
     const { response } = await prompts({
