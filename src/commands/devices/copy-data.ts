@@ -27,7 +27,7 @@ async function startCopy(deviceFrom: Device, deviceTo: Device, options: IOptions
     }
   }
 
-  successMSG(`> Data copy done. A total of ${total} registers were copied.`);
+  successMSG(`> Data transfer completed. A total of ${total} registers were copied.`);
 }
 
 async function copyDeviceData(options: IOptions) {
@@ -39,8 +39,8 @@ async function copyDeviceData(options: IOptions) {
 
   if (!options.from || !options.to) {
     const account = new Account({ token: config.profileToken, region: "usa-1" });
-    options.from = await pickDeviceIDFromTagoIO(account, "Pick a device to copy the data from:");
-    options.to = await pickDeviceIDFromTagoIO(account, "Pick a device to copy the data to: ");
+    options.from = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data from:");
+    options.to = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data to: ");
   }
 
   let deviceFrom: Device | undefined;

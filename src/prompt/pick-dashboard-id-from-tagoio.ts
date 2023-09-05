@@ -2,7 +2,7 @@ import prompts from "prompts";
 
 import { Account } from "@tago-io/sdk";
 
-async function pickDashboardIDFromTagoIO(account: Account, message: string = "Which dashboard you want to pick?") {
+async function pickDashboardIDFromTagoIO(account: Account, message: string = "Which dashboard you want to choose?") {
   const deviceList = await account.dashboards.list({ amount: 100, fields: ["id", "label"] });
 
   const { id } = await prompts({

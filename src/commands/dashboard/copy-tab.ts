@@ -115,12 +115,12 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   if (!options.from || !options.to) {
     let tabList = (dashInfo.tabs as DashboardTabs[]).map((x, i) => ({ title: `${i}. ${x.value} [${x.key}]`, value: x.key }));
     if (!options.from) {
-      options.from = await pickTabFromDashboard(tabList, "Pick a tab to copy the data from:");
+      options.from = await pickTabFromDashboard(tabList, "Pick a source tab to copy the data from:");
     }
 
     tabList = tabList.filter((x) => x.value !== options.from);
     if (!options.to) {
-      options.to = await pickTabFromDashboard(tabList, "Pick a tab to copy the data to: ");
+      options.to = await pickTabFromDashboard(tabList, "Pick a target tab to copy the data to: ");
     }
   }
 
