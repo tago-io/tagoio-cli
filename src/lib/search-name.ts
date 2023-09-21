@@ -13,9 +13,9 @@ function orderNames(key: string, names: string[]) {
 
 function searchName(key: string, list: { names: string[]; value: any }[]) {
   const keyLowerCase = key.toLowerCase();
-  // const orderedList = list.filter((x) => findAllNames(keyLowerCase, x.names)).sort((x) => orderNames(keyLowerCase, x.names));
   const orderedList = list.sort((a, b) => orderNames(keyLowerCase, a.names) - orderNames(keyLowerCase, b.names)).reverse();
 
   return orderedList[0]?.value;
 }
+
 export { searchName };

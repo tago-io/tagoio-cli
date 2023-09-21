@@ -5,11 +5,17 @@ import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../lib/messages";
 
+/**
+ * Prompts the user to select an analysis from their TagoIO account.
+ * @param account - The TagoIO account object.
+ * @param message - The message to display to the user.
+ * @returns A promise that resolves with the selected analysis info.
+ */
 async function pickAnalysisFromTagoIO(account: Account, message: string = "Choose the analysis"): Promise<AnalysisInfo> {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
   if (!analysisList) {
     errorHandler("Cancelled");
-    process.exit(0);
+    return process.exit(0);
   }
 
   const { script } = await prompts({
@@ -21,7 +27,7 @@ async function pickAnalysisFromTagoIO(account: Account, message: string = "Choos
 
   if (!script) {
     errorHandler("Cancelled");
-    process.exit(0);
+    return process.exit(0);
   }
 
   return script as AnalysisInfo;

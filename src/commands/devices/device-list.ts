@@ -6,21 +6,41 @@ import { DeviceQuery, TagsObj } from "@tago-io/sdk/lib/types";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";
 
-const mapTags = (tags: TagsObj[], opt: { [key: string]: any }) => {
+/**
+ * Maps an array of tags to an array of objects with key-value pairs.
+ * @param tags - The array of tags to be mapped.
+ * @param opt - An object with options for the mapping.
+ * @param opt.raw - If true, returns the original array of tags.
+ * @returns An array of objects with key-value pairs.
+ */
+function mapTags(tags: TagsObj[], opt: { [key: string]: any }): any[] {
   if (opt.raw) {
     return tags;
   }
 
   return tags.map((x) => ({ [x.key]: x.value }));
-};
+}
 
-const mapDate = (date: Date | null, opt: { [key: string]: any }) => {
+/**
+ * Maps a Date object to a formatted string.
+ * @param date - The Date object to be formatted.
+ * @param opt - An optional object with formatting options.
+ * @param opt.raw - If true, returns the ISO string representation of the date.
+ * @returns A formatted string representation of the date, or undefined if the date is null.
+ */
+function mapDate(date: Date | null, opt: { [key: string]: any }): string | undefined {
   if (opt.raw) {
     return date?.toISOString();
   }
   return date ? `${date?.toLocaleDateString()} ${date?.toLocaleTimeString()}` : undefined;
-};
+}
 
+/**
+ * Adds repeatable tags to the device query filter.
+ * @param rawFilter - The device query filter to add the tags to.
+ * @param keys - An array of tag keys.
+ * @param values - An array of tag values.
+ */
 function repeatableTags(rawFilter: DeviceQuery, { keys, values }: { keys: string[]; values: string[] }) {
   if (!rawFilter.filter) {
     rawFilter.filter = {};

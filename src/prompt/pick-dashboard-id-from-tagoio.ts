@@ -2,6 +2,8 @@ import prompts from "prompts";
 
 import { Account } from "@tago-io/sdk";
 
+import { errorHandler } from "../lib/messages";
+
 async function pickDashboardIDFromTagoIO(account: Account, message: string = "Which dashboard you want to choose?") {
   const deviceList = await account.dashboards.list({ amount: 100, fields: ["id", "label"] });
 
@@ -11,6 +13,11 @@ async function pickDashboardIDFromTagoIO(account: Account, message: string = "Wh
     type: "autocomplete",
     choices: deviceList.map((x) => ({ title: `${x.label} [${x.id}]`, value: x.id })),
   });
+
+  if (!id) {
+    errorHandler("Dashboard not selected");
+    return process.exit();
+  }
 
   return id as string;
 }

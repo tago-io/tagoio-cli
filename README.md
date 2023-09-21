@@ -3,16 +3,53 @@
   <img src="https://assets.tago.io/tagoio/tagoio.png" width="200px" alt="TODO"></img>
 </p>
 
+# Table of Contents
+- [TagoIO Command Line Tools](#tagoio-command-line-tools)
+- [How to Install](#how-to-install)
+- [Command List](#command-list)
+- [Analysis Runner](#analysis-runner)
+- [Credentials Storage](#credentials-storage)
+- [tagoconfig.json](#tagoconfigjson)
+- [Working with Environments](#working-with-environments)
+- [License](#license)
+
+For more information on the latest release notes, please visit the [Release Notes section](https://github.com/tago-io/tagoio-cli/releases)
+
 ## TagoIO Command Line Tools
-This project is a CLI Tool to be used with TagoIO. It's main functionality is to help with deployment within multiple profiles, as well as providing useful tools for developers.
+TagoIO Command Line Tools is a CLI tool that allows you to interact with TagoIO platform and manage your applications. You can use it to deploy, run, trigger, and debug your analysis, as well as to inspect, backup, and configure your devices. You can also export your applications from one profile to another.
 
-To work with Analysis, the tool requires that you run **tagoio init** to generate a tagoconfig.json
+To use this tool, you need to install it globally with npm and also install the builder dependency. You also need to generate a tagoconfig.json file for your project and a .tago-lock file for your profile. You can work with multiple environments by using the init and set-env commands.
 
-To connect to Devices, the CLI only requires you to generate your profile-token with **tagoio login**
+For more information about the commands and options of this tool, please refer to the [Command List](#command-list) section.
+
+![CLI Demo](./docs/images/tagoio_inspect.png)
+
 
 # How to Install
-- Run **npm install -g @tago-io/cli** to install this package globally.
-- Run **npm install -g @tago-io/builder** to install the builder dependecy.
+
+Installing the TagoIO Command Line Tools is a straightforward process. Follow these steps to get started:
+
+1. **Preparation**: Ensure that Node.js and npm are installed on your machine. If not, refer to the [installation guide](^1^).
+   
+2. **CLI Tool Installation**: Open your terminal and run the following command to install the CLI tool globally:
+   ```sh
+   npm install -g @tago-io/cli
+   ```
+   
+3. **Builder Dependency Installation**: Next, install the builder dependency using the command:
+   ```sh
+   npm install -g @tago-io/builder
+   ```
+
+4. **Project Initialization**: Initialize your project by generating a `tagoconfig.json` file. Use the command below and follow the on-screen instructions to provide your credentials or profile-token (available in your TagoIO account):
+   ```sh
+   tagoio init
+   ```
+
+5. **Profile Token Storage (Optional)**: To store your profile token in a `.tago-lock` file, use the `tagoio login` command. This step also allows you to work with different environments by adding an argument to the command:
+   ```sh
+   tagoio login
+   ```
 
 ## Command List
 List of commands of the CLI
@@ -55,22 +92,11 @@ List of commands of the CLI
 When writing up your analysis, make sure you have the following lines at end of the code:
 
 ```javascript
-if (!process.env.T_TEST) {
-  Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
-}
-
-export { startAnalysis };
-```
-
-When running tests, make sure to set T_TEST environment variable on your terminal.
-
-If you want to use the Debugger with -D, make sure you have a **.swcrc** file with sourceMaps activated
+Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
 
 ```
-{
-  "sourceMaps": true
-}
-```
+
+If you want to use the Debugger with -D, make sure you have a **.swcrc** file with sourceMaps activated. This repository contains a .swcrc.example file if you prefer to just copy to your folder.
 
 ## Credentials Storage
 When running **tagoio login** or **tagoio init**, the CLI will store your Profile-Token in the current folder on your terminal.
@@ -90,12 +116,24 @@ Having a tagoconfig.json is required in order to run the following cmds:
 You will also be required to have the .tago-lock file for a given environment.
 
 
+
 ## Working with Environments
-The CLI is optimized to work within multiple environments. That makes it easier to alternate environments for deployment and management of your analysis.
 
-You can create new environments by running the **tagoio init** cmd.
+Managing multiple environments is a breeze with the TagoIO CLI. This feature facilitates seamless alternation between different environments for deployment and analysis management. Here's how you can make the most of it:
 
-You can change your current environment by running the **tagoio set-env** cmd.
+### Creating a New Environment
+To set up a new environment, use the `tagoio init` command. This will guide you through the necessary steps to establish a fresh environment for your project. Here's how you can do it:
+
+```sh
+tagoio init
+```
+
+### Switching Between Environments
+If you are working with multiple environments, switching between them is essential. Use the `tagoio set-env` command to change your current environment effortlessly. Here's the command to use:
+
+```sh
+tagoio set-env [environment_name]
+```
 
 ## License
 

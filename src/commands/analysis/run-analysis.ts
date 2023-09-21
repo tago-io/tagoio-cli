@@ -8,6 +8,48 @@ import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
 
+/**
+ * Builds the command to run the analysis.
+ * @param options - The options to configure the command.
+ * @param options.tsnd - Whether to use `tsnd` to run the command.
+ * @param options.debug - Whether to enable debugging for the command.
+ * @param options.clear - Whether to clear the console before running the command.
+ * @returns The built command as a string.
+ */
+function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }): string {
+  let cmd: string = "";
+
+  switch (options.tsnd) {
+    case true: {
+      cmd = `tsnd `;
+      if (options.debug) {
+        cmd += "--inspect -- ";
+      }
+      break;
+    }
+
+    default: {
+      cmd = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+      if (options.debug) {
+        cmd += "--inspect ";
+      }
+      break;
+    }
+  }
+
+  if (options.clear) {
+    cmd += "--clear ";
+  }
+
+  return cmd;
+}
+
+/**
+ * Runs an analysis script.
+ * @param scriptName - The name of the script to run.
+ * @param options - The options for running the script.
+ * @returns void
+ */
 async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
@@ -50,26 +92,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
   };
 
   const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
-  let cmd: string = `SWCRC=true node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
-  if (options.tsnd) {
-    cmd = `tsnd `;
-    if (options.debug) {
-      cmd += "--inspect -- ";
-    }
-  }
-
-  if (!cmd) {
-    errorHandler(`Couldn't run file ${scriptToRun.fileName}`);
-    return;
-  }
-
-  if (options.debug && !options.tsnd) {
-    cmd += "--inspect ";
-  }
-
-  if (options.clear) {
-    cmd += "--clear ";
-  }
+  const cmd = _buildCMD(options);
 
   if (run_on === "tago") {
     await account.analysis.edit(scriptToRun.id, { run_on: "external" });
@@ -85,4 +108,4 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
   spawnProccess.on("close", killAnalysis);
   spawnProccess.on("SIGINT", killAnalysis);
 }
-export { runAnalysis };
+export { runAnalysis, _buildCMD };

@@ -89,6 +89,11 @@ async function pickTabFromDashboard(list: { title: string; value: string }[], me
     choices: list,
   });
 
+  if (!id) {
+    errorHandler("Tab not selected");
+    return process.exit();
+  }
+
   return id as string;
 }
 

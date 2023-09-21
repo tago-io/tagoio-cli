@@ -1,4 +1,4 @@
-const cmdRepeteableValue = (value: string, previous: string | string[]) => {
+const cmdRepeatableValue = (value: string, previous: string | string[]) => {
   if (!previous) {
     previous = [];
   }
@@ -8,4 +8,4 @@ const cmdRepeteableValue = (value: string, previous: string | string[]) => {
   return previous.concat([value]);
 };
 
-export { cmdRepeteableValue };
+export { cmdRepeatableValue };

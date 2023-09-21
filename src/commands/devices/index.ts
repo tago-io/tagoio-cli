@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { cmdRepeteableValue } from "../../lib/commander-repeatable";
+import { cmdRepeatableValue } from "../../lib/commander-repeatable";
 import { changeBucketType } from "./change-bucket-type";
 import { copyDeviceData } from "./copy-data";
 import { getDeviceData } from "./data-get";
@@ -25,7 +25,7 @@ function deviceCommands(program: Command) {
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env [environment]", "environment from config.js")
     // .option("-p, --postOnly", "filter logs to show POST content only")
-    // .option("-g, --getOnly", "fiter logs to show GET content only")
+    // .option("-g, --getOnly", "filter logs to show GET content only")
     .action(inspectorConnection)
     .addHelpText(
       "after",
@@ -61,8 +61,8 @@ Example:
     .description("get the list of devices.")
     .option("-env, --environment [environment]", "environment from config.js")
     .option("-n, --name [deviceName]", "partial name of the device name")
-    .option("-k, --tagkey [key]", "tag key to filter in", cmdRepeteableValue, [])
-    .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeteableValue, [])
+    .option("-k, --tagkey [key]", "tag key to filter in", cmdRepeatableValue, [])
+    .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeatableValue, [])
     .option("-s, --stringify", "return list as text")
     .option("--tags", "display tags")
     .option("-js, --json", "return json list", true)
@@ -94,7 +94,7 @@ Example:
     .option("--stringify", "return as text")
     .option("--json", "return as json", true)
     .option("-p, --post <dataJSON>", "send data to the device")
-    .option("-v, --var <variable>", "Filter by variable", cmdRepeteableValue, [])
+    .option("-v, --var <variable>", "Filter by variable", cmdRepeatableValue, [])
     .action(getDeviceData)
     .addHelpText(
       "after",

@@ -18,9 +18,9 @@ interface ConfigOptions {
 }
 
 /**
- *
- * @param environment
- * @returns
+ * Creates a TagoIO environment token.
+ * @param environment - The name of the environment to create the token for.
+ * @returns The created token, or undefined if the user chooses not to login.
  */
 async function createEnvironmentToken(environment: string) {
   const { tryLogin } = await prompts({
@@ -40,6 +40,11 @@ async function createEnvironmentToken(environment: string) {
   return options.token;
 }
 
+/**
+ * Prompts the user to choose one or more analysis options from a list.
+ * @param analysisOptions - An array of analysis options to choose from.
+ * @returns An array of AnalysisInfo objects representing the user's selected options.
+ */
 async function chooseAnalysis(analysisOptions: any[]) {
   const { response } = await prompts({
     type: "autocompleteMultiselect",
@@ -52,10 +57,10 @@ async function chooseAnalysis(analysisOptions: any[]) {
 }
 
 /**
- *
- * @param account
- * @param oldList
- * @returns
+ * Retrieves a list of analyses from the TagoIO account and prompts the user to select which ones to use.
+ * @param account - The TagoIO account object.
+ * @param oldList - An optional array of previously selected analyses.
+ * @returns An array of selected analyses with their IDs, names, and file names.
  */
 async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
@@ -83,6 +88,12 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
   return analysisResult;
 }
 
+/**
+ * Searches for analysis scripts in the specified path and prompts the user to select a script for each analysis in the list.
+ * @param analysisList - The list of analyses to associate with scripts.
+ * @param analysisPath - The path to search for analysis scripts.
+ * @returns A Promise that resolves to the updated analysis list with the selected script file names.
+ */
 async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
   infoMSG(`Searching for files at ${analysisPath}`);
   let files: Choice[] = readdirSync(analysisPath)
@@ -120,20 +131,24 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
 }
 
 /**
- *
- * @param param0
- * @returns
+ * Starts the configuration process for a TagoIO environment.
+ * @param environment The name of the environment to configure.
+ * @param options The configuration options.
+ * @param options.token The TagoIO token to use for authentication.
  */
 async function startConfig(environment: string, { token }: ConfigOptions) {
+  // Prompt user to enter environment name if not provided
   if (!environment) {
     ({ environment } = await prompts({ message: "Enter a name for this environment: ", type: "text", name: "environment" }));
   }
 
+  // Get config file or return if not found
   const configFile = getConfigFile();
   if (!configFile) {
     return;
   }
 
+  // Get token from file or prompt user to create one
   if (!token) {
     token = readToken(environment);
     if (!token) {
@@ -143,6 +158,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     writeToken(token, environment);
   }
 
+  // Prompt user to enter analysis and build paths if not found in config file
   if (!configFile.analysisPath) {
     configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
   }
@@ -151,16 +167,19 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
   }
 
+  // Return if token is not found
   if (!token) {
     return;
   }
 
+  // Get account info and analysis list
   const account = new Account({ token });
   const profile = await account.profiles.info("current");
   const accountInfo = await account.info();
   let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
   analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
+  // Create new environment object and write to config file
   const newEnv: IEnvironment = { analysisList: analysisList, id: profile.info.id, profileName: profile.info.name, email: accountInfo.email };
   writeToConfigFile(configFile);
   writeConfigFileEnv(environment, newEnv);

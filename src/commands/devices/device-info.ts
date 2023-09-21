@@ -48,7 +48,6 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   delete deviceInfo.bucket;
   //@ts-expect-error ignore error
   delete deviceInfo.description;
-  //@ts-expect-error ignore error
   deviceInfo.tags = mapTags(deviceInfo.tags, options);
   //@ts-expect-error ignore error
   deviceInfo.params = mapTags(paramList, options);
@@ -73,6 +72,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     );
     return;
   }
+
   console.table({
     name: deviceInfo.name,
     id: deviceInfo.id,

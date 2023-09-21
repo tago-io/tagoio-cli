@@ -73,7 +73,7 @@ async function copyDeviceData(options: IOptions) {
   const deviceToInfo = await deviceTo.info();
   const deviceFromInfo = await deviceFrom.info();
 
-  infoMSG(`> Copying tab ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);
+  infoMSG(`> Copying data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);
   const yesNo = await confirmPrompt();
   if (!yesNo) {
     return;
