@@ -14,13 +14,6 @@ import { errorHandler } from "../lib/messages";
  * @returns The URL of the selected file, or undefined if the user cancels.
  */
 
-/**
- * Prompts the user to select a file from their TagoIO account.
- * @param account - The TagoIO account object.
- * @param message - The message to display to the user.
- * @param currentPath - The current path to display to the user.
- * @returns The URL of the selected file, or undefined if the user cancels.
- */
 async function pickFileFromTagoIO(account: Account, message: string = "Pick the file", currentPath: string = "deviceBackup/"): Promise<string | undefined> {
   let file = { isFolder: true, name: "" };
 
