@@ -2,15 +2,8 @@ import { Command } from "commander";
 
 import { copyTabWidgets } from "./copy-tab";
 
-// function handleNumber(value: any, _previous: any) {
-//   if (Number.isNaN(Number(value))) {
-//     throw `${value} is not a number`;
-//   }
-//   return Number(value);
-// }
-
 function dashboardCommands(program: Command) {
-  program.command("Devices Header");
+  program.command("Dashboards Header");
   program
     .command("copy-tab")
     .alias("inspect")
@@ -18,8 +11,7 @@ function dashboardCommands(program: Command) {
     .argument("[dashboardID]", "ID of the dashboard")
     .option("-from, --from [tabID]", "ID of the Tab to copy")
     .option("-to, --to [tabID]", "ID of the Tab to paste")
-    .option("--env [environment]", "environment from config.js")
-    // .option("-g, --getOnly", "fiter logs to show GET content only")
+    .option("-env, --environment [environment]", "environment from config.js")
     .action(copyTabWidgets)
     .addHelpText(
       "after",
