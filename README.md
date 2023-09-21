@@ -22,6 +22,8 @@ To use this tool, you need to install it globally with npm and also install the 
 
 For more information about the commands and options of this tool, please refer to the [Command List](#command-list) section.
 
+![CLI Demo](./docs/images/tagoio_inspect.png)
+
 # How to Install
 To install TagoIO Command Line Tools, you need to follow these steps:
 
