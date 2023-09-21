@@ -43,7 +43,7 @@ Example:
     If name is not provided, you will be prompted to select which analysis you want to run.
 
     Note: Analysis will automatically be edited to run in external at TagoIO side.
-    To change it back to run at tagoio, use ${kleur.italic("tagoio am")}`
+    To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .option("-env, --environment [environment]", "environment from config.js")

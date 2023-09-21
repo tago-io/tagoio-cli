@@ -23,7 +23,7 @@ async function setEnvironment(arg?: string) {
   }
 
   setEnvironmentVariables({ TAGOIO_DEFAULT: arg });
-  successMSG(`Default environment is set to: ${arg}`);
+  successMSG(`The default environment has been successfully set to: ${arg}`);
 }
 
 export { setEnvironment };

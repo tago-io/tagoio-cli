@@ -35,7 +35,7 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
     ${kleur.bold("Export Tags")}:
     - Export Tags are a key-pair of tags added to the entities you want to export. By default the tag key is export_id.
     - You can run --setup to user the CLI to go through all your entities and setup the Export Tag for you.
-    - If targeted profile/environment already have an entity with same export tag, it will update the entitity instead of creating a new one.
+    - If targeted profile/environment already have an entity with same export tag, it will update the entity instead of creating a new one.
 
     ${kleur.bold("Entities Export")}:
     - ${highlightMSG("dashboards")}: Export the dashboard label, blueprint devices, tabs, tags and widgets of the dashboard.
@@ -43,7 +43,7 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
                If you are using device-tokens in Environment Variables or tags, you want to include the device in the export command.
     - ${highlightMSG("analysis")}: Export the analysis name, code, tags, mode and timeout settings.
     - ${highlightMSG("access")}: Export the access rules.
-    - ${highlightMSG("run")}: Export sidebar buttons, signin buttons and email templates
+    - ${highlightMSG("run")}: Export sidebar buttons, sign-in buttons and email templates
     - ${highlightMSG("actions")}: Export actions.
     - ${highlightMSG("dictionaries")}: Export all the dictionaries slugs.
 

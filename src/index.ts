@@ -18,12 +18,20 @@ import { ENV_FILE_PATH } from "./lib/dotenv-config";
 import { highlightMSG } from "./lib/messages";
 import { updater } from "./lib/notify-update";
 
+/**
+ * Loads the package.json file from the CLI directory.
+ */
 const packageJSON = JSON.parse(readFileSync(resolveCLIPath("./package.json")).toString());
 dotenv.config({ path: ENV_FILE_PATH });
 
 const indexConfigFile = getConfigFile();
 const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
 
+/**
+ * Calls functions to add all available commands to the CLI program.
+ * @param program - The CLI program to add commands to.
+ * @returns A Promise that resolves when all commands have been added.
+ */
 async function getAllCommands(program: Command) {
   analysisCommands(program);
   deviceCommands(program);
@@ -31,11 +39,21 @@ async function getAllCommands(program: Command) {
   profileCommands(program, defaultEnvironment);
 }
 
+/**
+ * Returns a string with ANSI escape codes to display text in red.
+ *
+ * @param str - The string to be colored in red.
+ * @returns A string with ANSI escape codes to display text in red.
+ */
 function errorColor(str: string) {
   // Add ANSI escape codes to display text in red.
   return `\x1b[31m${str}\x1b[0m`;
 }
 
+/**
+ * Initializes the TagoIO Command Line Tools program and sets up the available commands.
+ * @returns {Promise<void>} A Promise that resolves when the program has finished parsing the command line arguments.
+ */
 async function initiateCMD() {
   const updateLog = await updater({ name: packageJSON.name, version: packageJSON.version });
   const program = new Command();
@@ -119,4 +137,5 @@ Example:
 
   program.parse();
 }
+
 initiateCMD().catch(console.error);

@@ -1,4 +1,5 @@
 import prompts from "prompts";
+
 import { getConfigFile } from "../lib/config-file";
 import { errorHandler } from "../lib/messages";
 
@@ -17,6 +18,7 @@ async function pickEnvironment(message: string = "Choose your environment:") {
   const { environment } = await prompts({ type: "autocomplete", choices: envList, initial, name: "environment", message });
 
   if (!environment) {
+    errorHandler("Environment not selected");
     process.exit(0);
   }
 

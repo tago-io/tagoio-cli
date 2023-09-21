@@ -95,6 +95,15 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
   successMSG(`> Backup stored on ${name}.json`);
 }
 
+/**
+ * Backs up or restores data from a TagoIO device.
+ * @param idOrToken - The ID or token of the device to backup or restore.
+ * @param options - Additional options for the backup or restore process.
+ * @param options.environment - The environment to use for the backup or restore process.
+ * @param options.restore - Whether to restore data from a backup.
+ * @param options.local - Whether to store the backup locally or on TagoIO.
+ * @returns A Promise that resolves when the backup or restore process is complete.
+ */
 async function bkpDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {

@@ -8,7 +8,7 @@ import { writeToken } from "../lib/token";
 
 function writeCustomToken(environment: string, token: string) {
   writeToken(token, environment);
-  console.info(`Token writed to the environment ${environment}`);
+  successMSG(`Token successfully written to the environment ${highlightMSG(environment)}.`);
 }
 
 interface LoginOptions {
@@ -17,16 +17,52 @@ interface LoginOptions {
   token?: string;
 }
 
+/**
+ * Handles the OTP login process.
+ * @param {Object} options - The OTP login options.
+ * @param {OTPType} options.otp_autosend - The OTP type to use for login.
+ * @param {Object} loginOptions - The login options.
+ * @param {string} loginOptions.email - The user's email.
+ * @param {string} loginOptions.password - The user's password.
+ * @returns {Promise<Object>} - The login result.
+ */
 async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<LoginOptions>) {
   if (otp_autosend !== "authenticator") {
     await Account.requestLoginPINCode({ email, password }, otp_autosend).catch(errorHandler);
   }
 
-  const pinCode = await prompts({ type: "text", message: `Enter your PINCODE [${otp_autosend}]: `, name: "value" });
+  const pinCode = await prompts({ type: "text", message: `Enter your PIN CODE [${otp_autosend}]: `, name: "value" });
 
   const loginResult = await Account.login({ email, password, otp_type: otp_autosend, pin_code: pinCode.value } as any).catch(errorHandler);
-  if (loginResult) {
-    return { ...loginResult, otp_type: otp_autosend, pin_code: pinCode.value };
+  if (!loginResult) {
+    errorHandler("Login failed");
+    return process.exit(1);
+  }
+
+  return { ...loginResult, otp_type: otp_autosend, pin_code: pinCode.value };
+}
+
+/**
+ * Logs in a user with email and password.
+ * @param email The user's email.
+ * @param password The user's password.
+ * @returns A promise that resolves to the login result.
+ */
+async function loginWithEmailPassword(email: string, password: string) {
+  try {
+    const loginResult = await Account.login({ email, password });
+    return loginResult;
+  } catch (error) {
+    try {
+      const errorJSON = JSON.parse(error);
+      if (errorJSON?.otp_enabled) {
+        return handleOTPLogin(errorJSON, { email, password, token: "" });
+      }
+    } catch {
+      // Ignore JSON parsing errors
+    }
+
+    errorHandler(error);
   }
 }
 
@@ -52,19 +88,7 @@ async function tagoLogin(environment: string, options: LoginOptions) {
     }
   }
 
-  const loginResult = await Account.login({ email, password }).catch(async (error) => {
-    try {
-      const errorJSON = JSON.parse(error);
-      if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email: email as string, password: password as string, token: "" }).catch(errorHandler);
-      }
-    } catch {
-      //any
-    }
-
-    errorHandler(error);
-  });
-
+  const loginResult = await loginWithEmailPassword(email, password);
   if (!loginResult) {
     return;
   }
@@ -90,7 +114,7 @@ async function tagoLogin(environment: string, options: LoginOptions) {
 
   writeToken(result.token, environment);
 
-  successMSG(`Token writed to the environment ${highlightMSG(environment)}`);
+  successMSG(`Token successfully written to the environment ${highlightMSG(environment)}.`);
   options.token = result.token;
 }
 

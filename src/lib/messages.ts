@@ -6,7 +6,7 @@ function questionMSG(str: any) {
 
 function errorHandler(str: any) {
   console.error(`[${kleur.red("ERROR")}] ${kleur.bold(str)}`);
-  process.exit(0);
+  throw process.exit(0);
 }
 
 function highlightMSG(str: any) {
