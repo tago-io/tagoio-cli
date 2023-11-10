@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import kleur from "kleur";
+
 import { setEnvironmentVariables } from "./dotenv-config";
 import { getCurrentFolder } from "./get-current-folder";
 import { errorHandler, highlightMSG, infoMSG } from "./messages";
@@ -42,7 +43,7 @@ function getConfigFile() {
 
   try {
     if (!existsSync(configPath)) {
-      writeFileSync(configPath, JSON.stringify({}), { encoding: "utf-8" });
+      writeFileSync(configPath, JSON.stringify({ $schema: "https://github.com/tago-io/tagoio-cli/blob/master/docs/schema.json" }), { encoding: "utf-8" });
     }
   } catch (error) {
     errorHandler(error);

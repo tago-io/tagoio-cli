@@ -98,25 +98,6 @@ Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
 
 If you want to use the Debugger with -D, make sure you have a **.swcrc** file with sourceMaps activated. This repository contains a .swcrc.example file if you prefer to just copy to your folder.
 
-## Credentials Storage
-When running **tagoio login** or **tagoio init**, the CLI will store your Profile-Token in the current folder on your terminal.
-
-The Profile-Token credential is encrypted under a *.tago-lock.{env}.lock* file.
-
-## tagoconfig.json
-The tagoconfig.json file stores information about your current javascript/typescript project. It will contain information about your analysis, their ID's and names.
-
-- Run the command **tagoio init** in order to create the tagoconfig.json.
-
-Having a tagoconfig.json is required in order to run the following cmds:
-* tagoio deploy
-* tagoio trigger
-* tagoio run
-
-You will also be required to have the .tago-lock file for a given environment.
-
-
-
 ## Working with Environments
 
 Managing multiple environments is a breeze with the TagoIO CLI. This feature facilitates seamless alternation between different environments for deployment and analysis management. Here's how you can make the most of it:
@@ -134,6 +115,74 @@ If you are working with multiple environments, switching between them is essenti
 ```sh
 tagoio set-env [environment_name]
 ```
+
+
+## Credentials Storage
+
+Securing your credentials is a critical aspect of working with the TagoIO CLI. The CLI ensures the safe storage of your Profile-Token, which is vital for accessing various functionalities. Here's how the credentials storage works:
+
+### Storing Your Profile-Token
+
+When you execute commands like `tagoio login` or `tagoio init`, the CLI securely stores your Profile-Token in the current folder accessed by your terminal. Here's a brief on these commands:
+
+1. **tagoio login**: This command allows you to log in to your account, storing the profile token in the process.
+   
+   ```sh
+   tagoio login
+   ```
+
+2. **tagoio init**: This command initiates the creation of a new project, during which you will be prompted to enter your credentials, generating a Profile-Token.
+   
+   ```sh
+   tagoio init
+   ```
+
+### File Encryption
+
+The stored Profile-Token is encrypted and saved in a file named `.tago-lock.{env}.lock`, ensuring the security of your sensitive information.
+
+## tagoconfig.json
+The `tagoconfig.json` file serves as the central configuration file for your JavaScript or TypeScript project when working with the TagoIO CLI. This file contains vital information about your analysis, including their IDs and names. Here's how you can set up and utilize the `tagoconfig.json` file effectively:
+
+### Creating the tagoconfig.json File
+
+To create a `tagoconfig.json` file, initiate your project using the `tagoio init` command. This command sets up the necessary structure for your project, including the creation of the `tagoconfig.json` file.
+
+```sh
+tagoio init
+```
+
+
+### File Contents
+
+The `tagoconfig.json` file encapsulates information about your current project, including:
+
+- **Analysis Details**: Information about your analysis, including their IDs and names.
+- **Environment Configurations**: Details about the environments configured for your project.
+- **Other Settings**: Additional settings and configurations specific to your project.
+
+### Utilizing the tagoconfig.json File
+
+Having a `tagoconfig.json` file is essential for executing several commands, such as:
+
+- **tagoio deploy**: This command deploys your project to the TagoIO platform.
+  
+  ```sh
+  tagoio deploy
+  ```
+
+- **tagoio trigger**: Use this command to trigger specific actions or events in your project.
+  
+  ```sh
+  tagoio trigger
+  ```
+
+- **tagoio run**: This command allows you to run your project locally for testing and development.
+  
+  ```sh
+  tagoio run
+  ```
+
 
 ## License
 

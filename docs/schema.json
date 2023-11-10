@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "environment":  {
+      "$id": "environment",
+      "type": "object",
+      "properties": {
+          "analysisList": {
+              "description": "List of analysis files to upload",
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "fileName": {
+                          "description": "name and extension of the analysis file",
+                          "type": "string"
+                      },
+                      "name": {
+                          "description": "name of the analysis",
+                          "type": "string"
+                      },
+                      "id": {
+                          "description": "id of the analysis",
+                          "type": "string"
+                      }
+                  },
+                  "required": ["fileName", "id"]
+              }
+          },
+          "id": {
+              "description": "ID of the profile",
+              "type": "string"
+          },
+          "profileName": {
+              "description": "Name of the profile",
+              "type": "string"
+          },
+          "email": {
+              "description": "Email of the account",
+              "type": "string",
+              "format": "email"
+          }
+      }
+    }
+  },
+  "properties": {
+      "analysisPath": {
+        "description": "Path from the root of the project to the analysis folder",
+          "type": "string",
+          "format": "uri-reference"
+      },
+      "buildPath": {
+          "description": "Path from the root of the project to the build folder",
+          "type": "string",
+          "format": "uri-reference"
+      },
+      "default": {
+          "description": "Default environment to use when no environment is specified",
+          "type": "string"
+      },
+      "prod": {
+        "description": "Production environment.",
+        "$ref": "#/definitions/environment"
+      }
+  },
+  "additionalProperties": {
+    "anyOf": [
+      {
+        "$ref": "#/definitions/environment"
+      },
+      {
+        "type": "string"
+      }
+    ]
+  },
+  "required": ["buildPath", "analysisPath", "default"],
+  "title": "JSON schema for TagoIO CLI .tagoconfig"
+}
