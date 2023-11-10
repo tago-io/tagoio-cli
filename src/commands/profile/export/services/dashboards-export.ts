@@ -84,7 +84,11 @@ async function dashboardExport(exportAccount: Account, importAccount: Account, e
   if (exportList.length > 0 && options.pick) {
     const choices = exportList.map((item) => ({ title: item.label, value: item }));
     exportList = await chooseFromList(choices, "Choose the dashboards you want to export:");
+    if (!exportList) {
+      exportList = [];
+    }
   }
+
   // @ts-expect-error we are looking only for keys
   const import_list = await importAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
 
