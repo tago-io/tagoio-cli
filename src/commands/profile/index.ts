@@ -26,6 +26,7 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
     .addOption(new Option("-tt, --to-token <profile-token>", "profile token of the environment").conflicts("to"))
     .option("-e, --entity <entity>", "entities that will be exported (repeatable)", handleEntities, [])
     .addOption(new Option("--setup [environment]", "setup a profile to be exported").conflicts(["to", "from", "from-token", "to-token"]))
+    .option("--pick", "prompt you to pick which entities to be exported")
     .action(startExport)
     .addHelpText(
       "after",

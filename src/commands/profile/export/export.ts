@@ -1,6 +1,7 @@
-import { Account } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
+
+import { Account } from "@tago-io/sdk";
 
 import { addOnGitIgnore } from "../../../lib/add-to-gitignore";
 import { getCurrentFolder } from "../../../lib/get-current-folder";
@@ -27,6 +28,7 @@ interface IExportOptions {
   toToken?: string;
   entity: EntityType[];
   setup: string;
+  pick?: boolean;
 }
 
 async function resolveTokens(userConfig: IExport, options: IExportOptions) {
@@ -198,7 +200,7 @@ async function startExport(options: IExportOptions) {
           idCollection.push("devices");
           export_holder = await collectIDs(account, import_account, "devices", export_holder);
         }
-        export_holder = await dashboardExport(account, import_account, export_holder);
+        export_holder = await dashboardExport(account, import_account, export_holder, options);
         idCollection.push("dashboards");
         break;
       case "access":
@@ -250,4 +252,4 @@ async function startExport(options: IExportOptions) {
   addOnGitIgnore(getCurrentFolder(), `exportBackup`);
 }
 
-export { startExport, ENTITY_ORDER, chooseEntities, enterExportTag };
+export { startExport, ENTITY_ORDER, chooseEntities, enterExportTag, IExportOptions };

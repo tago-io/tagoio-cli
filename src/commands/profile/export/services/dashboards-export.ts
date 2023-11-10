@@ -4,6 +4,8 @@ import { Account } from "@tago-io/sdk";
 import { DashboardInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../../../../lib/messages";
+import { chooseFromList } from "../../../../prompt/choose-from-list";
+import { IExportOptions } from "../export";
 import { IExportHolder } from "../types";
 import { storeExportBackup } from "./export-backup/export-backup";
 import { insertWidgets, removeAllWidgets } from "./widgets-export";
@@ -74,11 +76,15 @@ async function resolveDashboardTarget(importAccount: Account, export_id: string,
   return importAccount.dashboards.info(dashboard_id);
 }
 
-async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder) {
+async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder, options: IExportOptions) {
   console.info("Exporting dashboard: started");
 
   // @ts-expect-error we are looking only for keys
-  const exportList = await exportAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
+  let exportList = await exportAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
+  if (exportList.length > 0 && options.pick) {
+    const choices = exportList.map((item) => ({ title: item.label, value: item }));
+    exportList = await chooseFromList(choices, "Choose the dashboards you want to export:");
+  }
   // @ts-expect-error we are looking only for keys
   const import_list = await importAccount.dashboards.list({ page: 1, amount: 99, fields: ["id", "label", "tags"], filter: { tags: [{ key: "export_id" }] } });
 
