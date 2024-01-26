@@ -26,9 +26,12 @@ interface IConfigFile {
 
 function resolveCLIPath(suffix: string) {
   let path = __dirname;
-  const pathSlices = path.split("/");
+  // Handle windows and linux paths
+  const pathSymbol = path.includes("\\") ? "\\" : "/";
+
+  const pathSlices = path.split(pathSymbol);
   const cliWordPosition = pathSlices.findIndex((x) => x.includes("cli")) + 1;
-  path = pathSlices.slice(0, cliWordPosition).join("/");
+  path = pathSlices.slice(0, cliWordPosition).join(pathSymbol);
   return join(path, suffix);
 }
 
