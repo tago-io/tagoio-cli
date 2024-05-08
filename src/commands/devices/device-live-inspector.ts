@@ -1,5 +1,4 @@
 import EventSource from "eventsource";
-
 import { Account, Device } from "@tago-io/sdk";
 import { DeviceInfo } from "@tago-io/sdk/lib/types";
 
@@ -10,6 +9,7 @@ import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio"
 /**
  * Creates a new SSE connection to the TagoIO Realtime API.
  * @param profileToken - The user's profile token.
+ * @param deviceID - The ID of the device to inspect.
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
 function apiSSE(profileToken: string, deviceID: string) {
@@ -59,9 +59,9 @@ function setupSSE(sse: ReturnType<typeof apiSSE>, deviceIdOrToken: string, devic
     }
   };
 
-  sse.onerror = (_error) => {
+  sse.onerror = (error) => {
     errorHandler("Connection error");
-    console.error(_error);
+    console.error(error);
   };
 
   sse.onopen = () => {
