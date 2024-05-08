@@ -12,16 +12,18 @@ import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio"
  * @param profileToken - The user's profile token.
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
-function apiSSE(profileToken: string) {
-  const sse = new EventSource(`https://realtime.tago.io?token=${profileToken}`);
+function apiSSE(profileToken: string, deviceID: string) {
+  const sse = new EventSource(`https://sse.tago.io/events?channel=device_inspector.${deviceID}&token=${profileToken}`);
 
   return sse;
 }
 
 interface ScopeContent {
+  connection_id: string;
+  content: string;
+  device_id: string;
   timestamp: string;
   title: string;
-  content: string;
 }
 
 /**
@@ -47,19 +49,20 @@ function displayMessage(scope: ScopeContent) {
  */
 function setupSSE(sse: ReturnType<typeof apiSSE>, deviceIdOrToken: string, deviceInfo: DeviceInfo) {
   sse.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.resourceName === "device" && data.resourceID === deviceIdOrToken) {
-      if (Array.isArray(data.scope)) {
-        for (const item of data.scope) {
-          displayMessage(item);
-        }
-      } else {
-        displayMessage(data.scope);
+    const scope = JSON.parse(event.data).payload as ScopeContent;
+    if (Array.isArray(scope)) {
+      for (const item of scope) {
+        displayMessage(item);
       }
+    } else {
+      displayMessage(scope);
     }
   };
 
-  sse.onerror = (error) => errorHandler(`Connection error: ${JSON.stringify(error)}`);
+  sse.onerror = (_error) => {
+    errorHandler("Connection error");
+    console.error(_error);
+  };
 
   sse.onopen = () => {
     const deviceName = deviceInfo?.name || deviceIdOrToken;
@@ -107,7 +110,7 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     deviceIdOrToken = deviceInfo.id;
   }
 
-  const sse = apiSSE(config.profileToken);
+  const sse = apiSSE(config.profileToken, deviceInfo.id);
   setupSSE(sse, deviceIdOrToken, deviceInfo);
 }
 
