@@ -22,7 +22,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     const device = new Device({ token: idOrToken });
     deviceInfo = await device
       .info()
-      .then((r) => r as DeviceInfo)
+      .then((r) => r as unknown as DeviceInfo)
       .catch(() => null);
 
     if (!deviceInfo) {

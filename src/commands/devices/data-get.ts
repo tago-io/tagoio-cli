@@ -1,9 +1,8 @@
 import kleur from "kleur";
 
 import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data, DataQuery } from "@tago-io/sdk/lib/types";
+import { Data, DataQuery, DataQueryDefault } from "@tago-io/sdk/lib/types";
 
-// import { DataQuery } from "@tago-io/sdk/lib/types";
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
@@ -42,7 +41,7 @@ async function getDevice(idOrToken: string, account: Account) {
  * @param options - The options to create the data filter from.
  * @returns The data filter object.
  */
-function _createDataFilter(options: IOptions): DataQuery {
+function _createDataFilter(options: IOptions): DataQueryDefault {
   const filter: DataQuery = {};
   if (options.var) {
     filter.variables = options.var;

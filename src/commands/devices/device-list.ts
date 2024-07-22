@@ -28,9 +28,9 @@ function mapTags(tags: TagsObj[], opt: { [key: string]: any }): any[] {
  * @param opt.raw - If true, returns the ISO string representation of the date.
  * @returns A formatted string representation of the date, or undefined if the date is null.
  */
-function mapDate(date: Date | null, opt: { [key: string]: any }): string | undefined {
+function mapDate(date: Date | null | undefined, opt: { [key: string]: any }): string | undefined {
   if (opt.raw) {
-    return date?.toISOString();
+    return date?.toISOString() ?? undefined;
   }
   return date ? `${date?.toLocaleDateString()} ${date?.toLocaleTimeString()}` : undefined;
 }
@@ -91,7 +91,7 @@ async function deviceList(options: IOptions) {
   const resultList = deviceList.map((x) => ({
     ...x,
     tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
-    last_input: mapDate(x.last_input, options),
+    last_input: mapDate(x?.last_input, options),
   }));
 
   if (options.stringify) {
