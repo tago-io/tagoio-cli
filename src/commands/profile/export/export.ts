@@ -200,7 +200,7 @@ async function startExport(options: IExportOptions) {
           idCollection.push("devices");
           export_holder = await collectIDs(account, import_account, "devices", export_holder);
         }
-        export_holder = await dashboardExport(account, import_account, export_holder, options);
+        export_holder = await dashboardExport(account, import_account, export_holder, options, userConfig.export_tag);
         idCollection.push("dashboards");
         break;
       case "access":

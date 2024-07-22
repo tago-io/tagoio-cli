@@ -50,6 +50,7 @@ async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { ema
  */
 async function loginWithEmailPassword(email: string, password: string) {
   try {
+    // @ts-expect-error - not required pin_code
     const loginResult = await Account.login({ email, password });
     return loginResult;
   } catch (error) {

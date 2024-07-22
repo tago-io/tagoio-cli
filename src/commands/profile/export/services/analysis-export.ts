@@ -1,13 +1,12 @@
+import zlib from "zlib";
 import axios from "axios";
 import prompts from "prompts";
-import zlib from "zlib";
-
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
+import { AnalysisListItem } from "@tago-io/sdk/lib/types";
 
+import { IExportHolder } from "../types";
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
 
 /**
  * Choose one of the values for your Environment Variable
@@ -29,7 +28,7 @@ async function choose_variable(key: string, values: string[]) {
   return variable;
 }
 
-function separate_variable_with_duplicate_values(export_analysis: AnalysisInfo[], import_analysis: AnalysisInfo[]) {
+function separate_variable_with_duplicate_values(export_analysis: AnalysisListItem[], import_analysis: AnalysisListItem[]) {
   const values_by_keys: any = {};
   for (const item of [...export_analysis, ...import_analysis]) {
     if (!item.variables) {
@@ -55,8 +54,8 @@ function separate_variable_with_duplicate_values(export_analysis: AnalysisInfo[]
 
 async function fixEnvironmentVariables(
   import_account: Account,
-  export_analysis: AnalysisInfo[],
-  import_analysis: AnalysisInfo[],
+  export_analysis: AnalysisListItem[],
+  import_analysis: AnalysisListItem[],
   analysis_info: { id: string; variables: { key: string; value: string } }[]
 ) {
   const variables_with_duplicate_values = separate_variable_with_duplicate_values(export_analysis, import_analysis);
@@ -89,6 +88,7 @@ async function analysisExport(account: Account, import_account: Account, export_
     // @ts-expect-error we are looking only for keys
     .list({ amount: 99, fields: ["id", "name", "tags", "variables"], filter: { tags: [{ key: "export_id" }] } })
     .then((r) => r.reverse());
+
   // @ts-expect-error we are looking only for keys
   const import_list = await import_account.analysis.list({ amount: 99, fields: ["id", "tags", "variables"], filter: { tags: [{ key: "export_id" }] } });
 

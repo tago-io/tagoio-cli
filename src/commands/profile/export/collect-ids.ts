@@ -42,18 +42,18 @@ async function getDeviceTokens(list: (DeviceListItem & { token?: string })[], ac
 }
 
 async function collectIDs(account: Account, import_account: Account, entity: Entity, export_holder: IExportHolder) {
+  // @ts-expect-error ts don't know what kind of tagsobj we are using
   let list = await account[entity].list({
     page: 1,
     amount: 99,
     fields: ["id", "tags"] as any,
-    // @ts-expect-error ts don't know what kind of tagsobj we are using
     filter: { tags: [{ key: "export_id" }] },
   });
+  // @ts-expect-error ts don't know what kind of tagsobj we are using
   let import_list = await import_account[entity].list({
     page: 1,
     amount: 99,
     fields: ["id", "tags"] as any,
-    // @ts-expect-error ts don't know what kind of tagsobj we are using
     filter: { tags: [{ key: "export_id" }] },
   });
 

@@ -114,7 +114,7 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     const device = new Device({ token: deviceIdOrToken, region: "usa-1" });
     deviceInfo = await device
       .info()
-      .then((r) => r as DeviceInfo)
+      .then((r) => r as unknown as DeviceInfo)
       .catch(() => null);
 
     if (!deviceInfo) {
