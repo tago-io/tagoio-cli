@@ -50,6 +50,11 @@
           "type": "string",
           "format": "uri-reference"
       },
+      "tagoDeployUrl": {
+          "description": "URL to of the TagoIO deploy server",
+          "type": "string",
+          "format": "uri-reference"
+      },
       "buildPath": {
           "description": "Path from the root of the project to the build folder",
           "type": "string",

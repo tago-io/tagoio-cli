@@ -19,6 +19,7 @@ interface IConfigFileEnvs {
 }
 interface IConfigFile {
   profileToken?: string;
+  tagoDeployUrl?: string;
   analysisPath: string;
   buildPath: string;
   default: string;

@@ -33,6 +33,10 @@ const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
  * @returns A Promise that resolves when all commands have been added.
  */
 async function getAllCommands(program: Command) {
+  const configFile = getConfigFile();
+  if (configFile?.tagoDeployUrl) {
+    process.env.TAGOIO_API = configFile?.tagoDeployUrl;
+  }
   analysisCommands(program);
   deviceCommands(program);
   dashboardCommands(program);
