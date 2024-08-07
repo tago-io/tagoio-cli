@@ -171,6 +171,10 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     configFile.tagoDeployUrl = "";
   }
 
+  if (!configFile.tagoDeploySse) {
+    configFile.tagoDeploySse = "";
+  }
+
   // Return if token is not found
   if (!token) {
     return;

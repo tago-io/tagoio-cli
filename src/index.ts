@@ -34,9 +34,15 @@ const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
  */
 async function getAllCommands(program: Command) {
   const configFile = getConfigFile();
+
   if (configFile?.tagoDeployUrl) {
-    process.env.TAGOIO_API = configFile?.tagoDeployUrl;
+    process.env.TAGOIO_API = configFile.tagoDeployUrl;
   }
+
+  if (configFile?.tagoDeploySse) {
+    process.env.TAGOIO_SSE = configFile.tagoDeploySse;
+  }
+
   analysisCommands(program);
   deviceCommands(program);
   dashboardCommands(program);

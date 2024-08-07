@@ -152,9 +152,10 @@ To create a `tagoconfig.json` file, initiate your project using the `tagoio init
 tagoio init
 ```
 
-If you are using the TagoDeploy service, you can configure the URL:
+If you are using the TagoDeploy service, you can configure the URLs for both the API and SSE:
 
-- To configure the URL for the TagoDeploy service, update the `tagoDeployUrl` field in the `tagoconfig.json` file with the URL of your server to utilize your API.
+- To set the URL for the API in the TagoDeploy service, update the `tagoDeployUrl` field in the `tagoconfig.json` file with the URL of your server.
+- To set the URL for SSE in the TagoDeploy service, update the `tagoDeploySse` field in the `tagoconfig.json` file with the URL of your server.
 
 ### File Contents
 
