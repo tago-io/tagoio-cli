@@ -167,6 +167,14 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
   }
 
+  if (!configFile.tagoDeployUrl) {
+    configFile.tagoDeployUrl = "";
+  }
+
+  if (!configFile.tagoDeploySse) {
+    configFile.tagoDeploySse = "";
+  }
+
   // Return if token is not found
   if (!token) {
     return;
