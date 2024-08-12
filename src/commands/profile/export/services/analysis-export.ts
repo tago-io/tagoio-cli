@@ -1,9 +1,9 @@
+import zlib from "zlib";
 import axios from "axios";
 import prompts from "prompts";
-import zlib from "zlib";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/out/modules/Account/analysis.types";
+import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
