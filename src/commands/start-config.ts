@@ -34,10 +34,10 @@ async function createEnvironmentToken(environment: string) {
   }
   infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
 
-  const options = { token: undefined };
+  const options = { token: undefined, tagoDeployUrl: undefined };
   await tagoLogin(environment, options);
 
-  return options.token;
+  return { profileToken: options.token, tagoDeployUrl: options?.tagoDeployUrl };
 }
 
 /**
@@ -152,7 +152,9 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   if (!token) {
     token = readToken(environment);
     if (!token) {
-      token = await createEnvironmentToken(environment);
+      const data = await createEnvironmentToken(environment);
+      token = data?.profileToken;
+      configFile.tagoDeployUrl = data?.tagoDeployUrl || "";
     }
   } else {
     writeToken(token, environment);
@@ -165,10 +167,6 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
 
   if (!configFile.buildPath) {
     configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
-  }
-
-  if (!configFile.tagoDeployUrl) {
-    configFile.tagoDeployUrl = "";
   }
 
   if (!configFile.tagoDeploySse) {

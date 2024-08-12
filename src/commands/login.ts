@@ -6,6 +6,29 @@ import { OTPType } from "@tago-io/sdk/lib/types";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 
+/**
+ * @description Set the TagoIO deploy URL.
+ */
+async function setTagoDeployUrl() {
+  const { tagoDeployUrl } = await prompts({
+    message: "Do you want to pass on the tagoDeploy URL?",
+    type: "confirm",
+    name: "tagoDeployUrl",
+  });
+  if (!tagoDeployUrl) {
+    return;
+  }
+
+  const { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: " });
+  if (urlAPI) {
+    process.env.TAGOIO_API = urlAPI;
+  }
+
+  console.info(process.env.TAGOIO_API);
+
+  return urlAPI;
+}
+
 function writeCustomToken(environment: string, token: string) {
   writeToken(token, environment);
   successMSG(`Token successfully written to the environment ${highlightMSG(environment)}.`);
@@ -15,6 +38,7 @@ interface LoginOptions {
   email?: string;
   password?: string;
   token?: string;
+  tagoDeployUrl?: string;
 }
 
 /**
@@ -56,7 +80,7 @@ async function loginWithEmailPassword(email: string, password: string) {
     try {
       const errorJSON = JSON.parse(error);
       if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password, token: "" });
+        return handleOTPLogin(errorJSON, { email, password, token: "", tagoDeployUrl: "" });
       }
     } catch {
       // Ignore JSON parsing errors
@@ -67,6 +91,9 @@ async function loginWithEmailPassword(email: string, password: string) {
 }
 
 async function tagoLogin(environment: string, options: LoginOptions) {
+  const tagoDeployUrl = await setTagoDeployUrl();
+  options.tagoDeployUrl = tagoDeployUrl;
+
   if (options.token) {
     return writeCustomToken(environment, options.token);
   }
