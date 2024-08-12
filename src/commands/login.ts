@@ -50,7 +50,7 @@ interface LoginOptions {
  * @param {string} loginOptions.password - The user's password.
  * @returns {Promise<Object>} - The login result.
  */
-async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<LoginOptions>) {
+async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<Pick<LoginOptions, "email" | "password">>) {
   if (otp_autosend !== "authenticator") {
     await Account.requestLoginPINCode({ email, password }, otp_autosend).catch(errorHandler);
   }
@@ -80,7 +80,7 @@ async function loginWithEmailPassword(email: string, password: string) {
     try {
       const errorJSON = JSON.parse(error);
       if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password, token: "", tagoDeployUrl: "" });
+        return handleOTPLogin(errorJSON, { email, password });
       }
     } catch {
       // Ignore JSON parsing errors
