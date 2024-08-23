@@ -125,7 +125,7 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
   for (const { id, fileName } of scriptList) {
     await buildScript(account, fileName, id, config);
   }

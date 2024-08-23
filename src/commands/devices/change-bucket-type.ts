@@ -16,7 +16,7 @@ interface BucketSettings {
 const coloredBucketType = (type: string) => (type === "mutable" ? kleur.green(type) : type === "legacy" ? kleur.red(type) : kleur.blue(type));
 
 async function convertDevice(deviceID: string, settings: BucketSettings, profileToken: string) {
-  const account = new Account({ token: profileToken, region: "usa-1" });
+  const account = new Account({ token: profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
   const deviceInfo = await account.devices.info(deviceID);
   const bucketType = deviceInfo.type;
 
@@ -81,7 +81,7 @@ async function changeBucketType(id: string, options: { environment: string }) {
     errorHandler("Environment not found");
     return;
   }
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
   const bucketList = id ? [id] : await chooseBucketsFromList(account);
   if (id) {
     const bucketInfo = await account.buckets.info(id);
