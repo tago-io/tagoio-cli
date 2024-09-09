@@ -50,6 +50,16 @@
           "type": "string",
           "format": "uri-reference"
       },
+      "tagoDeployUrl": {
+          "description": "URL to API for TagoDeploy server",
+          "type": "string",
+          "format": "uri-reference"
+      },
+      "tagoDeploySse": {
+        "description": "URL to SSE for TagoDeploy server",
+        "type": "string",
+        "format": "uri-reference"
+      },
       "buildPath": {
           "description": "Path from the root of the project to the build folder",
           "type": "string",

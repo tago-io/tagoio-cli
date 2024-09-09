@@ -104,14 +104,14 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
   if (!deviceIdOrToken) {
     deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
   }
 
   let deviceInfo = await account.devices.info(deviceIdOrToken).catch(() => null);
   if (!deviceInfo) {
-    const device = new Device({ token: deviceIdOrToken, region: "usa-1" });
+    const device = new Device({ token: deviceIdOrToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
     deviceInfo = await device
       .info()
       .then((r) => r as DeviceInfo)

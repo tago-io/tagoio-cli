@@ -6,6 +6,31 @@ import { OTPType } from "@tago-io/sdk/lib/types";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 
+/**
+ * @description Set the TagoIO deploy URL.
+ */
+async function setTagoDeployUrl(): Promise<{ urlAPI: string; urlSSE: string } | undefined> {
+  const { tagoDeployUrl } = await prompts({
+    message: "Do you want to pass on the tagoDeploy URL?",
+    type: "confirm",
+    name: "tagoDeployUrl",
+  });
+  if (!tagoDeployUrl) {
+    return;
+  }
+
+  const { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: " });
+  if (!urlAPI) {
+    return;
+  }
+
+  const urlSSE = urlAPI.replace("https://api.", "https://sse.").replace(".tago-io.net", ".tago-io.net/events");
+  process.env.TAGOIO_API = urlAPI;
+  process.env.TAGOIO_SSE = urlSSE;
+
+  return { urlAPI, urlSSE };
+}
+
 function writeCustomToken(environment: string, token: string) {
   writeToken(token, environment);
   successMSG(`Token successfully written to the environment ${highlightMSG(environment)}.`);
@@ -15,6 +40,8 @@ interface LoginOptions {
   email?: string;
   password?: string;
   token?: string;
+  tagoDeployUrl?: string;
+  tagoDeploySse?: string;
 }
 
 /**
@@ -26,7 +53,7 @@ interface LoginOptions {
  * @param {string} loginOptions.password - The user's password.
  * @returns {Promise<Object>} - The login result.
  */
-async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<LoginOptions>) {
+async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<Pick<LoginOptions, "email" | "password">>) {
   if (otp_autosend !== "authenticator") {
     await Account.requestLoginPINCode({ email, password }, otp_autosend).catch(errorHandler);
   }
@@ -56,7 +83,7 @@ async function loginWithEmailPassword(email: string, password: string) {
     try {
       const errorJSON = JSON.parse(error);
       if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password, token: "" });
+        return handleOTPLogin(errorJSON, { email, password });
       }
     } catch {
       // Ignore JSON parsing errors
@@ -67,6 +94,10 @@ async function loginWithEmailPassword(email: string, password: string) {
 }
 
 async function tagoLogin(environment: string, options: LoginOptions) {
+  const tagoDeploy = await setTagoDeployUrl();
+  options.tagoDeployUrl = tagoDeploy?.urlAPI;
+  options.tagoDeploySse = tagoDeploy?.urlSSE;
+
   if (options.token) {
     return writeCustomToken(environment, options.token);
   }

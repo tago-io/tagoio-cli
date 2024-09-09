@@ -24,7 +24,7 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
   const analysisList = config.analysisList.filter((x) => x.fileName);
 
   let script: IEnvironment["analysisList"][0] | undefined;

@@ -34,10 +34,10 @@ async function createEnvironmentToken(environment: string) {
   }
   infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
 
-  const options = { token: undefined };
+  const options = { token: undefined, tagoDeployUrl: undefined, tagoDeploySse: undefined };
   await tagoLogin(environment, options);
 
-  return options.token;
+  return { profileToken: options.token, tagoDeployUrl: options?.tagoDeployUrl, tagoDeploySse: options?.tagoDeploySse };
 }
 
 /**
@@ -152,7 +152,10 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   if (!token) {
     token = readToken(environment);
     if (!token) {
-      token = await createEnvironmentToken(environment);
+      const data = await createEnvironmentToken(environment);
+      token = data?.profileToken;
+      configFile.tagoDeployUrl = data?.tagoDeployUrl || "";
+      configFile.tagoDeploySse = data?.tagoDeploySse || "";
     }
   } else {
     writeToken(token, environment);
