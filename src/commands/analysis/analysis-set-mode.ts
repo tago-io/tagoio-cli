@@ -67,7 +67,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const analysisFilterName = userInputName ? `*${userInputName}*` : undefined;
 
   // Get analysis list from TagoIO

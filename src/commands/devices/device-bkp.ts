@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync } from "fs";
 import axios from "axios";
+import { readFileSync, writeFileSync } from "fs";
 import kleur from "kleur";
 import { DateTime } from "luxon";
 
@@ -111,7 +111,7 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }

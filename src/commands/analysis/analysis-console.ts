@@ -92,7 +92,7 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const analysis_info = await account.analysis.info(scriptObj.id);
   if (!analysis_info) {
     errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);

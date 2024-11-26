@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import dotenv from "dotenv";
+import { readFileSync } from "fs";
 import kleur from "kleur";
 
 import { analysisCommands } from "./commands/analysis";
@@ -33,16 +33,6 @@ const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
  * @returns A Promise that resolves when all commands have been added.
  */
 async function getAllCommands(program: Command) {
-  const configFile = getConfigFile();
-
-  if (configFile?.tagoDeployUrl) {
-    process.env.TAGOIO_API = configFile.tagoDeployUrl;
-  }
-
-  if (configFile?.tagoDeploySse) {
-    process.env.TAGOIO_SSE = configFile.tagoDeploySse;
-  }
-
   analysisCommands(program);
   deviceCommands(program);
   dashboardCommands(program);

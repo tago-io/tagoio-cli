@@ -13,7 +13,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }
