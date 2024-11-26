@@ -58,7 +58,7 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
       errorHandler(`Token for environment ${options.to} not found. Did you try "tagoio login ${options.to}" ?`);
       process.exit(0);
     }
-    
+
     userConfig.import.token = config.profileToken;
     userConfig.import.region = config.profileRegion;
     infoMSG(`Export to ${kleur.cyan(options.to)} environment selected.`);
@@ -134,13 +134,13 @@ async function collectParameters(options: IExportOptions) {
     // Account that entities will be copied from.
     export: {
       token: options?.["fromToken"] as string, // Development
-      region: "usa-1" // TODO: Add region param to cli command
+      region: "usa-1",
     },
 
     // Account where the entities will be pasted to.
     import: {
       token: options?.["toToken"] as string,
-      region: "usa-1"// TODO: Add region param to cli command
+      region: "usa-1",
     },
   };
 
@@ -169,8 +169,8 @@ async function startExport(options: IExportOptions) {
     return;
   }
 
-  const account = new Account({ token: userConfig.export.token, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
-  const import_account = new Account({ token: userConfig.import.token, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: userConfig.export.token, region: userConfig.export.region });
+  const import_account = new Account({ token: userConfig.import.token, region: userConfig.import.region });
 
   const import_rule = ENTITY_ORDER.filter((entity) => userConfig.entities.includes(entity));
   let export_holder: IExportHolder = {

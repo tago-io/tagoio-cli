@@ -11,7 +11,7 @@ import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } fr
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
-import { tagoLogin } from "./login";
+import { getTagoDeployURL, tagoLogin } from "./login";
 
 interface ConfigOptions {
   token: string | void;
@@ -178,7 +178,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     return;
   }
 
-  let tagoAPIURL, tagoSSEurl;
+  let tagoAPIURL, tagoSSEURL: string | undefined;
   // Get token from file or prompt user to create one
   if (!token) {
     token = readToken(environment);
@@ -186,10 +186,13 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
       const data = await createEnvironmentToken(environment);
       token = data?.profileToken;
       tagoAPIURL = data?.tagoDeployUrl;
-      tagoSSEurl = data?.tagoDeploySse;
+      tagoSSEURL = data?.tagoDeploySse;
     }
   } else {
+    const urlConfig = await getTagoDeployURL()
     writeToken(token, environment);
+    tagoAPIURL = urlConfig?.urlAPI || "";
+    tagoSSEURL = urlConfig?.urlSSE || "";
   }
 
   // Prompt user to enter analysis and build paths if not found in config file
@@ -216,13 +219,13 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   if (tagoAPIURL) {
     region = {
       api: tagoAPIURL || "",
-      sse: tagoSSEurl || "",
+      sse: tagoSSEURL || "",
       realtime: "", // Not used in the CLI
     }
   }
 
   // Get account info and analysis list
-  const account = new Account({ token: token, region });
+  const account = new Account({ token, region });
   const profile = await account.profiles.info("current");
   const accountInfo = await account.info();
   let analysisList = await getAnalysisList(
@@ -240,7 +243,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     id: profile.info.id,
     profileName: profile.info.name,
     email: accountInfo.email,
-    tagoSSEURL: tagoSSEurl,
+    tagoSSEURL: tagoSSEURL,
     tagoAPIURL: tagoAPIURL,
   };
   writeToConfigFile(configFile);
