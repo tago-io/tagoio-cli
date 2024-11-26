@@ -4,7 +4,7 @@ import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
 
 import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
@@ -69,10 +69,10 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
     return [];
   }
 
-  const getName = (analysis: AnalysisInfo) => `[${analysis.id}] ${analysis.name}`;
+  const getName = (analysis: AnalysisListItem) => `[${analysis.id}] ${analysis.name}`;
 
   const oldIDList = new Set(oldList.map((x) => x.id));
-  const configList: AnalysisInfo[] = analysisList.filter((x) => oldIDList.has(x.id));
+  const configList: AnalysisListItem<"id" | "name" | "tags">[] = analysisList.filter((x) => oldIDList.has(x.id));
 
   const analysisOptions = analysisList.map((x) => ({ title: getName(x), selected: configList.some((y) => y.id === x.id), value: x }));
   const response = await chooseAnalysis(analysisOptions);

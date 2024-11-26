@@ -104,7 +104,7 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
 
   infoMSG(`Query Filter: ${kleur.cyan(JSON.stringify(filter))}`);
   const dataList = await device
-    .getData(filter)
+    .getData(filter as any)
     .then((r) => {
       return r.map((x) => {
         // @ts-expect-error ignore error
