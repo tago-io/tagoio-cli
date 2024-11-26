@@ -9,7 +9,7 @@ import { writeToken } from "../lib/token";
 /**
  * @description Set the TagoIO deploy URL.
  */
-async function setTagoDeployUrl(): Promise<{ urlAPI: string; urlSSE: string } | undefined> {
+async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | undefined> {
   const { tagoDeployUrl } = await prompts({
     message: "Do you have a TagoIO Deploy customized API Endpoint?",
     type: "confirm",
@@ -24,12 +24,20 @@ async function setTagoDeployUrl(): Promise<{ urlAPI: string; urlSSE: string } | 
     return;
   }
 
+  const sanitizedUrlAPI = new URL(urlAPI).origin;
+
   let { urlSSE } = await prompts({ type: "text", name: "urlSSE", message: "Set the URL for the SSE service: ", hint: "https://sse.tago.io" });
   if (!urlSSE) {
-    urlSSE = urlAPI.replace("https://api.", "https://sse.").replace(".tago-io.net", ".tago-io.net/events");
+    urlSSE = sanitizedUrlAPI.replace("https://api.", "https://sse.");
   }
 
-  return { urlAPI, urlSSE };
+  if (urlSSE) {
+    const sseUrl = new URL(urlSSE);
+    sseUrl.pathname = '/events';
+    urlSSE = sseUrl.toString();
+  }
+
+  return { urlAPI: sanitizedUrlAPI, urlSSE };
 }
 
 function writeCustomToken(environment: string, token: string) {
@@ -96,7 +104,7 @@ async function loginWithEmailPassword(email: string, password: string) {
 }
 
 async function tagoLogin(environment: string, options: LoginOptions) {
-  const tagoDeploy = await setTagoDeployUrl();
+  const tagoDeploy = await getTagoDeployURL();
   options.tagoDeployUrl = tagoDeploy?.urlAPI;
   options.tagoDeploySse = tagoDeploy?.urlSSE;
 
@@ -151,4 +159,4 @@ async function tagoLogin(environment: string, options: LoginOptions) {
   options.token = result.token;
 }
 
-export { tagoLogin };
+export { tagoLogin, getTagoDeployURL };
