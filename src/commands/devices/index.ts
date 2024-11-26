@@ -129,24 +129,23 @@ Example:
    `
     );
 
-
   program
-  .command("device-network")
-  .alias("nc")
-  .description(`change the device network and/or connector`)
-  .argument("[ID/Token]", "ID/Token of your device")
-  .option("-n, --networkID <network ID>", "network ID")
-  .option("-c, --connectorID [connector ID]", "connector ID")
-  .option("-env, --environment [environment]", "environment from config.js")
-  .action(changeNetworkOrConnector)
-  .addHelpText(
-    "after",
-    `
+    .command("device-network")
+    .alias("nc")
+    .description(`change the device network and/or connector`)
+    .argument("[ID/Token]", "ID/Token of your device")
+    .option("-n, --networkID <network ID>", "network ID")
+    .option("-c, --connectorID [connector ID]", "connector ID")
+    .option("-env, --environment [environment]", "environment from config.js")
+    .action(changeNetworkOrConnector)
+    .addHelpText(
+      "after",
+      `
 Example:
    $ tagoio device-network 62151835435d540010b768c4 --n 62151835435d540010b768c4 --c 62151835435d540010b768c4
    $ tagoio nc 62151835435d540010b768c4 --n 62151835435d540010b768c4
    `
-  );
+    );
 
   program
     .command("device-type")
