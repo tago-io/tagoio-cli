@@ -6,7 +6,6 @@ function dashboardCommands(program: Command) {
   program.command("Dashboards Header");
   program
     .command("copy-tab")
-    .alias("inspect")
     .description("copy a tab of a dashboard to another tab")
     .argument("[dashboardID]", "ID of the dashboard")
     .option("-from, --from [tabID]", "ID of the Tab to copy")

@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { IExportHolder } from "../types";
 import { getExportHolder } from "./collect-ids";
 

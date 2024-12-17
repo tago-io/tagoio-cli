@@ -91,7 +91,7 @@ async function deviceList(options: IOptions) {
   const resultList = deviceList.map((x) => ({
     ...x,
     tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
-    last_input: mapDate(x.last_input, options),
+    last_input: mapDate(x.last_input as Date, options),
   }));
 
   if (options.stringify) {

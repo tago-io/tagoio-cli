@@ -34,7 +34,7 @@ async function getAnalysisListFromTagoIO(account: Account, analysisFilterName: s
  * @param {AnalysisInfo[]} analysisList - The list of analysis to choose from.
  * @returns {Promise<AnalysisInfo[]>} - The selected analysis object.
  */
-async function chooseAnalysisToUpdateRunOnMode(account: Account, analysisList: AnalysisInfo[]): Promise<AnalysisInfo[]> {
+async function chooseAnalysisToUpdateRunOnMode(analysisList: AnalysisInfo[]): Promise<AnalysisInfo[]> {
   const colorAnalysisName = (x: AnalysisInfo) => `${x.name} [${x.run_on === "tago" ? kleur.cyan(x.run_on) : kleur.yellow(x.run_on || "")}]`;
 
   // Prompts the user to choose an analysis from a list.
@@ -79,7 +79,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
   infoMSG(`${analysisList.length} analysis found.`);
 
   // Query user for the analysis to update
-  const selectedAnalysis = await chooseAnalysisToUpdateRunOnMode(account, analysisList);
+  const selectedAnalysis = await chooseAnalysisToUpdateRunOnMode(analysisList);
 
   let mode: string = options.filterMode;
   if (!mode) {

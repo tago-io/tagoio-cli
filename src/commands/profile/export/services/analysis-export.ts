@@ -1,9 +1,9 @@
-import zlib from "zlib";
 import axios from "axios";
 import prompts from "prompts";
+import zlib from "zlib";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+import { AnalysisListItem } from "@tago-io/sdk/lib/types";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
@@ -29,7 +29,7 @@ async function choose_variable(key: string, values: string[]) {
   return variable;
 }
 
-function separate_variable_with_duplicate_values(export_analysis: AnalysisInfo[], import_analysis: AnalysisInfo[]) {
+function separate_variable_with_duplicate_values(export_analysis: AnalysisListItem[], import_analysis: AnalysisListItem[]) {
   const values_by_keys: any = {};
   for (const item of [...export_analysis, ...import_analysis]) {
     if (!item.variables) {
@@ -37,7 +37,7 @@ function separate_variable_with_duplicate_values(export_analysis: AnalysisInfo[]
     }
     for (const variable of item.variables as unknown as { key: string; value: any }[]) {
       // eslint-disable-next-line no-prototype-builtins
-      if (!values_by_keys.hasOwnProperty(variable.key)) {
+      if (!(variable.key in values_by_keys)) {
         values_by_keys[variable.key] = [];
       }
       if (!values_by_keys[variable.key].includes(variable.value)) {
@@ -55,8 +55,8 @@ function separate_variable_with_duplicate_values(export_analysis: AnalysisInfo[]
 
 async function fixEnvironmentVariables(
   import_account: Account,
-  export_analysis: AnalysisInfo[],
-  import_analysis: AnalysisInfo[],
+  export_analysis: AnalysisListItem<"id" | "name" | "variables">[],
+  import_analysis: AnalysisListItem<"id" | "name" | "variables">[],
   analysis_info: { id: string; variables: { key: string; value: string } }[]
 ) {
   const variables_with_duplicate_values = separate_variable_with_duplicate_values(export_analysis, import_analysis);
