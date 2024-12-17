@@ -1,6 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
 import kleur from "kleur";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
 
@@ -37,12 +37,12 @@ function resolveCLIPath(suffix: string) {
   const pathSlices = path.split(pathSymbol);
   const cliWordPosition = pathSlices.findIndex((x) => x.includes("cli")) + 1;
   path = pathSlices.slice(0, cliWordPosition).join(pathSymbol);
-  return join(path, suffix);
+  return join(path, suffix).normalize();
 }
 
 function getFilePath() {
   const folder = getCurrentFolder();
-  return `${folder}/tagoconfig.json`;
+  return join(folder, 'tagoconfig.json').normalize();
 }
 
 function getConfigFile() {
