@@ -104,7 +104,7 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!deviceIdOrToken) {
     deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
   }

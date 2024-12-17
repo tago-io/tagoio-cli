@@ -1,4 +1,5 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
@@ -15,7 +16,7 @@ async function postDeviceData(idOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }

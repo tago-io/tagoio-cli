@@ -74,7 +74,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     return process.exit();
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   let { token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);

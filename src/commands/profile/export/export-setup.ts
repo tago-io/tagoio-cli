@@ -124,7 +124,7 @@ async function setupExport(options: { setup: string }) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   const exportTag = await enterExportTag("export_id");
   const entities = await chooseEntities([], ["dictionaries", "run"]);

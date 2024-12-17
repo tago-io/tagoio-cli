@@ -38,7 +38,7 @@ async function copyDeviceData(options: IOptions) {
   }
 
   if (!options.from || !options.to) {
-    const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+    const account = new Account({ token: config.profileToken, region: config.profileRegion });
     options.from = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data from:");
     options.to = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data to: ");
   }
@@ -46,7 +46,7 @@ async function copyDeviceData(options: IOptions) {
   let deviceFrom: Device | undefined;
   let deviceTo: Device | undefined;
   if (options.from?.length === 24 || options.to?.length === 24) {
-    const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+    const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
     if (options.from.length === 24) {
       deviceFrom = await Utils.getDevice(account, options.from);

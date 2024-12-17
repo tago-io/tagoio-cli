@@ -1,6 +1,8 @@
-import { Account } from "@tago-io/sdk";
 import axios from "axios";
 import kleur from "kleur";
+
+import { Account } from "@tago-io/sdk";
+
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
 import { chooseFromList } from "../../prompt/choose-from-list";
@@ -13,10 +15,12 @@ interface BucketSettings {
   chunk_retention?: number;
 }
 
+type environmentConfigResponse = NonNullable<ReturnType<typeof getEnvironmentConfig>>;
+
 const coloredBucketType = (type: string) => (type === "mutable" ? kleur.green(type) : type === "legacy" ? kleur.red(type) : kleur.blue(type));
 
-async function convertDevice(deviceID: string, settings: BucketSettings, profileToken: string) {
-  const account = new Account({ token: profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+async function convertDevice(deviceID: string, settings: BucketSettings, config: environmentConfigResponse) {
+  const account = new Account({ token: config.profileToken, region: config?.profileRegion });
   const deviceInfo = await account.devices.info(deviceID);
   const bucketType = deviceInfo.type;
 
@@ -33,8 +37,10 @@ async function convertDevice(deviceID: string, settings: BucketSettings, profile
     }
   };
 
-  const url = `https://api.tago.io/device/${deviceInfo.id}/convert`;
-  const headers = { Authorization: `${profileToken}` };
+  const defaultBaseURL = "https://api.tago.io";
+  const userBaseURL = typeof config.profileRegion === "object" ? config.profileRegion.api : defaultBaseURL;
+  const url = `${userBaseURL}/device/${deviceInfo.id}/convert`;
+  const headers = { Authorization: `${config.profileToken}` };
 
   try {
     const response = await axios.post(url, settings, { headers });
@@ -50,8 +56,8 @@ async function convertDevice(deviceID: string, settings: BucketSettings, profile
 // function to copy device data
 // this function will copy device data from mutable bucket to immutable bucket
 
-async function startBucketChange(profileToken: string, deviceID: string, settings: BucketSettings) {
-  await convertDevice(deviceID, settings, profileToken).catch((error) => {
+async function startBucketChange(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
+  await convertDevice(deviceID, settings, config).catch((error) => {
     errorHandler(error);
     throw false;
   });
@@ -81,7 +87,7 @@ async function changeBucketType(id: string, options: { environment: string }) {
     errorHandler("Environment not found");
     return;
   }
-  const account = new Account({ token: config.profileToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const bucketList = id ? [id] : await chooseBucketsFromList(account);
   if (id) {
     const bucketInfo = await account.buckets.info(id);
@@ -109,7 +115,7 @@ async function changeBucketType(id: string, options: { environment: string }) {
   }
 
   for (const bucket of bucketList) {
-    await startBucketChange(config.profileToken, bucket, bucketTypeSettings);
+    await startBucketChange(config, bucket, bucketTypeSettings);
   }
 }
 
