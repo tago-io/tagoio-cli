@@ -1,4 +1,5 @@
-import { spawn, SpawnOptions } from "child_process";
+import { spawn, SpawnOptions } from "node:child_process";
+import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
@@ -79,19 +80,27 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
   let { token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
 
+  const analysisEnv: { [key: string]: string } = {
+    ...process.env,
+    T_EXTERNAL: "external",
+    T_ANALYSIS_TOKEN: analysisToken,
+    T_ANALYSIS_ID: scriptToRun.id,
+  }
+
+  if (typeof config.profileRegion === "object") {
+    analysisEnv.TAGOIO_API = config.profileRegion.api;
+    analysisEnv.TAGOIO_REALTIME = config.profileRegion.realtime;
+    // analysisEnv.TAGOIO_SSE = config.profileRegion.sse;
+  }
+
   const spawnOptions: SpawnOptions = {
     shell: true,
     cwd: getCurrentFolder(),
     stdio: "inherit",
-    env: {
-      ...process.env,
-      T_EXTERNAL: "external",
-      T_ANALYSIS_TOKEN: analysisToken,
-      T_ANALYSIS_ID: scriptToRun.id,
-    },
+    env: analysisEnv,
   };
 
-  const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
+  const scriptPath = path.join(config.analysisPath, scriptToRun.fileName).normalize();
   const cmd = _buildCMD(options);
 
   if (run_on === "tago") {
