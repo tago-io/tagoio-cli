@@ -99,18 +99,5 @@
         "useValidTypeof": "error"
       }
     }
-  },
-  "javascript": {
-    "globals": ["test", "it", "describe", "expect"],
-    "formatter": {
-      "jsxQuoteStyle": "double",
-      "quoteProperties": "asNeeded",
-      "semicolons": "always",
-      "arrowParentheses": "always",
-      "bracketSpacing": true,
-      "bracketSameLine": false,
-      "quoteStyle": "double",
-      "attributePosition": "auto"
-    }
   }
 }
