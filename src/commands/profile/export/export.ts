@@ -178,6 +178,7 @@ async function startExport(options: IExportOptions) {
     analysis: {},
     dashboards: {},
     tokens: { [userConfig.export.token]: userConfig.import.token },
+    config: { export_tag: userConfig.export_tag },
   };
 
   infoMSG("====Exporting started====");

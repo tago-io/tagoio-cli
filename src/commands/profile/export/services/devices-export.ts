@@ -1,4 +1,5 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
+
 import { errorHandler, infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExport, IExportHolder } from "../types";
@@ -9,23 +10,23 @@ async function deviceExport(account: Account, import_account: Account, export_ho
   const list = await account.devices.list({
     amount: 99,
     fields: ["id", "name", "tags", "type"],
-    filter: { tags: [{ key: "export_id" }] },
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
   const import_list = await import_account.devices.list({
     amount: 99,
     fields: ["id", "tags"],
-    filter: { tags: [{ key: "export_id" }] },
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 
   for (const { id: device_id, name } of list) {
     console.info(`Exporting devices ${name}`);
     const device = await account.devices.info(device_id);
 
-    const export_id = device.tags.find((tag) => tag.key === "export_id")?.value;
+    const export_id = device.tags.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
     const token = await Utils.getTokenByName(account, device_id);
 
-    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === "export_id" && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
 
     let new_token: string;
     const new_device = replaceObj(device, export_holder.devices);

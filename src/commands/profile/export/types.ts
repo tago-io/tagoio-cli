@@ -10,6 +10,7 @@ interface IExportHolder {
   devices: { [key: string]: string };
   analysis: { [key: string]: string };
   tokens: { [key: string]: string };
+  config: { export_tag: string };
 }
 
 type Entity = "dashboards" | "devices" | "analysis";
