@@ -1,6 +1,6 @@
+import zlib from "zlib";
 import axios from "axios";
 import prompts from "prompts";
-import zlib from "zlib";
 
 import { Account } from "@tago-io/sdk";
 import { AnalysisListItem } from "@tago-io/sdk/lib/types";
@@ -87,18 +87,18 @@ async function analysisExport(account: Account, import_account: Account, export_
 
   const list = await account.analysis
     // @ts-expect-error we are looking only for keys
-    .list({ amount: 99, fields: ["id", "name", "tags", "variables"], filter: { tags: [{ key: "export_id" }] } })
+    .list({ amount: 99, fields: ["id", "name", "tags", "variables"], filter: { tags: [{ key: export_holder.config.export_tag }] } })
     .then((r) => r.reverse());
   // @ts-expect-error we are looking only for keys
-  const import_list = await import_account.analysis.list({ amount: 99, fields: ["id", "tags", "variables"], filter: { tags: [{ key: "export_id" }] } });
+  const import_list = await import_account.analysis.list({ amount: 99, fields: ["id", "tags", "variables"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
 
   const analysis_info = [];
   for (const { id: analysis_id, name } of list) {
     console.info(`Exporting analysis ${name}...`);
     const analysis = await account.analysis.info(analysis_id);
-    const export_id = analysis.tags?.find((tag) => tag.key === "export_id")?.value;
+    const export_id = analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
-    let { id: target_id } = import_list.find((analysis) => analysis.tags?.find((tag) => tag.key === "export_id" && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((analysis) => analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
 
     const new_analysis = replaceObj(analysis, { ...export_holder.devices, ...export_holder.tokens });
     if (!target_id) {
