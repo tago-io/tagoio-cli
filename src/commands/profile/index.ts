@@ -40,6 +40,7 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
 
     ${kleur.bold("Entities Export")}:
     - ${highlightMSG("dashboards")}: Export the dashboard label, blueprint devices, tabs, tags and widgets of the dashboard.
+      ${kleur.bold("Note")}: To export the dashboards while preserving the relationship between Devices/Analysis, ensure they have the export_id tag or any other tag you choose.
     - ${highlightMSG("devices")}: Export the devices and copy relevant data from it, after erasing the data. Must specify the data with the --data option.
                If you are using device-tokens in Environment Variables or tags, you want to include the device in the export command.
     - ${highlightMSG("analysis")}: Export the analysis name, code, tags, mode and timeout settings.
