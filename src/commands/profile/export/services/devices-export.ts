@@ -35,7 +35,8 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
       if (config.data && config.data.length > 0) {
-        const device = new Device({ token: new_token, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+        // TODO: Support different regions
+        const device = new Device({ token: new_token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
         const old_device = new Device({ token });
 
         const data = await old_device.getData({

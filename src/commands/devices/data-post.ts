@@ -23,7 +23,7 @@ async function postDeviceData(idOrToken: string, options: IOptions) {
   const deviceInfo = await account.devices
     .info(idOrToken)
     .catch(() => {
-      const device = new Device({ token: idOrToken, region: !process.env.TAGOIO_API ? "usa-1" : "env" });
+      const device = new Device({ token: idOrToken, region: config.profileRegion });
       return device.info();
     })
     .catch(errorHandler);
