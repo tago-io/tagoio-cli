@@ -22,7 +22,7 @@ function analysisCommands(program: Command) {
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .allowExcessArguments(true)
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .action(deployAnalysis)
     .addHelpText(
@@ -46,10 +46,10 @@ Example:
     To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`
     )
     .argument("[name]", "partial name of the analysis in config.js")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("-d, --debug", "run with --inspector for debug")
     .option("-c, --clear", "Will clear screen on restart")
-    .option("-tsnd, --tsnd", "run with ts-node-dev if installed globally")
+    .option("--tsnd", "run with ts-node-dev if installed globally")
     .action(runAnalysis)
     .addHelpText(
       "after",
@@ -70,7 +70,7 @@ Example:
     .argument("[name]", "partial name of the analysis in config.js")
     .option("--json [JSON]", "JSON to be used in scope")
     .option("--tago", "pick analysis directly from TagoIO list")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .action(triggerAnalysis)
     .addHelpText(
       "after",
@@ -85,7 +85,7 @@ Example:
     .alias("ac")
     .description("connect to your Analysis Console")
     .argument("[name]", "partial name of the analysis in config.js")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .action(connectAnalysisConsole)
     .addHelpText(
       "after",
@@ -100,7 +100,7 @@ Example:
     .alias("ad")
     .description("duplicate your Analysis")
     .argument("[ID]", "ID of the analysis")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("--name [string]", "new name for the Analysis")
     .action(duplicateAnalysis)
     .addHelpText(
@@ -122,7 +122,7 @@ Example:
     Analysis in external mode are displayed first.`
     )
     .argument("[name]", "partial analysis name to filter the list")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("-f, --filterMode [external/tago]", "show only analysis in external/tago")
     .option("-m, --mode [external/tago]", "set as external or tago")
     .action(analysisSetMode)

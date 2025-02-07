@@ -1,6 +1,6 @@
-import kleur from "kleur";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import kleur from "kleur";
 
 import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
 
@@ -67,7 +67,7 @@ function getConfigFile() {
 }
 
 function getProfileRegion(userEnvironment: IEnvironment) {
-  let region: GenericModuleParams["region"] = "usa-1";
+  let region: GenericModuleParams["region"] = "us-e1";
   if (userEnvironment?.tagoAPIURL) {
     region = {
       api: userEnvironment.tagoAPIURL || "",
@@ -94,7 +94,7 @@ function getEnvironmentConfig(environment?: string) {
     }
     const profileRegion = getProfileRegion(userEnvironment);
     const profileToken = readToken(environment);
-    
+
     const profileInfo = kleur.dim(`[${userEnvironment.profileName}] [${userEnvironment.email}]`);
     infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}\n`);
 

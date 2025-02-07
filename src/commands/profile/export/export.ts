@@ -134,13 +134,13 @@ async function collectParameters(options: IExportOptions) {
     // Account that entities will be copied from.
     export: {
       token: options?.["fromToken"] as string, // Development
-      region: "usa-1",
+      region: "us-e1", // TODO: Support different regions
     },
 
     // Account where the entities will be pasted to.
     import: {
       token: options?.["toToken"] as string,
-      region: "usa-1",
+      region: "us-e1", // TODO: Support different regions
     },
   };
 
@@ -178,6 +178,7 @@ async function startExport(options: IExportOptions) {
     analysis: {},
     dashboards: {},
     tokens: { [userConfig.export.token]: userConfig.import.token },
+    config: { export_tag: userConfig.export_tag },
   };
 
   infoMSG("====Exporting started====");
