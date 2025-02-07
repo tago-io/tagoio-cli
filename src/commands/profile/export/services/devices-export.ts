@@ -11,17 +11,21 @@ async function _generateDeviceToken(account: Account, import_account: Account, t
   let device_tokens = await account.devices.tokenList(device_id, { fields: ["name", "permission", "expire_time", "serie_number"] });
   device_tokens = device_tokens.filter((token) => token.serie_number);
 
-  if (device_tokens.length === 0) return;
+  if (device_tokens.length === 0) {
+    return;
+  }
 
   await import_account.devices.tokenDelete(new_token).catch(errorHandler);
 
   for (const token of device_tokens) {
-    await import_account.devices.tokenCreate(target_id, {
-      name: token.name as string,
-      permission: token.permission || "full",
-      expire_time: "never",
-      serie_number: token.serie_number || undefined,
-    }).catch(errorHandler);
+    await import_account.devices
+      .tokenCreate(target_id, {
+        name: token.name as string,
+        permission: token.permission || "full",
+        expire_time: "never",
+        serie_number: token.serie_number || undefined,
+      })
+      .catch(errorHandler);
   }
 }
 
@@ -47,7 +51,9 @@ async function deviceExport(account: Account, import_account: Account, export_ho
 
     const token = await Utils.getTokenByName(account, device_id);
 
-    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || {
+      id: null,
+    };
 
     let new_token: string;
     const new_device = replaceObj(device, export_holder.devices);
@@ -66,14 +72,16 @@ async function deviceExport(account: Account, import_account: Account, export_ho
           skip,
         });
 
-        if (queryData.length === 0) break;
+        if (queryData.length === 0) {
+          break;
+        }
         skip += queryData.length;
         await import_device.sendData(queryData).catch(errorHandler);
       }
 
       // Add Configurations Parameters
       const export_param_list = await export_device.getParameters("all");
-      const param_list_map = export_param_list.map(({ id, ...param }) => param)
+      const param_list_map = export_param_list.map(({ id, ...param }) => param);
       await import_account.devices.paramSet(target_id, param_list_map).catch(errorHandler);
     } else {
       await import_account.devices.edit(target_id, {
