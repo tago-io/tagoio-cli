@@ -1,9 +1,9 @@
-import { spawn, SpawnOptions } from "node:child_process";
+import { SpawnOptions, spawn } from "node:child_process";
 import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
+import { IEnvironment, getEnvironmentConfig, resolveCLIPath } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
@@ -89,7 +89,9 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   if (typeof config.profileRegion === "object") {
     analysisEnv.TAGOIO_API = config.profileRegion.api;
-    analysisEnv.TAGOIO_REALTIME = config.profileRegion.realtime;
+    if (config.profileRegion.realtime) {
+      analysisEnv.TAGOIO_REALTIME = config.profileRegion.realtime;
+    }
     // analysisEnv.TAGOIO_SSE = config.profileRegion.sse;
   }
 

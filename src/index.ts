@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from "fs";
 import { Command } from "commander";
 import dotenv from "dotenv";
-import { readFileSync } from "fs";
 import kleur from "kleur";
 
 import { analysisCommands } from "./commands/analysis";
@@ -87,7 +87,7 @@ async function initiateCMD() {
 Example:
     $ tagoio init
     $ tagoio init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
-    $ tagoio init -env dev`
+    $ tagoio init --env dev`
     );
 
   program

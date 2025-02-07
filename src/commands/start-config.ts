@@ -7,7 +7,7 @@ import { Account } from "@tago-io/sdk";
 import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
 import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
 
-import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
+import { IEnvironment, getConfigFile, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
@@ -126,7 +126,7 @@ async function getAnalysisScripts(
   for (const analysis of analysisList) {
     files = files.sort((a, b) =>
       stringComparison.cosine.distance(analysis.name, a.title) >
-      stringComparison.cosine.distance(analysis.name, b.title)
+        stringComparison.cosine.distance(analysis.name, b.title)
         ? 1
         : -1,
     );
@@ -215,7 +215,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     return;
   }
 
-  let region: GenericModuleParams["region"] = "usa-1";
+  let region: GenericModuleParams["region"] = "us-e1";
   if (tagoAPIURL) {
     region = {
       api: tagoAPIURL || "",

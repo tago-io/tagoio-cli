@@ -43,10 +43,10 @@ Example:
     .alias("info")
     .description("get information about a device and it's configuration parameters.")
     .argument("[ID/Token]", "ID/Token of your device")
-    .option("-env, --environment [environment]", "environment from config.js")
-    .option("-js, --json", "return json list", true)
-    .option("-raw, --raw", "get object the same as stored")
-    .option("-tk, --tokens", "get tokens")
+    .option("--env, --environment [environment]", "environment from config.js")
+    .option("--json", "return json list", true)
+    .option("--raw", "get object the same as stored")
+    .option("-t, --tokens", "get tokens")
     .action(deviceInfo)
     .addHelpText(
       "after",
@@ -60,14 +60,14 @@ Example:
     .command("device-list")
     .alias("dl")
     .description("get the list of devices.")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [deviceName]", "partial name of the device name")
     .option("-k, --tagkey [key]", "tag key to filter in", cmdRepeatableValue, [])
     .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeatableValue, [])
     .option("-s, --stringify", "return list as text")
     .option("--tags", "display tags")
-    .option("-js, --json", "return json list", true)
-    .option("-raw, --raw", "get object the same as stored")
+    .option("--json", "return json list", true)
+    .option("--raw", "get object the same as stored")
     .action(deviceList)
     .addHelpText(
       "after",
@@ -85,13 +85,13 @@ Example:
     .command("data")
     .description("get data from a device.")
     .argument("[ID/Token]", "ID/Token of your device")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("-g, --group <group>", "Filter by group")
-    .option("-qty, --qty <qty>", "Request a given set amount of data", handleNumber, 15)
-    .option("-start, --start-date <date>", "Get data after date")
-    .option("-end, --end-date <date>", "Get data previous of date")
+    .option("--qty <qty>", "Request a given set amount of data", handleNumber, 15)
+    .option("--start-date <date>", "Get data after date")
+    .option("--end-date <date>", "Get data previous of date")
     .option("-q, --query [queryType]", "Perform an specific query", (value) => (isValidQuery(value) ? value : null))
-    .option("-js, --json", "return json list", true)
+    .option("--json", "return json list", true)
     .option("--stringify", "return as text")
     .option("-p, --post <dataJSON>", "send data to the device")
     .option("-v, --var <variable>", "Filter by variable", cmdRepeatableValue, [])
@@ -114,7 +114,7 @@ Example:
     .alias("bkp")
     .description("backup data from a Device. Store it on TagoIO Cloud by default")
     .argument("[ID/Token]", "ID/Token of your device")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .option("--local", "store file locally")
     .option("--restore", "restore a backup file")
     .action(bkpDeviceData)
@@ -136,7 +136,7 @@ Example:
     .argument("[ID/Token]", "ID/Token of your device")
     .option("-n, --networkID <network ID>", "network ID")
     .option("-c, --connectorID [connector ID]", "connector ID")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .action(changeNetworkOrConnector)
     .addHelpText(
       "after",
@@ -151,7 +151,7 @@ Example:
     .command("device-type")
     .description(`change the bucket type to immutable or mutable`)
     .argument("[ID/Token]", "ID/Token of your device")
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--env, --environment [environment]", "environment from config.js")
     .action(changeBucketType)
     .addHelpText(
       "after",
@@ -170,10 +170,10 @@ Example:
   program
     .command("device-copy")
     .description(`copy data from one device to another`)
-    .option("-from, --from [token/id]", "token/id of the device where data will be copied from")
-    .option("-to, --to [token/id]", "token/id of the device where data will be copied to")
-    .option("-qty, --qty <number>", "amount of data to be copy", handleNumber, 10_000)
-    .option("-env, --environment [environment]", "environment from config.js")
+    .option("--from [token/id]", "token/id of the device where data will be copied from")
+    .option("--to [token/id]", "token/id of the device where data will be copied to")
+    .option("--qty <number>", "amount of data to be copy", handleNumber, 10_000)
+    .option("--env, --environment [environment]", "environment from config.js")
     .action(copyDeviceData)
     .addHelpText(
       "after",

@@ -31,7 +31,7 @@ async function updateDevice(config: environmentConfigResponse, deviceID: string,
   await account.devices.edit(deviceID, { network: settings.network, connector: settings.connector, active: true });
 
   for (const token of tokens) {
-    const serieNumber =  token.serie_number as string | undefined;
+    const serieNumber = token.serie_number as string | undefined;
     await account.devices.tokenCreate(deviceID, { serie_number: serieNumber, name: token.name, permission: "full" });
   }
 
@@ -47,7 +47,7 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
 
   let { networkID, connectorID } = options;
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const deviceID = id || (await pickDeviceIDFromTagoIO(account));
   if (!deviceID) {
     return;
