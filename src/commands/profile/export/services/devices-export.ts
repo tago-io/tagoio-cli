@@ -64,19 +64,8 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       const export_device = new Device({ token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
       const import_device = new Device({ token: new_token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
 
-      let skip = 0;
-      while (true) {
-        const queryData = await export_device.getData({
-          variables: config.data,
-          qty: 9999,
-          skip,
-        });
-
-        if (queryData.length === 0) {
-          break;
-        }
-        skip += queryData.length;
-        await import_device.sendData(queryData).catch(errorHandler);
+      for await (const items of export_device.getDataStreaming({ variables: config.data })) {
+        await import_device.sendData(items).catch(errorHandler);
       }
 
       // Add Configurations Parameters
