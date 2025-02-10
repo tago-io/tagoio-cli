@@ -1,4 +1,4 @@
-import EventSource from "eventsource";
+import { EventSource } from "eventsource";
 import { Account, Device } from "@tago-io/sdk";
 import { DeviceInfo } from "@tago-io/sdk/lib/types";
 

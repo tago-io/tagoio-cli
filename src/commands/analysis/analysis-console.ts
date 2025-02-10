@@ -1,4 +1,4 @@
-import EventSource from "eventsource";
+import { EventSource } from "eventsource";
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
@@ -30,7 +30,7 @@ async function getScriptObj(scriptName: string | void, analysisList: IEnvironmen
   if (scriptName) {
     scriptObj = searchName(
       scriptName,
-      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
   } else {
     scriptObj = await pickAnalysisFromConfig(analysisList);
@@ -44,7 +44,7 @@ async function getScriptObj(scriptName: string | void, analysisList: IEnvironmen
  * @param deviceIdOrToken - The ID or token of the device to inspect.
  * @param deviceInfo - Information about the device being inspected.
  */
-function setupSSE(sse: ReturnType<typeof apiSSE>, scriptId: string, analysis_info: AnalysisInfo) {
+function setupSSE(sse: ReturnType<typeof apiSSE>, _script_id: string, analysis_info: AnalysisInfo) {
   sse.onmessage = (event) => {
     const scope = JSON.parse(event.data).payload;
     console.log(`\x1b[35m${new Date(scope.timestamp).toISOString()} \x1b[0m ${scope.message}`);
