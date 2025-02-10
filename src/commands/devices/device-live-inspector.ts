@@ -10,6 +10,7 @@ import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio"
  * Creates a new SSE connection to the TagoIO Realtime API.
  * @param profileToken - The user's profile token.
  * @param deviceID - The ID of the device to inspect.
+ * @param urlSSERealtime - The URL of the TagoIO SSE Realtime API.
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
 function apiSSE(profileToken: string, deviceID: string, urlSSERealtime?: string) {

@@ -11,6 +11,7 @@ import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
  * Creates a new SSE connection to the TagoIO Realtime API.
  * @param profileToken - The user's profile token.
  * @param analysisID - The ID of the analysis script to connect to.
+ * @param urlSSERealtime - The URL of the TagoIO SSE Realtime API.
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
 function apiSSE(profileToken: string, analysisID: string, urlSSERealtime?: string) {
