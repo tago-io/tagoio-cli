@@ -12,8 +12,9 @@ import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio"
  * @param deviceID - The ID of the device to inspect.
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
-function apiSSE(profileToken: string, deviceID: string) {
-  const sse = new EventSource(`https://sse.tago.io/events?channel=device_inspector.${deviceID}&token=${profileToken}`);
+function apiSSE(profileToken: string, deviceID: string, urlSSERealtime?: string) {
+  const url = urlSSERealtime || "https://sse.tago.io";
+  const sse = new EventSource(`${url}/events?channel=device_inspector.${deviceID}&token=${profileToken}`);
 
   return sse;
 }
@@ -110,7 +111,7 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     deviceIdOrToken = deviceInfo.id;
   }
 
-  const sse = apiSSE(config.profileToken, deviceInfo.id);
+  const sse = apiSSE(config.profileToken, deviceInfo.id, config?.tagoSSEURL);
   setupSSE(sse, deviceIdOrToken, deviceInfo);
 }
 
