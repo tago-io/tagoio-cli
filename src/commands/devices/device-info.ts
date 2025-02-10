@@ -13,7 +13,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }
@@ -22,7 +22,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     const device = new Device({ token: idOrToken });
     deviceInfo = await device
       .info()
-      .then((r) => r as DeviceInfo)
+      .then((r) => r as unknown as DeviceInfo)
       .catch(() => null);
 
     if (!deviceInfo) {

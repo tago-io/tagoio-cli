@@ -1,8 +1,9 @@
-import { spawn, SpawnOptions } from "child_process";
+import { SpawnOptions, spawn } from "node:child_process";
+import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
+import { IEnvironment, getEnvironmentConfig, resolveCLIPath } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
@@ -74,24 +75,34 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     return process.exit();
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   let { token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
+
+  const analysisEnv: { [key: string]: string } = {
+    ...process.env,
+    T_EXTERNAL: "external",
+    T_ANALYSIS_TOKEN: analysisToken,
+    T_ANALYSIS_ID: scriptToRun.id,
+  }
+
+  if (typeof config.profileRegion === "object") {
+    analysisEnv.TAGOIO_API = config.profileRegion.api;
+    if (config.profileRegion.realtime) {
+      analysisEnv.TAGOIO_REALTIME = config.profileRegion.realtime;
+    }
+    // analysisEnv.TAGOIO_SSE = config.profileRegion.sse;
+  }
 
   const spawnOptions: SpawnOptions = {
     shell: true,
     cwd: getCurrentFolder(),
     stdio: "inherit",
-    env: {
-      ...process.env,
-      T_EXTERNAL: "external",
-      T_ANALYSIS_TOKEN: analysisToken,
-      T_ANALYSIS_ID: scriptToRun.id,
-    },
+    env: analysisEnv,
   };
 
-  const scriptPath = `${config.analysisPath}/${scriptToRun.fileName}`;
+  const scriptPath = path.join(config.analysisPath, scriptToRun.fileName).normalize();
   const cmd = _buildCMD(options);
 
   if (run_on === "tago") {

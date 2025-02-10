@@ -40,6 +40,16 @@
               "description": "Email of the account",
               "type": "string",
               "format": "email"
+          },
+          "tagoAPIURL": {
+              "description": "URL to API for TagoDeploy server",
+              "type": "string",
+              "format": "uri-reference"
+          },
+          "tagoSSEURL": {
+            "description": "URL to SSE for TagoDeploy server",
+            "type": "string",
+            "format": "uri-reference"
           }
       }
     }

@@ -8,5 +8,8 @@
     "originTest.run.tago.io": "resultTest.run.tago.io",
     "00000000-6386-4535-8ccb-e400205c3058": "00000000-7386-4535-8ccb-e400205c3051"
   },
-  "tokens": {}
+  "tokens": {},
+  "config": {
+    "export_tag": "export_id"
+  }
 }

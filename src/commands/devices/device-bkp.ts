@@ -111,7 +111,7 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
     idOrToken = await pickDeviceIDFromTagoIO(account);
   }
@@ -119,7 +119,7 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
   const deviceInfo = await account.devices
     .info(idOrToken)
     .catch(() => {
-      const device = new Device({ token: idOrToken, region: "usa-1" });
+      const device = new Device({ token: idOrToken, region: config.profileRegion });
       return device.info();
     })
     .catch(errorHandler);

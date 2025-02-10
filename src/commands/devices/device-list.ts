@@ -80,7 +80,7 @@ async function deviceList(options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const filter: DeviceQuery = { amount: 50, fields: ["id", "name", "active", "last_input"], filter: { tags: [{}] } };
   if (filter.filter && options.name) {
     filter.filter.name = `*${options.name}*`;
@@ -91,7 +91,7 @@ async function deviceList(options: IOptions) {
   const resultList = deviceList.map((x) => ({
     ...x,
     tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
-    last_input: mapDate(x.last_input, options),
+    last_input: mapDate(x.last_input as Date, options),
   }));
 
   if (options.stringify) {

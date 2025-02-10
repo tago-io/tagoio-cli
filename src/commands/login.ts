@@ -6,6 +6,40 @@ import { OTPType } from "@tago-io/sdk/lib/types";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 
+/**
+ * @description Set the TagoIO deploy URL.
+ */
+async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | undefined> {
+  const { tagoDeployUrl } = await prompts({
+    message: "Do you have a TagoIO Deploy customized API Endpoint?",
+    type: "confirm",
+    name: "tagoDeployUrl",
+  });
+  if (!tagoDeployUrl) {
+    return;
+  }
+
+  const { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: ", hint: "https://api.tago.io" });
+  if (!urlAPI) {
+    return;
+  }
+
+  const sanitizedUrlAPI = new URL(urlAPI).origin;
+
+  let { urlSSE } = await prompts({ type: "text", name: "urlSSE", message: "Set the URL for the SSE service: ", hint: "https://sse.tago.io" });
+  if (!urlSSE) {
+    urlSSE = sanitizedUrlAPI.replace("https://api.", "https://sse.");
+  }
+
+  if (urlSSE) {
+    const sseUrl = new URL(urlSSE);
+    sseUrl.pathname = '/events';
+    urlSSE = sseUrl.toString();
+  }
+
+  return { urlAPI: sanitizedUrlAPI, urlSSE };
+}
+
 function writeCustomToken(environment: string, token: string) {
   writeToken(token, environment);
   successMSG(`Token successfully written to the environment ${highlightMSG(environment)}.`);
@@ -15,6 +49,8 @@ interface LoginOptions {
   email?: string;
   password?: string;
   token?: string;
+  tagoDeployUrl?: string;
+  tagoDeploySse?: string;
 }
 
 /**
@@ -26,7 +62,7 @@ interface LoginOptions {
  * @param {string} loginOptions.password - The user's password.
  * @returns {Promise<Object>} - The login result.
  */
-async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<LoginOptions>) {
+async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { email, password }: Required<Pick<LoginOptions, "email" | "password">>) {
   if (otp_autosend !== "authenticator") {
     await Account.requestLoginPINCode({ email, password }, otp_autosend).catch(errorHandler);
   }
@@ -50,13 +86,14 @@ async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { ema
  */
 async function loginWithEmailPassword(email: string, password: string) {
   try {
+    // @ts-expect-error ts don't know what kind of otp_enabled we are using
     const loginResult = await Account.login({ email, password });
     return loginResult;
   } catch (error) {
     try {
       const errorJSON = JSON.parse(error);
       if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password, token: "" });
+        return handleOTPLogin(errorJSON, { email, password });
       }
     } catch {
       // Ignore JSON parsing errors
@@ -67,6 +104,10 @@ async function loginWithEmailPassword(email: string, password: string) {
 }
 
 async function tagoLogin(environment: string, options: LoginOptions) {
+  const tagoDeploy = await getTagoDeployURL();
+  options.tagoDeployUrl = tagoDeploy?.urlAPI;
+  options.tagoDeploySse = tagoDeploy?.urlSSE;
+
   if (options.token) {
     return writeCustomToken(environment, options.token);
   }
@@ -118,4 +159,4 @@ async function tagoLogin(environment: string, options: LoginOptions) {
   options.token = result.token;
 }
 
-export { tagoLogin };
+export { tagoLogin, getTagoDeployURL };

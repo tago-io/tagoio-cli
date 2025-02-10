@@ -8,6 +8,8 @@ import { replaceObj } from "../../../../lib/replace-obj";
 import { IExportHolder } from "../types";
 import { storeExportBackup } from "./export-backup/export-backup";
 
+type DashboardTabs = { hidden: boolean; key: string };
+
 async function insertWidgets(exportAccount: Account, importAccount: Account, dashboard: DashboardInfo, target: DashboardInfo, export_holder: IExportHolder) {
   const widget_ids = dashboard.arrangement?.map((x) => x.widget_id);
 
@@ -26,27 +28,27 @@ async function insertWidgets(exportAccount: Account, importAccount: Account, das
   }, 5);
 
   newWidgetQueue.error((error) => console.log(error));
-  for (const x of widget_ids || []) {
-    newWidgetQueue.push(x).catch(errorHandler);
+  for (const widget_id of widget_ids || []) {
+    newWidgetQueue.push(widget_id).catch(errorHandler);
   }
 
   await newWidgetQueue.drain();
 
-  const hidden_tabs = new Set(dashboard.tabs.filter((tab: any) => !tab.hidden).map((tab: any) => tab.key));
+  const hiddenTabKeys = new Set(dashboard.tabs.filter((tab: DashboardTabs) => !tab.hidden).map((tab: DashboardTabs) => tab.key));
   if (!dashboard.arrangement) {
     return;
   }
-  const arrangement = dashboard.arrangement.sort((a) => (hidden_tabs.has(a.tab) ? 1 : -1));
+  const arrangement = dashboard.arrangement.sort((a) => (a.tab &&hiddenTabKeys.has(a.tab) ? 1 : -1));
 
   const new_arrangement: any = [];
-  const widget_holder: { [key: string]: string } = {};
+  const widgetIDMappings: { [key: string]: string } = {};
   for (const widget_arrangement of arrangement) {
     const widget = widgets.find((wdgt) => widget_arrangement.widget_id === wdgt.id);
     if (!widget || !widget.id) {
       continue;
     }
 
-    const new_widget = replaceObj(widget, { ...export_holder.analysis, ...export_holder.devices, ...widget_holder });
+    const new_widget = replaceObj(widget, { ...export_holder.analysis, ...export_holder.devices, ...widgetIDMappings });
     if (new_widget.data) {
       new_widget.data = new_widget.data.map((x: any) => {
         if (x.qty) {
@@ -61,7 +63,8 @@ async function insertWidgets(exportAccount: Account, importAccount: Account, das
     });
     new_arrangement.push({ ...widget_arrangement, widget_id: new_id });
 
-    widget_holder[widget.id] = new_id;
+    widgetIDMappings[widget.id] = new_id;
+    await new Promise((resolve) => setTimeout(resolve, 500)); // ? Prevent RPM limit issues
   }
 
   await importAccount.dashboards.edit(target.id, { arrangement: new_arrangement });

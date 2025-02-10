@@ -89,17 +89,17 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!deviceIdOrToken) {
     deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
   }
 
   let deviceInfo = await account.devices.info(deviceIdOrToken).catch(() => null);
   if (!deviceInfo) {
-    const device = new Device({ token: deviceIdOrToken, region: "usa-1" });
+    const device = new Device({ token: deviceIdOrToken, region: config.profileRegion });
     deviceInfo = await device
       .info()
-      .then((r) => r as DeviceInfo)
+      .then((r) => r as unknown as DeviceInfo)
       .catch(() => null);
 
     if (!deviceInfo) {

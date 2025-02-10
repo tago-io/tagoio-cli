@@ -5,12 +5,12 @@ import { Entity, IExportHolder } from "../types";
 
 function getExportHolder(list: any[], import_list: any[], entity: Entity, export_holder: IExportHolder) {
   for (const item of list) {
-    const export_id = item.tags.find((tag: TagsObj) => tag.key === "export_id")?.value;
+    const export_id = item.tags.find((tag: TagsObj) => tag.key === export_holder.config.export_tag)?.value;
     if (!export_id) {
       continue;
     }
 
-    const importItem = import_list.find((a) => a.tags.find((tag: any) => tag.key === "export_id" && tag.value == export_id));
+    const importItem = import_list.find((a) => a.tags.find((tag: any) => tag.key === export_holder.config.export_tag && tag.value == export_id));
 
     if (!importItem || !importItem.id) {
       continue;
@@ -42,19 +42,19 @@ async function getDeviceTokens(list: (DeviceListItem & { token?: string })[], ac
 }
 
 async function collectIDs(account: Account, import_account: Account, entity: Entity, export_holder: IExportHolder) {
+  // @ts-expect-error ts don't know what kind of tagsobj we are using
   let list = await account[entity].list({
     page: 1,
     amount: 99,
     fields: ["id", "tags"] as any,
-    // @ts-expect-error ts don't know what kind of tagsobj we are using
-    filter: { tags: [{ key: "export_id" }] },
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
+  // @ts-expect-error ts don't know what kind of tagsobj we are using
   let import_list = await import_account[entity].list({
     page: 1,
     amount: 99,
     fields: ["id", "tags"] as any,
-    // @ts-expect-error ts don't know what kind of tagsobj we are using
-    filter: { tags: [{ key: "export_id" }] },
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 
   if (entity === "devices") {

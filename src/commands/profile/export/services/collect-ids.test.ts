@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { IExportHolder } from "../types";
 import { getExportHolder } from "./collect-ids";
 
@@ -13,7 +15,7 @@ describe("Collect ID", () => {
       { id: "2Test", token: "5321-5321-5321-5321", tags: [{ key: "export_id", value: "other_dev" }] },
     ];
 
-    const exportHolder: IExportHolder = { devices: {}, analysis: {}, dashboards: {}, tokens: {} };
+    const exportHolder: IExportHolder = { devices: {}, analysis: {}, dashboards: {}, tokens: {}, config: { export_tag: "export_id" } };
 
     getExportHolder(list, import_list, "devices", exportHolder);
 
@@ -32,7 +34,7 @@ describe("Collect ID", () => {
       { id: "2Test", token: "5321-5321-5321-5321", tags: [{ key: "export_id", value: "other_dev" }] },
     ];
 
-    const exportHolder: IExportHolder = { devices: {}, analysis: {}, dashboards: {}, tokens: {} };
+    const exportHolder: IExportHolder = { devices: {}, analysis: {}, dashboards: {}, tokens: {}, config: { export_tag: "export_id" } };
 
     expect(() => Promise.reject(getExportHolder(list, import_list, "devices", exportHolder))).toThrow("Device Token not found: 1Test [1Test]");
   });

@@ -124,7 +124,7 @@ async function setupExport(options: { setup: string }) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   const exportTag = await enterExportTag("export_id");
   const entities = await chooseEntities([], ["dictionaries", "run"]);

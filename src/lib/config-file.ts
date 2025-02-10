@@ -1,6 +1,8 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import kleur from "kleur";
+
+import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
 
 import { setEnvironmentVariables } from "./dotenv-config";
 import { getCurrentFolder } from "./get-current-folder";
@@ -12,6 +14,8 @@ interface IEnvironment {
   id: string;
   profileName: string;
   email: string;
+  tagoSSEURL?: string;
+  tagoAPIURL?: string;
 }
 
 interface IConfigFileEnvs {
@@ -19,6 +23,7 @@ interface IConfigFileEnvs {
 }
 interface IConfigFile {
   profileToken?: string;
+  profileRegion?: GenericModuleParams["region"];
   analysisPath: string;
   buildPath: string;
   default: string;
@@ -32,12 +37,12 @@ function resolveCLIPath(suffix: string) {
   const pathSlices = path.split(pathSymbol);
   const cliWordPosition = pathSlices.findIndex((x) => x.includes("cli")) + 1;
   path = pathSlices.slice(0, cliWordPosition).join(pathSymbol);
-  return join(path, suffix);
+  return join(path, suffix).normalize();
 }
 
 function getFilePath() {
   const folder = getCurrentFolder();
-  return `${folder}/tagoconfig.json`;
+  return join(folder, 'tagoconfig.json').normalize();
 }
 
 function getConfigFile() {
@@ -61,6 +66,19 @@ function getConfigFile() {
   }
 }
 
+function getProfileRegion(userEnvironment: IEnvironment) {
+  let region: GenericModuleParams["region"] = "us-e1";
+  if (userEnvironment?.tagoAPIURL) {
+    region = {
+      api: userEnvironment.tagoAPIURL || "",
+      sse: userEnvironment.tagoSSEURL || "",
+      realtime: "", // Not used in the CLI
+    }
+  }
+
+  return region;
+}
+
 function getEnvironmentConfig(environment?: string) {
   const configFile = getConfigFile();
   if (!configFile) {
@@ -74,9 +92,13 @@ function getEnvironmentConfig(environment?: string) {
     if (!userEnvironment) {
       errorHandler(`Environment not found: ${environment}`);
     }
+    const profileRegion = getProfileRegion(userEnvironment);
+    const profileToken = readToken(environment);
+
     const profileInfo = kleur.dim(`[${userEnvironment.profileName}] [${userEnvironment.email}]`);
     infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}\n`);
-    return { ...configFile[environment], ...defaultPaths, profileToken: readToken(environment) };
+
+    return { ...configFile[environment], ...defaultPaths, profileToken, profileRegion };
   }
 
   const defaultEnvName = process.env.TAGOIO_DEFAULT as string;
@@ -85,9 +107,13 @@ function getEnvironmentConfig(environment?: string) {
   }
 
   const defaultEnvironment = configFile[defaultEnvName];
+  const profileRegion = getProfileRegion(defaultEnvironment);
+  const profileToken = readToken(defaultEnvName);
+
   const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
   infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}\n`);
-  return { ...defaultEnvironment, ...defaultPaths, profileToken: readToken(defaultEnvName) };
+
+  return { ...defaultEnvironment, ...defaultPaths, profileToken, profileRegion };
 }
 
 function writeConfigFileEnv(environment: string, data: IEnvironment) {
@@ -129,4 +155,4 @@ function setDefault(environment: string) {
   writeFileSync(configPath, JSON.stringify(configFile), { encoding: "utf-8" });
 }
 
-export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, IConfigFile, IEnvironment };
+export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, getProfileRegion, IConfigFile, IEnvironment };

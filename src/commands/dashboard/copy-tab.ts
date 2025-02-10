@@ -110,7 +110,7 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: "usa-1" });
+  const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!dashID) {
     dashID = await pickDashboardIDFromTagoIO(account);
   }

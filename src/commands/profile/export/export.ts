@@ -4,9 +4,9 @@ import prompts from "prompts";
 import { Account } from "@tago-io/sdk";
 
 import { addOnGitIgnore } from "../../../lib/add-to-gitignore";
+import { getEnvironmentConfig } from "../../../lib/config-file";
 import { getCurrentFolder } from "../../../lib/get-current-folder";
 import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
-import { readToken } from "../../../lib/token";
 import { confirmPrompt } from "../../../prompt/confirm";
 import { pickEnvironment } from "../../../prompt/pick-environment";
 import { setupExport } from "./export-setup";
@@ -41,22 +41,26 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
   }
 
   if (options.from) {
-    const token = readToken(options.from);
-    if (!token) {
+    const config = getEnvironmentConfig(options.from);
+    if (!config || !config.profileToken) {
       errorHandler(`Token for environment ${options.from} not found. Did you try "tagoio login ${options.from}" ?`);
       process.exit(0);
     }
-    userConfig.export.token = token;
+
+    userConfig.export.token = config.profileToken;
+    userConfig.export.region = config.profileRegion;
     infoMSG(`Export from ${kleur.cyan(options.from)} environment selected.`);
   }
 
   if (options.to) {
-    const token = readToken(options.to);
-    if (!token) {
+    const config = getEnvironmentConfig(options.to);
+    if (!config || !config.profileToken) {
       errorHandler(`Token for environment ${options.to} not found. Did you try "tagoio login ${options.to}" ?`);
       process.exit(0);
     }
-    userConfig.import.token = token;
+
+    userConfig.import.token = config.profileToken;
+    userConfig.import.region = config.profileRegion;
     infoMSG(`Export to ${kleur.cyan(options.to)} environment selected.`);
   }
 }
@@ -90,8 +94,8 @@ async function enterExportTag(defaultTag: string) {
 }
 
 async function confirmEnvironments(userConfig: IExport) {
-  const exportAcc = new Account({ token: userConfig.export.token, region: "usa-1" });
-  const importAcc = new Account({ token: userConfig.import.token, region: "usa-1" });
+  const exportAcc = new Account({ token: userConfig.export.token, region: userConfig.export.region });
+  const importAcc = new Account({ token: userConfig.import.token, region: userConfig.import.region });
 
   const errorWhenReading = (error: any, type: string) => {
     errorHandler(`${type} profile: ${error}`);
@@ -130,11 +134,13 @@ async function collectParameters(options: IExportOptions) {
     // Account that entities will be copied from.
     export: {
       token: options?.["fromToken"] as string, // Development
+      region: "us-e1", // TODO: Support different regions
     },
 
     // Account where the entities will be pasted to.
     import: {
       token: options?.["toToken"] as string,
+      region: "us-e1", // TODO: Support different regions
     },
   };
 
@@ -163,8 +169,8 @@ async function startExport(options: IExportOptions) {
     return;
   }
 
-  const account = new Account({ token: userConfig.export.token, region: "usa-1" });
-  const import_account = new Account({ token: userConfig.import.token, region: "usa-1" });
+  const account = new Account({ token: userConfig.export.token, region: userConfig.export.region });
+  const import_account = new Account({ token: userConfig.import.token, region: userConfig.import.region });
 
   const import_rule = ENTITY_ORDER.filter((entity) => userConfig.entities.includes(entity));
   let export_holder: IExportHolder = {
@@ -172,6 +178,7 @@ async function startExport(options: IExportOptions) {
     analysis: {},
     dashboards: {},
     tokens: { [userConfig.export.token]: userConfig.import.token },
+    config: { export_tag: userConfig.export_tag },
   };
 
   infoMSG("====Exporting started====");

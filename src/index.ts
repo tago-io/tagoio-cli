@@ -87,7 +87,7 @@ async function initiateCMD() {
 Example:
     $ tagoio init
     $ tagoio init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
-    $ tagoio init -env dev`
+    $ tagoio init --env dev`
     );
 
   program

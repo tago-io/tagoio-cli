@@ -4,13 +4,14 @@ import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
+import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
 
-import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
+import { IEnvironment, getConfigFile, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
-import { tagoLogin } from "./login";
+import { getTagoDeployURL, tagoLogin } from "./login";
 
 interface ConfigOptions {
   token: string | void;
@@ -24,7 +25,7 @@ interface ConfigOptions {
  */
 async function createEnvironmentToken(environment: string) {
   const { tryLogin } = await prompts({
-    message: "Do you want to login and create a token now?",
+    message: "Do you want to login and create a profile-token now?",
     type: "confirm",
     name: "tryLogin",
     hint: "Press N to enter a token later",
@@ -34,10 +35,18 @@ async function createEnvironmentToken(environment: string) {
   }
   infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
 
-  const options = { token: undefined };
+  const options = {
+    token: undefined,
+    tagoDeployUrl: undefined,
+    tagoDeploySse: undefined,
+  };
   await tagoLogin(environment, options);
 
-  return options.token;
+  return {
+    profileToken: options.token,
+    tagoDeployUrl: options?.tagoDeployUrl,
+    tagoDeploySse: options?.tagoDeploySse,
+  };
 }
 
 /**
@@ -62,19 +71,30 @@ async function chooseAnalysis(analysisOptions: any[]) {
  * @param oldList - An optional array of previously selected analyses.
  * @returns An array of selected analyses with their IDs, names, and file names.
  */
-async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
-  const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
+async function getAnalysisList(
+  account: Account,
+  oldList: IEnvironment["analysisList"] = [],
+) {
+  const analysisList = await account.analysis
+    .list({ amount: 35, fields: ["id", "name", "tags"] })
+    .catch(errorHandler);
 
   if (!analysisList) {
     return [];
   }
 
-  const getName = (analysis: AnalysisInfo) => `[${analysis.id}] ${analysis.name}`;
+  const getName = (analysis: AnalysisListItem) =>
+    `[${analysis.id}] ${analysis.name}`;
 
   const oldIDList = new Set(oldList.map((x) => x.id));
-  const configList: AnalysisInfo[] = analysisList.filter((x) => oldIDList.has(x.id));
+  const configList: AnalysisListItem<"id" | "name" | "tags">[] =
+    analysisList.filter((x) => oldIDList.has(x.id));
 
-  const analysisOptions = analysisList.map((x) => ({ title: getName(x), selected: configList.some((y) => y.id === x.id), value: x }));
+  const analysisOptions = analysisList.map((x) => ({
+    title: getName(x),
+    selected: configList.some((y) => y.id === x.id),
+    value: x,
+  }));
   const response = await chooseAnalysis(analysisOptions);
 
   const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
@@ -94,7 +114,10 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
  * @param analysisPath - The path to search for analysis scripts.
  * @returns A Promise that resolves to the updated analysis list with the selected script file names.
  */
-async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
+async function getAnalysisScripts(
+  analysisList: IEnvironment["analysisList"],
+  analysisPath: string,
+) {
   infoMSG(`Searching for files at ${analysisPath}`);
   let files: Choice[] = readdirSync(analysisPath)
     .filter((x) => x.endsWith(".ts") || x.endsWith(".js") || x.endsWith(".py"))
@@ -102,7 +125,10 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
 
   for (const analysis of analysisList) {
     files = files.sort((a, b) =>
-      stringComparison.cosine.distance(analysis.name, a.title) > stringComparison.cosine.distance(analysis.name, b.title) ? 1 : -1
+      stringComparison.cosine.distance(analysis.name, a.title) >
+        stringComparison.cosine.distance(analysis.name, b.title)
+        ? 1
+        : -1,
     );
 
     const editFile = files.find((x) => x.title === analysis.fileName);
@@ -139,7 +165,11 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
 async function startConfig(environment: string, { token }: ConfigOptions) {
   // Prompt user to enter environment name if not provided
   if (!environment) {
-    ({ environment } = await prompts({ message: "Enter a name for this environment: ", type: "text", name: "environment" }));
+    ({ environment } = await prompts({
+      message: "Enter a name for this environment (e.g dev): ",
+      type: "text",
+      name: "environment",
+    }));
   }
 
   // Get config file or return if not found
@@ -148,23 +178,36 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     return;
   }
 
+  let tagoAPIURL, tagoSSEURL: string | undefined;
   // Get token from file or prompt user to create one
   if (!token) {
     token = readToken(environment);
     if (!token) {
-      token = await createEnvironmentToken(environment);
+      const data = await createEnvironmentToken(environment);
+      token = data?.profileToken;
+      tagoAPIURL = data?.tagoDeployUrl;
+      tagoSSEURL = data?.tagoDeploySse;
     }
   } else {
+    const urlConfig = await getTagoDeployURL()
     writeToken(token, environment);
+    tagoAPIURL = urlConfig?.urlAPI || "";
+    tagoSSEURL = urlConfig?.urlSSE || "";
   }
 
   // Prompt user to enter analysis and build paths if not found in config file
   if (!configFile.analysisPath) {
-    configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
+    configFile.analysisPath = await promptTextToEnter(
+      `Enter the path of your ${kleur.cyan("analysis")} folder: `,
+      "./src/analysis",
+    );
   }
 
   if (!configFile.buildPath) {
-    configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
+    configFile.buildPath = await promptTextToEnter(
+      `Enter the path of your ${kleur.cyan("building")} folder (typescript): `,
+      "./build",
+    );
   }
 
   // Return if token is not found
@@ -172,15 +215,37 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     return;
   }
 
+  let region: GenericModuleParams["region"] = "us-e1";
+  if (tagoAPIURL) {
+    region = {
+      api: tagoAPIURL || "",
+      sse: tagoSSEURL || "",
+      realtime: "", // Not used in the CLI
+    }
+  }
+
   // Get account info and analysis list
-  const account = new Account({ token });
+  const account = new Account({ token, region });
   const profile = await account.profiles.info("current");
   const accountInfo = await account.info();
-  let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
-  analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
+  let analysisList = await getAnalysisList(
+    account,
+    configFile[environment]?.analysisList,
+  );
+  analysisList = await getAnalysisScripts(
+    analysisList,
+    configFile.analysisPath,
+  );
 
   // Create new environment object and write to config file
-  const newEnv: IEnvironment = { analysisList: analysisList, id: profile.info.id, profileName: profile.info.name, email: accountInfo.email };
+  const newEnv: IEnvironment = {
+    analysisList: analysisList,
+    id: profile.info.id,
+    profileName: profile.info.name,
+    email: accountInfo.email,
+    tagoSSEURL: tagoSSEURL,
+    tagoAPIURL: tagoAPIURL,
+  };
   writeToConfigFile(configFile);
   writeConfigFileEnv(environment, newEnv);
 }
