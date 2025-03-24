@@ -107,6 +107,9 @@ function getEnvironmentConfig(environment?: string) {
   }
 
   const defaultEnvironment = configFile[defaultEnvName];
+  if (!defaultEnvironment) {
+    errorHandler(`Default Environment not found: ${defaultEnvName}`);
+  }
   const profileRegion = getProfileRegion(defaultEnvironment);
   const profileToken = readToken(defaultEnvName);
 
