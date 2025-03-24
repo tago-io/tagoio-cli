@@ -33,8 +33,8 @@ async function updateDictionary({ item, import_list, exportAccount, import_accou
 async function dictionaryExport(exportAccount: Account, import_account: Account, export_holder: IExportHolder) {
   console.info("Exporting dictionaries: started");
 
-  const list = await exportAccount.dictionaries.list({ amount: 99, fields: ["id", "slug", "languages", "name", "fallback"] });
-  const import_list = await import_account.dictionaries.list({ amount: 99, fields: ["id", "slug", "languages", "name", "fallback"] });
+  const list = await exportAccount.dictionaries.list({ amount: 10000, fields: ["id", "slug", "languages", "name", "fallback"] });
+  const import_list = await import_account.dictionaries.list({ amount: 10000, fields: ["id", "slug", "languages", "name", "fallback"] });
 
   const dictionaryQueue = queue(updateDictionary, 5);
   dictionaryQueue.error(errorHandler);

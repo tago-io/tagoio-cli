@@ -87,7 +87,11 @@ async function deviceList(options: IOptions) {
   }
 
   repeatableTags(filter, { keys: options.tagkey, values: options.tagvalue });
-  const deviceList = await account.devices.list(filter);
+  const deviceList = await account.devices.list(filter).catch(errorHandler);
+  if (!deviceList) {
+    return;
+  }
+
   const resultList = deviceList.map((x) => ({
     ...x,
     tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,

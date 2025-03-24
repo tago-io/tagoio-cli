@@ -227,7 +227,10 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   // Get account info and analysis list
   const account = new Account({ token, region });
   const profile = await account.profiles.info("current");
-  const accountInfo = await account.info();
+  const accountInfo = await account.info().catch(errorHandler);
+  if (!accountInfo) {
+    return;
+  }
   let analysisList = await getAnalysisList(
     account,
     configFile[environment]?.analysisList,

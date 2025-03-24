@@ -5,20 +5,21 @@ import { replaceObj } from "../../../../lib/replace-obj";
 import { IExport, IExportHolder } from "../types";
 
 async function deviceExport(account: Account, import_account: Account, export_holder: IExportHolder, config: IExport) {
-  infoMSG("Exporting devices: started");
+  infoMSG("Exporting devices: started (Max 10000 devices)");
 
   const list = await account.devices.list({
-    amount: 99,
+    amount: 10000,
     fields: ["id", "name", "tags", "type"],
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
   const import_list = await import_account.devices.list({
-    amount: 99,
+    amount: 10000,
     fields: ["id", "tags"],
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 
   for (const { id: device_id, name } of list) {
+    await new Promise((resolve) => setTimeout(resolve, 150)); // sleep
     console.info(`Exporting devices ${name}`);
     const device = await account.devices.info(device_id);
 
@@ -36,8 +37,8 @@ async function deviceExport(account: Account, import_account: Account, export_ho
 
       if (config.data && config.data.length > 0) {
         // TODO: Support different regions
-        const device = new Device({ token: new_token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
-        const old_device = new Device({ token });
+        const device = new Device({ token: new_token, region: config.import.region });
+        const old_device = new Device({ token, region: config.export.region });
 
         const data = await old_device.getData({
           variables: config.data,
