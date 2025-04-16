@@ -74,7 +74,10 @@ async function fixEnvironmentVariables(
       if (!variable) {
         continue;
       }
-      (analyze_info.variables as unknown as { key: string; value: any }[]).find((data) => data.key === variable.key)!.value = variable.value;
+      const foundVar = (analyze_info.variables as unknown as { key: string; value: any }[]).find((data) => data.key === variable.key);
+      if (foundVar) {
+        foundVar.value = variable.value;
+      }
     }
     await import_account.analysis.edit(analyze_info.id, {
       variables: analyze_info.variables,
