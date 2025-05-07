@@ -19,9 +19,14 @@ async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | 
     return;
   }
 
-  const { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: ", hint: "https://api.tago.io" });
+  let { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: ", hint: "https://api.tago.io" });
   if (!urlAPI) {
     return;
+  }
+
+  const isFullURL = urlAPI.includes("https://");
+  if (!isFullURL) {
+    urlAPI = `https://${urlAPI}`;
   }
 
   const sanitizedUrlAPI = new URL(urlAPI).origin;
@@ -32,10 +37,19 @@ async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | 
   }
 
   if (urlSSE) {
+    const isFullURLSSE = urlSSE.includes("https://sse.");
+    if (!isFullURLSSE && !urlSSE.includes("sse.")) {
+      urlSSE = urlSSE.replace("api.", "sse.");
+      urlSSE = `https://${urlSSE}`;
+    }
+
     const sseUrl = new URL(urlSSE);
     sseUrl.pathname = '/events';
     urlSSE = sseUrl.toString();
   }
+
+  process.env.TAGOIO_API = sanitizedUrlAPI;
+  process.env.TAGOIO_SSE = urlSSE;
 
   return { urlAPI: sanitizedUrlAPI, urlSSE };
 }
