@@ -3,6 +3,7 @@ import prompts from "prompts";
 import { Account } from "@tago-io/sdk";
 import { OTPType } from "@tago-io/sdk/lib/types";
 
+import { addHttpsToUrl } from "../lib/add-https-to-url";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 
@@ -24,24 +25,20 @@ async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | 
     return;
   }
 
-  const isFullURL = urlAPI.includes("https://");
-  if (!isFullURL) {
-    urlAPI = `https://${urlAPI}`;
-  }
+  urlAPI = addHttpsToUrl(urlAPI);
 
   const sanitizedUrlAPI = new URL(urlAPI).origin;
 
   let { urlSSE } = await prompts({ type: "text", name: "urlSSE", message: "Set the URL for the SSE service: ", hint: "https://sse.tago.io" });
+
+  urlSSE = addHttpsToUrl(urlSSE);
+
   if (!urlSSE) {
     urlSSE = sanitizedUrlAPI.replace("https://api.", "https://sse.");
   }
 
   if (urlSSE) {
-    const isFullURLSSE = urlSSE.includes("https://sse.");
-    if (!isFullURLSSE && !urlSSE.includes("sse.")) {
-      urlSSE = urlSSE.replace("api.", "sse.");
-      urlSSE = `https://${urlSSE}`;
-    }
+    urlSSE = urlSSE.replace("api.", "sse.");
 
     const sseUrl = new URL(urlSSE);
     sseUrl.pathname = '/events';

@@ -180,10 +180,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
 
   let tagoAPIURL, tagoSSEURL: string | undefined;
 
-  if (configFile[environment]?.tagoAPIURL && configFile[environment]?.tagoSSEURL) {
-    tagoAPIURL = configFile[environment]?.tagoAPIURL;
-    tagoSSEURL = configFile[environment]?.tagoSSEURL;
-  }
+
 
   // Get token from file or prompt user to create one
   if (!token) {
@@ -193,6 +190,9 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
       token = data?.profileToken;
       tagoAPIURL = data?.tagoDeployUrl;
       tagoSSEURL = data?.tagoDeploySse;
+    } else {
+      tagoAPIURL = configFile[environment]?.tagoAPIURL;
+      tagoSSEURL = configFile[environment]?.tagoSSEURL;
     }
   } else {
     const urlConfig = await getTagoDeployURL()
