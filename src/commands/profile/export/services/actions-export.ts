@@ -7,11 +7,12 @@ async function actionsExport(account: Account, import_account: Account, export_h
   console.info("Exporting actions: started");
 
   // @ts-expect-error we are looking only for keys
-  const list = await account.actions.list({ amount: 99, fields: ["id", "name", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  const list = await account.actions.list({ amount: 10000, fields: ["id", "name", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
   // @ts-expect-error we are looking only for keys
-  const import_list = await import_account.actions.list({ amount: 99, fields: ["id", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  const import_list = await import_account.actions.list({ amount: 10000, fields: ["id", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
 
   for (const { id: action_id, name } of list) {
+    await new Promise((resolve) => setTimeout(resolve, 250)); // sleep
     console.info(`Exporting action ${name}`);
     const action = await account.actions.info(action_id);
     const export_id = action.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;

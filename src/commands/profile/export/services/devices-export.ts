@@ -30,20 +30,21 @@ async function _generateDeviceToken(account: Account, import_account: Account, t
 }
 
 async function deviceExport(account: Account, import_account: Account, export_holder: IExportHolder, config: IExport) {
-  infoMSG("Exporting devices: started");
+  infoMSG("Exporting devices: started (Max 10000 devices)");
 
   const list = await account.devices.list({
-    amount: 99,
+    amount: 10000,
     fields: ["id", "name", "tags", "type"],
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
   const import_list = await import_account.devices.list({
-    amount: 99,
+    amount: 10000,
     fields: ["id", "tags"],
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 
   for (const { id: device_id, name } of list) {
+    await new Promise((resolve) => setTimeout(resolve, 150)); // sleep
     console.info(`Exporting devices ${name}`);
     const device = await account.devices.info(device_id);
 
