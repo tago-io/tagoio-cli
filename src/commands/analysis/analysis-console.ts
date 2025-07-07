@@ -15,8 +15,8 @@ import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
  * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
 function apiSSE(profileToken: string, analysisID: string, urlSSERealtime?: string) {
-  const url = urlSSERealtime || "https://sse.tago.io";
-  const sse = new EventSource(`${url}/events?channel=analysis_console.${analysisID}&token=${profileToken}`);
+  const url = urlSSERealtime || "https://sse.tago.io/events";
+  const sse = new EventSource(`${url}?channel=analysis_console.${analysisID}&token=${profileToken}`);
 
   return sse;
 }
