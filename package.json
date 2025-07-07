@@ -44,7 +44,7 @@
     "@swc-node/register": "^1.10.9",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.14",
-    "@tago-io/sdk": "^11.3.8",
+    "@tago-io/sdk": "^12.0.3",
     "async": "^3.2.6",
     "axios": "^1.7.9",
     "commander": "^13.1.0",
