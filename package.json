@@ -1,15 +1,26 @@
 {
   "name": "@tago-io/cli",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "TagoIO Application CLI Node.JS",
   "main": "./build/index.js",
   "repository": "tago-io/tagoio-cli",
-  "keywords": ["tago", "tagoio", "tago-io", "iot", "tago.io", "cli", "analysis", "device"],
+  "keywords": [
+    "tago",
+    "tagoio",
+    "tago-io",
+    "iot",
+    "tago.io",
+    "cli",
+    "analysis",
+    "device"
+  ],
   "engines": {
     "node": ">=17.0.0",
     "npm": ">=6.0.0"
   },
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "scripts": {
     "start": "node -r @swc-node/register ./src/index.ts",
     "build": "rm -rf ./build; tsc --build; chmod +x ./build/index.js",
@@ -22,7 +33,9 @@
     "tagoio": "./build/index.js"
   },
   "jest": {
-    "testPathIgnorePatterns": ["build"],
+    "testPathIgnorePatterns": [
+      "build"
+    ],
     "preset": "ts-jest"
   },
   "author": "TagoIO LLC",
