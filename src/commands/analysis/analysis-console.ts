@@ -1,6 +1,6 @@
-import { connect } from "socket.io-client";
-
+import { EventSource } from "eventsource";
 import { Account } from "@tago-io/sdk";
+import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
 import { IEnvironment, getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
@@ -8,21 +8,17 @@ import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
 
 /**
- * Creates a WebSocket connection to the TagoIO Realtime API.
- * @param profileToken The user's profile token.
- * @returns The WebSocket instance.
+ * Creates a new SSE connection to the TagoIO Realtime API.
+ * @param profileToken - The user's profile token.
+ * @param analysisID - The ID of the analysis script to connect to.
+ * @param urlSSERealtime - The URL of the TagoIO SSE Realtime API.
+ * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
-function apiSocket(profileToken: string) {
-  const socket = connect("wss://realtime.tago.io", {
-    reconnectionDelay: 10_000,
-    reconnection: true,
-    transports: ["websocket"],
-    query: {
-      token: profileToken,
-    },
-  });
+function apiSSE(profileToken: string, analysisID: string, urlSSERealtime?: string) {
+  const url = urlSSERealtime || "https://sse.tago.io";
+  const sse = new EventSource(`${url}/events?channel=analysis_console.${analysisID}&token=${profileToken}`);
 
-  return socket;
+  return sse;
 }
 
 /**
@@ -36,41 +32,36 @@ async function getScriptObj(scriptName: string | void, analysisList: IEnvironmen
   if (scriptName) {
     scriptObj = searchName(
       scriptName,
-      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
   } else {
     scriptObj = await pickAnalysisFromConfig(analysisList);
   }
   return scriptObj;
 }
+
 /**
- * Sets up a socket connection to TagoIO and attaches to an analysis script.
- * @param socket - The socket connection to TagoIO.
- * @param scriptId - The ID of the analysis script to attach to.
- * @param analysis_info - Information about the analysis script.
+ * Sets up the SSE connection and event listeners for device live inspection.
+ * @param sse - The SSE connection to TagoIO.
+ * @param deviceIdOrToken - The ID or token of the device to inspect.
+ * @param deviceInfo - Information about the device being inspected.
  */
-function setupSocket(socket: ReturnType<typeof apiSocket>, scriptId: string, analysis_info: any) {
-  socket.on("connect", () => {
-    infoMSG("Connected to TagoIO, Getting analysis information...");
-    socket.emit("attach", "analysis", scriptId);
-    socket.emit("attach", {
-      resourceName: "analysis",
-      resourceID: scriptId,
-    });
-  });
-
-  socket.on("disconnect", () => console.info("Disconnected from TagoIO.\n\n"));
-
-  socket.on("error", (e: Error) => {
-    errorHandler("Connection error");
-    console.error(e);
-  });
-
-  socket.on("ready", () => successMSG(`Analysis [${highlightMSG(analysis_info.name)}] found succesfully. ${highlightMSG("Waiting for logs...")}`));
-
-  socket.on("analysis::console", (scope: any) => {
+function setupSSE(sse: ReturnType<typeof apiSSE>, _script_id: string, analysis_info: AnalysisInfo) {
+  sse.onmessage = (event) => {
+    const scope = JSON.parse(event.data).payload;
     console.log(`\x1b[35m${new Date(scope.timestamp).toISOString()} \x1b[0m ${scope.message}`);
-  });
+  };
+
+  sse.onerror = (error) => {
+    errorHandler("Connection error");
+    console.error(error);
+  };
+
+  sse.onopen = () => {
+    infoMSG("Connected to TagoIO, Getting analysis information...");
+    successMSG(`Analysis [${highlightMSG(analysis_info.name)}] found successfully.`);
+    successMSG(`Waiting for logs...`);
+  };
 }
 
 /**
@@ -99,8 +90,8 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
     return;
   }
 
-  const socket = apiSocket(config.profileToken);
-  setupSocket(socket, scriptObj.id, analysis_info);
+  const sse = apiSSE(config.profileToken, analysis_info.id, config?.tagoSSEURL);
+  setupSSE(sse, scriptObj.id, analysis_info);
 }
 
 export { connectAnalysisConsole };
