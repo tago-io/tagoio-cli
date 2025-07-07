@@ -6,7 +6,7 @@
   "repository": "tago-io/tagoio-cli",
   "keywords": ["tago", "tagoio", "tago-io", "iot", "tago.io", "cli", "analysis", "device"],
   "engines": {
-    "node": ">=17.0.0",
+    "node": ">=20.0.0",
     "npm": ">=6.0.0"
   },
   "files": ["build"],
