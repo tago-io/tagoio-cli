@@ -7,7 +7,7 @@ import { Account } from "@tago-io/sdk";
 import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
 import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
 
-import { IEnvironment, getConfigFile, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
+import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
@@ -179,6 +179,9 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   }
 
   let tagoAPIURL, tagoSSEURL: string | undefined;
+
+
+
   // Get token from file or prompt user to create one
   if (!token) {
     token = readToken(environment);
@@ -187,6 +190,9 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
       token = data?.profileToken;
       tagoAPIURL = data?.tagoDeployUrl;
       tagoSSEURL = data?.tagoDeploySse;
+    } else {
+      tagoAPIURL = configFile[environment]?.tagoAPIURL;
+      tagoSSEURL = configFile[environment]?.tagoSSEURL;
     }
   } else {
     const urlConfig = await getTagoDeployURL()
@@ -227,7 +233,10 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   // Get account info and analysis list
   const account = new Account({ token, region });
   const profile = await account.profiles.info("current");
-  const accountInfo = await account.info();
+  const accountInfo = await account.info().catch(errorHandler);
+  if (!accountInfo) {
+    return;
+  }
   let analysisList = await getAnalysisList(
     account,
     configFile[environment]?.analysisList,

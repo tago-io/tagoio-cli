@@ -1,6 +1,6 @@
 {
   "name": "@tago-io/cli",
-  "version": "2.0.0",
+  "version": "2.0.3",
   "description": "TagoIO Application CLI Node.JS",
   "main": "./build/index.js",
   "repository": "tago-io/tagoio-cli",

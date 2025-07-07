@@ -35,7 +35,7 @@ async function updateDevice(config: environmentConfigResponse, deviceID: string,
     await account.devices.tokenCreate(deviceID, { serie_number: serieNumber, name: token.name, permission: "full" });
   }
 
-  successMSG(`> ${deviceID} - ${settings.network} network and ${settings.connector} connector updated successfully`);
+  successMSG(`Device ${kleur.blue(deviceID)} has been successfully updated to use the ${kleur.cyan(settings.network)} network along with the ${kleur.cyan(settings.connector)} connector.`);
 }
 
 async function changeNetworkOrConnector(id: string, options: { environment: string; networkID: string; connectorID: string }) {
@@ -53,7 +53,11 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
     return;
   }
 
-  const deviceInfo = await account.devices.info(deviceID);
+  const deviceInfo = await account.devices.info(deviceID).catch(errorHandler);
+  if (!deviceInfo) {
+    return;
+  }
+
   infoMSG(`> ${deviceInfo.name} - ${kleur.blue(deviceID)}\n`);
 
   if (!networkID) {

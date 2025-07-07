@@ -21,7 +21,10 @@ const coloredBucketType = (type: string) => (type === "mutable" ? kleur.green(ty
 
 async function convertDevice(deviceID: string, settings: BucketSettings, config: environmentConfigResponse) {
   const account = new Account({ token: config.profileToken, region: config?.profileRegion });
-  const deviceInfo = await account.devices.info(deviceID);
+  const deviceInfo = await account.devices.info(deviceID).catch(errorHandler);
+  if (!deviceInfo) {
+    return;
+  }
   const bucketType = deviceInfo.type;
 
   if (bucketType === settings.type) {
@@ -66,7 +69,7 @@ async function startBucketChange(config: environmentConfigResponse, deviceID: st
 }
 
 async function chooseBucketsFromList(account: Account) {
-  const bucketList = await account.devices.list({ fields: ["id", "name", "bucket", "type"] });
+  const bucketList = await account.devices.list({ fields: ["id", "name", "bucket", "type"] }).catch(errorHandler);
   if (!bucketList || bucketList.length === 0) {
     errorHandler("No buckets found");
     throw false;

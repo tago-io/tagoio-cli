@@ -2,7 +2,7 @@ import { EventSource } from "eventsource";
 import { Account } from "@tago-io/sdk";
 import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
-import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
+import { IEnvironment, getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
@@ -84,7 +84,7 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  const analysis_info = await account.analysis.info(scriptObj.id);
+  const analysis_info = await account.analysis.info(scriptObj.id).catch(() => null);
   if (!analysis_info) {
     errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);
     return;
