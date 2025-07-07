@@ -4,23 +4,12 @@
   "description": "TagoIO Application CLI Node.JS",
   "main": "./build/index.js",
   "repository": "tago-io/tagoio-cli",
-  "keywords": [
-    "tago",
-    "tagoio",
-    "tago-io",
-    "iot",
-    "tago.io",
-    "cli",
-    "analysis",
-    "device"
-  ],
+  "keywords": ["tago", "tagoio", "tago-io", "iot", "tago.io", "cli", "analysis", "device"],
   "engines": {
     "node": ">=17.0.0",
     "npm": ">=6.0.0"
   },
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "scripts": {
     "start": "node -r @swc-node/register ./src/index.ts",
     "build": "rm -rf ./build; tsc --build; chmod +x ./build/index.js",
@@ -33,9 +22,7 @@
     "tagoio": "./build/index.js"
   },
   "jest": {
-    "testPathIgnorePatterns": [
-      "build"
-    ],
+    "testPathIgnorePatterns": ["build"],
     "preset": "ts-jest"
   },
   "author": "TagoIO LLC",
@@ -48,9 +35,9 @@
     "async": "^3.2.6",
     "axios": "^1.10.0",
     "commander": "^13.1.0",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.0.1",
     "envfile": "^7.1.0",
-    "eventsource": "^3.0.5",
+    "eventsource": "^4.0.0",
     "kleur": "^4.1.5",
     "lodash": "^4.17.21",
     "luxon": "^3.6.1",
@@ -60,9 +47,9 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/async": "^3.2.24",
-    "@types/eventsource": "^1.1.15",
-    "@types/lodash": "^4.17.15",
-    "@types/luxon": "^3.4.2",
+    "@types/eventsource": "^3.0.0",
+    "@types/lodash": "^4.17.20",
+    "@types/luxon": "^3.6.2",
     "@types/node": "^22.13.1",
     "@types/prompts": "^2.4.9",
     "ts-node-dev": "2.0.0",
