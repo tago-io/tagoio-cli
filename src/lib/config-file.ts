@@ -10,7 +10,7 @@ import { errorHandler, highlightMSG, infoMSG } from "./messages";
 import { readToken } from "./token";
 
 interface IEnvironment {
-  analysisList: { name: string; fileName: string; id: string }[];
+  analysisList: { name: string; fileName: string; id: string; path?: string }[];
   id: string;
   profileName: string;
   email: string;

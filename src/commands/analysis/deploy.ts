@@ -1,5 +1,5 @@
-import { execSync } from "child_process";
-import { promises as fs } from "fs";
+import { execSync } from "node:child_process";
+import { promises as fs } from "node:fs";
 
 import { Account } from "@tago-io/sdk";
 
@@ -9,8 +9,20 @@ import { errorHandler, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
 import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list";
+import { detectRuntime } from "../../lib/current-runtime";
 
 type EnvConfig = Omit<IConfigFile, "default">;
+
+interface BuildScriptParams {
+  account: Account;
+  scriptName: string;
+  analysisID: string;
+  config: EnvConfig;
+  runtime: string;
+  force: boolean;
+  path: string;
+}
+
 /**
  * Returns an object containing the paths for analysis, build and current folder.
  * @param config - An object containing the configuration for the environment.
@@ -51,20 +63,23 @@ async function deleteOldFile(buildedFile: string) {
 
 /**
  * Builds and uploads a script to a TagoIO analysis.
- * @param account - The TagoIO account object.
- * @param scriptName - The name of the script file to be uploaded.
- * @param analysisID - The ID of the TagoIO analysis to upload the script to.
- * @param config - The environment configuration object.
+ * @param params - The parameters for building and uploading the script.
  */
-async function buildScript(account: Account, scriptName: string, analysisID: string, config: EnvConfig) {
+async function buildScript(params: BuildScriptParams) {
+  const { account, scriptName, analysisID, config, runtime, force, path } = params;
   const { analysisPath, buildPath, folderPath } = getPaths(config);
 
-  const analysisFile = `${analysisPath}/${scriptName}`;
+  let analysisFile;
+  if (path) {
+    analysisFile = `${analysisPath}/${path}/${scriptName}`;
+  } else {
+    analysisFile = `${analysisPath}/${scriptName}`;
+  }
   const buildFile = `${buildPath}/${scriptName.replace(".ts", "")}.tago.js`;
   const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
-  execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+  execSync(`analysis-builder ${analysisFile} ${buildFile} ${runtime} ${force ? "--force" : ""}`, { stdio: "inherit", cwd: folderPath });
 
   const script = await getScript(buildedFile, scriptName);
   if (!script) {
@@ -77,8 +92,8 @@ async function buildScript(account: Account, scriptName: string, analysisID: str
       language: "node",
       name: `${scriptName}.tago.js`,
     })
-    .catch((error) => errorHandler(`\n> Script ${scriptName}.ts error: ${error}`))
-    .then(() => successMSG(`Script ${scriptName}.ts successfully uploaded to TagoIO!`));
+    .catch((error) => errorHandler(`\n> Script ${scriptName} error: ${error}`))
+    .then(() => successMSG(`Script ${scriptName} successfully uploaded to TagoIO!`));
 
   await account.analysis.edit(analysisID, {
     run_on: "tago",
@@ -93,7 +108,19 @@ async function buildScript(account: Account, scriptName: string, analysisID: str
  * @param options.silent - Whether to skip confirmation prompts.
  * @returns void
  */
-async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean }) {
+async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean; deno: boolean; node: boolean; force: boolean }) {
+  let runtime;
+  if (options.deno && options.node) {
+    console.error('Error: Cannot specify both --deno and --node flags');
+    process.exit(1);
+  } else if (options.deno) {
+    runtime = '--deno';
+  } else if (options.node) {
+    runtime = '--node';
+  } else {
+    runtime = detectRuntime();
+  }
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
@@ -126,8 +153,16 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  for (const { id, fileName } of scriptList) {
-    await buildScript(account, fileName, id, config);
+  for (const { id, fileName, path } of scriptList) {
+    await buildScript({
+      account,
+      scriptName: fileName,
+      analysisID: id,
+      config,
+      runtime,
+      force: options.force,
+      path: path || "",
+    });
   }
   process.exit();
 }

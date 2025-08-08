@@ -1,4 +1,5 @@
-import { readdirSync } from "fs";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
@@ -16,6 +17,38 @@ import { getTagoDeployURL, tagoLogin } from "./login";
 interface ConfigOptions {
   token: string | void;
   environment: string | void;
+}
+
+interface AnalysisFile {
+  filename: string;
+  relativePath: string;
+}
+
+const analysisPath = "./src/analysis";
+
+/**
+ * Recursively scans a directory and its subdirectories for analysis files.
+ * @param dirPath - The directory path to scan.
+ * @param basePath - The base analysis path for relative path calculation.
+ * @returns An array of file paths with their relative paths.
+ */
+function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): AnalysisFile[] {
+  const files: AnalysisFile[] = [];
+  const items = readdirSync(dirPath);
+
+  for (const item of items) {
+    const fullPath = join(dirPath, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      files.push(...scanAnalysisFiles(fullPath, basePath));
+    } else if (item.endsWith(".ts") || item.endsWith(".js") || item.endsWith(".py")) {
+      const relativePath = dirPath === basePath ? "" : dirPath.replace(basePath + "/", "").replace(analysisPath + "/", "");
+      files.push({ filename: item, relativePath });
+    }
+  }
+
+  return files;
 }
 
 /**
@@ -118,17 +151,17 @@ async function getAnalysisScripts(
   analysisList: IEnvironment["analysisList"],
   analysisPath: string,
 ) {
-  infoMSG(`Searching for files at ${analysisPath}`);
-  let files: Choice[] = readdirSync(analysisPath)
-    .filter((x) => x.endsWith(".ts") || x.endsWith(".js") || x.endsWith(".py"))
-    .map((x) => ({ title: x }));
+  analysisPath = analysisPath.replace("./", "");
+  infoMSG(`Searching for files at ${analysisPath} and subfolders`);
+  let files: Choice[] = scanAnalysisFiles(analysisPath)
+    .map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
 
   for (const analysis of analysisList) {
     files = files.sort((a, b) =>
       stringComparison.cosine.distance(analysis.name, a.title) >
         stringComparison.cosine.distance(analysis.name, b.title)
         ? 1
-        : -1,
+        : -1
     );
 
     const editFile = files.find((x) => x.title === analysis.fileName);
@@ -146,12 +179,14 @@ async function getAnalysisScripts(
       continue;
     }
 
+    const file = files.find((x) => x.value === response);
+    analysis.fileName = file?.title as string;
+    analysis.path = file?.description as string;
+
     const fileIndex = files.findIndex((x) => x.title === response);
     if (fileIndex !== -1) {
       files.splice(fileIndex, 1);
     }
-
-    analysis.fileName = response;
   }
   return analysisList;
 }
