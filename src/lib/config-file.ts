@@ -1,9 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import kleur from "kleur";
-
-import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
-
+import { GenericModuleParams } from "@tago-io/sdk";
 import { setEnvironmentVariables } from "./dotenv-config";
 import { getCurrentFolder } from "./get-current-folder";
 import { errorHandler, highlightMSG, infoMSG } from "./messages";

@@ -61,18 +61,6 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean}, ru
  * @returns void
  */
 async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean; deno: boolean; node: boolean }) {
-  let runtime;
-  if (options.deno && options.node) {
-    console.error('Error: Cannot specify both --deno and --node flags');
-    process.exit(1);
-  } else if (options.deno) {
-    runtime = '--deno';
-  } else if (options.node) {
-    runtime = '--node';
-  } else {
-    runtime = detectRuntime();
-  }
-  
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
@@ -98,7 +86,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
-  let { token: analysisToken, run_on, name } = await account.analysis.info(scriptToRun.id);
+  let { token: analysisToken, run_on, name, runtime: runtimeParam } = await account.analysis.info(scriptToRun.id);
   successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
 
   const analysisEnv: { [key: string]: string } = {
@@ -130,6 +118,18 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     scriptPath = path.join(config.analysisPath.concat("/", scriptToRun.path + "/"), scriptToRun.fileName).normalize();
   } else {
     scriptPath = path.join(config.analysisPath, scriptToRun.fileName).normalize();
+  }
+
+  let runtime;
+  if (options.deno && options.node) {
+    console.error('Error: Cannot specify both --deno and --node flags');
+    process.exit(1);
+  } else if (options.deno) {
+    runtime = '--deno';
+  } else if (options.node) {
+    runtime = '--node';
+  } else {
+    runtime = detectRuntime(runtimeParam || "");
   }
   
   const cmd = _buildCMD(options, runtime);

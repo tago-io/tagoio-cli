@@ -3,11 +3,7 @@ import { join } from "node:path";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
-
-import { Account } from "@tago-io/sdk";
-import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
-import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
-
+import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@tago-io/sdk";
 import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
@@ -42,7 +38,7 @@ function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): Analysi
 
     if (stat.isDirectory()) {
       files.push(...scanAnalysisFiles(fullPath, basePath));
-    } else if (item.endsWith(".ts") || item.endsWith(".js") || item.endsWith(".py")) {
+    } else if (item.endsWith(".ts") || item.endsWith(".js")) {
       const relativePath = dirPath === basePath ? "" : dirPath.replace(basePath + "/", "").replace(analysisPath + "/", "");
       files.push({ filename: item, relativePath });
     }
@@ -116,7 +112,7 @@ async function getAnalysisList(
     return [];
   }
 
-  const getName = (analysis: AnalysisListItem) =>
+  const getName = (analysis: AnalysisListItem<"id" | "name" | "tags">) =>
     `[${analysis.id}] ${analysis.name}`;
 
   const oldIDList = new Set(oldList.map((x) => x.id));

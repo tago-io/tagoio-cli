@@ -1,5 +1,5 @@
 import { Account } from "@tago-io/sdk";
-import { RunInfo } from "@tago-io/sdk/lib/types";
+import { RunInfo } from "@tago-io/sdk";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";

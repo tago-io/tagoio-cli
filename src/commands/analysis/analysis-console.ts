@@ -1,7 +1,6 @@
 import { EventSource } from "eventsource";
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
-
+import { AnalysisInfo } from "@tago-io/sdk";
 import { IEnvironment, getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";

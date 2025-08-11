@@ -2,7 +2,7 @@ import kleur from "kleur";
 import prompts from "prompts";
 
 import { Account } from "@tago-io/sdk";
-import { DashboardInfo } from "@tago-io/sdk/lib/types";
+import { DashboardInfo } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

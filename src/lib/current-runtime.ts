@@ -1,9 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 
-function detectRuntime() {
-  if (existsSync(`./deno.json`) ||
-      existsSync(`./deno.jsonc`) ||
-      existsSync(`./deno.lock`)) {
+function detectRuntime(runtimeParam: string) {
+  if (runtimeParam.includes('deno')) {
     return '--deno';
   }
 

@@ -4,7 +4,7 @@ import kleur from "kleur";
 import { DateTime } from "luxon";
 
 import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data, DeviceInfo, DeviceItem } from "@tago-io/sdk/lib/types";
+import { Data, DeviceInfo, DeviceItem } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

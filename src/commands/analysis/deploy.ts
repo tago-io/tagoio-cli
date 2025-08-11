@@ -19,7 +19,6 @@ interface BuildScriptParams {
   analysisID: string;
   config: EnvConfig;
   runtime: string;
-  force: boolean;
   path: string;
 }
 
@@ -66,7 +65,7 @@ async function deleteOldFile(buildedFile: string) {
  * @param params - The parameters for building and uploading the script.
  */
 async function buildScript(params: BuildScriptParams) {
-  const { account, scriptName, analysisID, config, runtime, force, path } = params;
+  const { account, scriptName, analysisID, config, runtime, path } = params;
   const { analysisPath, buildPath, folderPath } = getPaths(config);
 
   let analysisFile;
@@ -79,7 +78,12 @@ async function buildScript(params: BuildScriptParams) {
   const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
-  execSync(`analysis-builder ${analysisFile} ${buildFile} ${runtime} ${force ? "--force" : ""}`, { stdio: "inherit", cwd: folderPath });
+  if (runtime === '--deno') {
+    console.log("bundling with deno");
+    execSync(`deno bundle ${analysisFile} -o ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+  } else {
+    execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+  }
 
   const script = await getScript(buildedFile, scriptName);
   if (!script) {
@@ -89,8 +93,8 @@ async function buildScript(params: BuildScriptParams) {
   await account.analysis
     .uploadScript(analysisID, {
       content: script,
-      language: "node",
       name: `${scriptName}.tago.js`,
+      language: runtime === "--deno" ? "deno" : "node" as any,
     })
     .catch((error) => errorHandler(`\n> Script ${scriptName} error: ${error}`))
     .then(() => successMSG(`Script ${scriptName} successfully uploaded to TagoIO!`));
@@ -108,22 +112,7 @@ async function buildScript(params: BuildScriptParams) {
  * @param options.silent - Whether to skip confirmation prompts.
  * @returns void
  */
-async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean; deno: boolean; node: boolean; force: boolean }) {
-  console.log("deploying with environment");
-  let runtime;
-  if (options.deno && options.node) {
-    console.error('Error: Cannot specify both --deno and --node flags');
-    process.exit(1);
-  } else if (options.deno) {
-    console.log("deploying with deno");
-    runtime = '--deno';
-  } else if (options.node) {
-    console.log("deploying with node");
-    runtime = '--node';
-  } else {
-    runtime = detectRuntime();
-  }
-
+async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean; deno: boolean; node: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
@@ -157,13 +146,27 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   for (const { id, fileName, path } of scriptList) {
+    let { runtime: runtimeParam } = await account.analysis.info(id);
+    let runtime;
+    if (options.deno && options.node) {
+      console.error('Error: Cannot specify both --deno and --node flags');
+      process.exit(1);
+    } else if (options.deno) {
+      console.log("deploying with deno");
+      runtime = '--deno';
+    } else if (options.node) {
+      console.log("deploying with node");
+      runtime = '--node';
+    } else {
+      runtime = detectRuntime(runtimeParam || "");
+    }
+
     await buildScript({
       account,
       scriptName: fileName,
       analysisID: id,
       config,
       runtime,
-      force: options.force,
       path: path || "",
     });
   }

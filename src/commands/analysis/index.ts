@@ -26,7 +26,6 @@ function analysisCommands(program: Command) {
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
-    .option("-F, --force", "it will not ignore the modules that already exist on TagoIO context", false)
     .action(deployAnalysis)
     .addHelpText(
       "after",
@@ -38,8 +37,7 @@ Example:
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
     $ tagoio deploy --node
-    $ tagoio deploy --deno
-    $ tagoio deploy -F`
+    $ tagoio deploy --deno`
     );
 
   program
