@@ -70,6 +70,10 @@ Example:
     $ tagoio run dash
     $ tagoio run dashboard-handler -d
     $ tagoio run dashboard-handler -d -c
+    $ tagoio run dashboard-handler --deno
+    $ tagoio run dashboard-handler --node
+    $ tagoio run --deno
+    $ tagoio run --node
        `
     );
 
