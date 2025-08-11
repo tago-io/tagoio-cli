@@ -181,7 +181,9 @@ async function getAnalysisScripts(
 
     const file = files.find((x) => x.value === response);
     analysis.fileName = file?.title as string;
-    analysis.path = file?.description as string;
+    if (file?.description && file?.description?.length > 0) {
+      analysis.path = file?.description as string;
+    }
 
     const fileIndex = files.findIndex((x) => x.title === response);
     if (fileIndex !== -1) {

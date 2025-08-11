@@ -125,7 +125,13 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     env: analysisEnv,
   };
 
-  const scriptPath = path.join(config.analysisPath, scriptToRun.fileName).normalize();
+  let scriptPath;
+  if (scriptToRun.path) {
+    scriptPath = path.join(config.analysisPath.concat("/", scriptToRun.path + "/"), scriptToRun.fileName).normalize();
+  } else {
+    scriptPath = path.join(config.analysisPath, scriptToRun.fileName).normalize();
+  }
+  
   const cmd = _buildCMD(options, runtime);
 
   if (run_on === "tago") {

@@ -109,13 +109,16 @@ async function buildScript(params: BuildScriptParams) {
  * @returns void
  */
 async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean; deno: boolean; node: boolean; force: boolean }) {
+  console.log("deploying with environment");
   let runtime;
   if (options.deno && options.node) {
     console.error('Error: Cannot specify both --deno and --node flags');
     process.exit(1);
   } else if (options.deno) {
+    console.log("deploying with deno");
     runtime = '--deno';
   } else if (options.node) {
+    console.log("deploying with node");
     runtime = '--node';
   } else {
     runtime = detectRuntime();

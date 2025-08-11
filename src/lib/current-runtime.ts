@@ -1,14 +1,14 @@
-import { existsSync } from "node:fs";
-import { getCurrentFolder } from "./get-current-folder";
+import { existsSync, readFileSync } from "node:fs";
 
 function detectRuntime() {
-  if (existsSync(`${getCurrentFolder}/deno.json`) ||
-      existsSync(`${getCurrentFolder}/deno.jsonc`) ||
-      existsSync(`${getCurrentFolder}/deno.lock`)) {
+  if (existsSync(`./deno.json`) ||
+      existsSync(`./deno.jsonc`) ||
+      existsSync(`./deno.lock`)) {
     return '--deno';
   }
 
   return '--node';
 }
+
 
 export { detectRuntime };
