@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.1.4/schema.json",
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
@@ -14,9 +14,9 @@
     "enabled": true,
     "useIgnoreFile": true
   },
-  "organizeImports": { "enabled": true },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
-    "ignore": ["node_modules", ".tagoio", "build"],
+    "includes": ["**", "!**/node_modules", "!**/.tagoio", "!**/build"],
     "enabled": true,
     "rules": {
       "recommended": false,
@@ -24,11 +24,10 @@
         "noBannedTypes": "warn",
         "noExtraBooleanCast": "error",
         "noForEach": "warn",
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
         "noUselessTypeConstraint": "error",
-        "noWith": "error",
-        "useFlatMap": "warn"
+        "useFlatMap": "warn",
+        "noAdjacentSpacesInRegex": "error"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -38,7 +37,6 @@
         "noGlobalObjectCalls": "error",
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
-        "noNewSymbol": "error",
         "noNonoctalDecimalEscape": "error",
         "noPrecisionLoss": "error",
         "noSelfAssign": "error",
@@ -53,7 +51,9 @@
         "noUnusedVariables": "error",
         "useIsNan": "error",
         "useValidForDirection": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "useValidTypeof": "error"
       },
       "style": {
         "noDefaultExport": "warn",
@@ -96,7 +96,7 @@
         "useAwait": "off",
         "useGetterReturn": "error",
         "useIsArray": "error",
-        "useValidTypeof": "error"
+        "noWith": "error"
       }
     }
   }

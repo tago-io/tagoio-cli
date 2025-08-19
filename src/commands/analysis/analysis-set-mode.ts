@@ -1,7 +1,7 @@
 import kleur from "kleur";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
+import { AnalysisInfo } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

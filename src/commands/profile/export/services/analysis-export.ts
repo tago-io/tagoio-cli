@@ -3,7 +3,7 @@ import axios from "axios";
 import prompts from "prompts";
 
 import { Account } from "@tago-io/sdk";
-import { AnalysisListItem } from "@tago-io/sdk/lib/types";
+import { AnalysisListItem } from "@tago-io/sdk";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
@@ -29,7 +29,7 @@ async function choose_variable(key: string, values: string[]) {
   return variable;
 }
 
-function separate_variable_with_duplicate_values(export_analysis: AnalysisListItem[], import_analysis: AnalysisListItem[]) {
+function separate_variable_with_duplicate_values(export_analysis: AnalysisListItem<"id" | "name" | "variables">[], import_analysis: AnalysisListItem<"id" | "name" | "variables">[]) {
   const values_by_keys: any = {};
   for (const item of [...export_analysis, ...import_analysis]) {
     if (!item.variables) {

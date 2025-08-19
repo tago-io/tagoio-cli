@@ -38,7 +38,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       if (config.data && config.data.length > 0) {
         // TODO: Support different regions
         const device = new Device({ token: new_token, region: config.import.region });
-        const old_device = new Device({ token, region: config.export.region });
+        const old_device = new Device({ token: token as string, region: config.export.region });
 
         const data = await old_device.getData({
           variables: config.data,
@@ -55,11 +55,11 @@ async function deviceExport(account: Account, import_account: Account, export_ho
         active: new_device.active,
         visible: new_device.visible,
       });
-      new_token = await Utils.getTokenByName(import_account, target_id);
+      new_token = await Utils.getTokenByName(import_account, target_id) as string;
     }
 
     export_holder.devices[device_id] = target_id;
-    export_holder.tokens[token] = new_token;
+    export_holder.tokens[token as string] = new_token;
   }
 
   console.info("Exporting devices: finished");

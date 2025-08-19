@@ -1,7 +1,7 @@
 import { queue } from "async";
 
 import { Account } from "@tago-io/sdk";
-import { DashboardInfo } from "@tago-io/sdk/lib/types";
+import { DashboardInfo } from "@tago-io/sdk";
 
 import { errorHandler } from "../../../../lib/messages";
 import { chooseFromList } from "../../../../prompt/choose-from-list";

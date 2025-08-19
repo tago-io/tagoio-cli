@@ -1,5 +1,5 @@
 import { Account, Utils } from "@tago-io/sdk";
-import { DeviceListItem, TagsObj } from "@tago-io/sdk/lib/types";
+import { DeviceListItem, TagsObj } from "@tago-io/sdk";
 
 import { Entity, IExportHolder } from "./types";
 
@@ -34,7 +34,7 @@ function getExportHolder(list: any[], import_list: any[], entity: Entity, export
 
 async function getDeviceTokens(list: (DeviceListItem & { token?: string })[], account: Account) {
   for (const device of list) {
-    const token = await Utils.getTokenByName(account, device.id);
+    const token = await Utils.getTokenByName(account, device.id) as string;
     device.token = token;
   }
 

@@ -24,6 +24,8 @@ function analysisCommands(program: Command) {
     .allowExcessArguments(true)
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-s, --silent", "will not prompt to confirm the deploy")
+    .option("--deno", "Force build for Deno runtime", false)
+    .option("--node", "Force build for Node.js runtime", false)
     .action(deployAnalysis)
     .addHelpText(
       "after",
@@ -31,7 +33,11 @@ function analysisCommands(program: Command) {
 Example:
     $ tagoio deploy all
     $ tagoio deploy all -e stage
-    $ tagoio deploy dashboard-handler`
+    $ tagoio deploy dashboard-handler
+    $ tagoio deploy dashboard-handler --deno
+    $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy --node
+    $ tagoio deploy --deno`
     );
 
   program
@@ -50,6 +56,8 @@ Example:
     .option("-d, --debug", "run with --inspector for debug")
     .option("-c, --clear", "Will clear screen on restart")
     .option("--tsnd", "run with ts-node-dev if installed globally")
+    .option("--deno", "Force build for Deno runtime", false)
+    .option("--node", "Force build for Node.js runtime", false)
     .action(runAnalysis)
     .addHelpText(
       "after",
@@ -60,6 +68,10 @@ Example:
     $ tagoio run dash
     $ tagoio run dashboard-handler -d
     $ tagoio run dashboard-handler -d -c
+    $ tagoio run dashboard-handler --deno
+    $ tagoio run dashboard-handler --node
+    $ tagoio run --deno
+    $ tagoio run --node
        `
     );
 

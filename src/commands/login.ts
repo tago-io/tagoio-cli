@@ -1,7 +1,7 @@
 import prompts from "prompts";
 
 import { Account } from "@tago-io/sdk";
-import { OTPType } from "@tago-io/sdk/lib/types";
+import { OTPType } from "@tago-io/sdk";
 
 import { addHttpsToUrl } from "../lib/add-https-to-url";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
