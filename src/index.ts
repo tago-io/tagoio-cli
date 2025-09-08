@@ -9,6 +9,7 @@ import { dashboardCommands } from "./commands/dashboard";
 import { deviceCommands } from "./commands/devices";
 import { listEnvironment } from "./commands/list-env";
 import { tagoLogin } from "./commands/login";
+import { mcpConfig } from "./commands/mcp-config";
 import { profileCommands } from "./commands/profile";
 import { setEnvironment } from "./commands/set-env";
 import { startConfig } from "./commands/start-config";
@@ -131,6 +132,19 @@ Example:
       `
 Example:
    $ tagoio list-env`,
+    );
+
+  program
+    .command("mcp-config")
+    .description("get token and API URL for MCP configuration")
+    .argument("[environment]", "name of the environment", defaultEnvironment)
+    .action(mcpConfig)
+    .addHelpText(
+      "after",
+      `
+Example:
+   $ tagoio mcp-config
+   $ tagoio mcp-config dev`,
     );
 
   await getAllCommands(program);
