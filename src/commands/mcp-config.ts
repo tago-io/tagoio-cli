@@ -39,11 +39,19 @@ function mcpConfig(environment?: string) {
   // Encrypt token using base64
   const encryptedToken = Buffer.from(token).toString("base64");
 
-  // Set environment variables for other applications to read
+  // Secure approach: Set environment variables that can be inherited by child processes
   process.env.TAGOIO_MCP_TOKEN = encryptedToken;
   process.env.TAGOIO_MCP_API = apiUrl;
 
-  console.log("TOKEN and API exported.");
+  const output = {
+    token: encryptedToken,
+    api: apiUrl,
+  };
+
+  console.log(output);
+  
+  // Exit with specific code to indicate success
+  process.exit(0);
 }
 
 export { mcpConfig };
