@@ -1,7 +1,6 @@
+import { Account, AnalysisInfo } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk";
-import { IEnvironment, getEnvironmentConfig } from "../../lib/config-file";
+import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";

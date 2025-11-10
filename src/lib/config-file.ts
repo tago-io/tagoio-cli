@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import kleur from "kleur";
 import { GenericModuleParams } from "@tago-io/sdk";
+import kleur from "kleur";
 import { setEnvironmentVariables } from "./dotenv-config";
 import { getCurrentFolder } from "./get-current-folder";
 import { errorHandler, highlightMSG, infoMSG } from "./messages";
@@ -40,7 +40,7 @@ function resolveCLIPath(suffix: string) {
 
 function getFilePath() {
   const folder = getCurrentFolder();
-  return join(folder, 'tagoconfig.json').normalize();
+  return join(folder, "tagoconfig.json").normalize();
 }
 
 function getConfigFile() {
@@ -70,8 +70,7 @@ function getProfileRegion(userEnvironment: IEnvironment) {
     region = {
       api: userEnvironment.tagoAPIURL || "",
       sse: userEnvironment.tagoSSEURL || "",
-      realtime: "", // Not used in the CLI
-    }
+    };
   }
 
   return region;

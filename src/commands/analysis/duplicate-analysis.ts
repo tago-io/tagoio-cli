@@ -1,9 +1,7 @@
-import zlib from "zlib";
+import { Account, AnalysisInfo } from "@tago-io/sdk";
 import axios from "axios";
 import prompts from "prompts";
-
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk";
+import zlib from "zlib";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";

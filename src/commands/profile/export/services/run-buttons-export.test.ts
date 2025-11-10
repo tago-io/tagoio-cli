@@ -11,7 +11,7 @@ describe("Collect ID", () => {
     const copyTargetRun = cloneDeep(targetRunInfo);
     expect(copyTargetRun.signin_buttons.length).toBe(0);
     expect(runInfo.signin_buttons[0].url).toBe(
-      "originTest.run.tago.io/dashboards/info/6387b32e5b570000112303fe?anonymousToken=00000000-6386-4535-8ccb-e400205c3058"
+      "originTest.run.tago.io/dashboards/info/6387b32e5b570000112303fe?anonymousToken=00000000-6386-4535-8ccb-e400205c3058",
     );
     // @ts-expect-error ignore the error
     updateSigninButtons(runInfo, copyTargetRun, exportHolder);
@@ -19,7 +19,7 @@ describe("Collect ID", () => {
     expect(copyTargetRun.signin_buttons.length).toBe(1);
     // @ts-expect-error type are different after update
     expect(copyTargetRun.signin_buttons[0].url).toBe(
-      "resultTest.run.tago.io/dashboards/info/73656d1df7cb62001163c3de?anonymousToken=00000000-7386-4535-8ccb-e400205c3051"
+      "resultTest.run.tago.io/dashboards/info/73656d1df7cb62001163c3de?anonymousToken=00000000-7386-4535-8ccb-e400205c3051",
     );
   });
 

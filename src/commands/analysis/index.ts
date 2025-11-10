@@ -18,7 +18,7 @@ function analysisCommands(program: Command) {
     .description(
       `deploy your analysis to TagoIO
     Analysis must be registered in your tagoconfig.ts file first
-    You can register an analysis by using ${kleur.italic("tagoio init")}`
+    You can register an analysis by using ${kleur.italic("tagoio init")}`,
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .allowExcessArguments(true)
@@ -37,7 +37,7 @@ Example:
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
     $ tagoio deploy --node
-    $ tagoio deploy --deno`
+    $ tagoio deploy --deno`,
     );
 
   program
@@ -49,7 +49,7 @@ Example:
     If name is not provided, you will be prompted to select which analysis you want to run.
 
     Note: Analysis will automatically be edited to run in external at TagoIO side.
-    To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`
+    To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`,
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -72,7 +72,7 @@ Example:
     $ tagoio run dashboard-handler --node
     $ tagoio run --deno
     $ tagoio run --node
-       `
+       `,
     );
 
   program
@@ -89,7 +89,7 @@ Example:
       `
 Example:
     $ tagoio analysis-trigger dash
-    $ tagoio analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`
+    $ tagoio analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`,
     );
 
   program
@@ -104,7 +104,7 @@ Example:
       `
 
 Example:
-    $ tagoio analysis-console 62151835435d540010b768c4`
+    $ tagoio analysis-console 62151835435d540010b768c4`,
     );
 
   program
@@ -120,7 +120,7 @@ Example:
       `
 
 Example:
-    $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+    $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`,
     );
 
   program
@@ -131,7 +131,7 @@ Example:
       `change an analysis or group of analysis to run on tago/external
 
     If name is not provided, you will be prompted to select which analysis you want to update.
-    Analysis in external mode are displayed first.`
+    Analysis in external mode are displayed first.`,
     )
     .argument("[name]", "partial analysis name to filter the list")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -143,7 +143,7 @@ Example:
       `
 
 Example:
-     $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+     $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`,
     );
 
   return program;

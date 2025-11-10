@@ -1,7 +1,5 @@
+import { Account, Data, DataQuery, Device, Utils } from "@tago-io/sdk";
 import kleur from "kleur";
-
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data, DataQuery } from "@tago-io/sdk";
 
 // import { DataQuery } from "@tago-io/sdk";
 import { getEnvironmentConfig } from "../../lib/config-file";

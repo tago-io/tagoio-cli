@@ -1,7 +1,5 @@
+import { Account, DeviceQuery, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
-
-import { Account } from "@tago-io/sdk";
-import { DeviceQuery, TagsObj } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, successMSG } from "../../lib/messages";

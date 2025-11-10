@@ -1,6 +1,6 @@
-import { dirname } from "path";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
 import { stringify } from "envfile";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { dirname } from "path";
 
 import { addOnGitIgnore } from "./add-to-gitignore";
 import { getCurrentFolder } from "./get-current-folder";

@@ -1,7 +1,5 @@
+import { Account, DashboardInfo, WidgetInfo } from "@tago-io/sdk";
 import { queue } from "async";
-
-import { Account } from "@tago-io/sdk";
-import { DashboardInfo, WidgetInfo } from "@tago-io/sdk";
 
 import { errorHandler } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
@@ -38,7 +36,7 @@ async function insertWidgets(exportAccount: Account, importAccount: Account, das
   if (!dashboard.arrangement) {
     return;
   }
-  const arrangement = dashboard.arrangement.sort((a) => (a.tab &&hiddenTabKeys.has(a.tab) ? 1 : -1));
+  const arrangement = dashboard.arrangement.sort((a) => (a.tab && hiddenTabKeys.has(a.tab) ? 1 : -1));
 
   const new_arrangement: any = [];
   const widgetIDMappings: { [key: string]: string } = {};

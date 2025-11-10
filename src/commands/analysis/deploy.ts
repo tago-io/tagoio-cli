@@ -1,15 +1,15 @@
 import { execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 
-import { Account } from "@tago-io/sdk";
+import { Account, RunTypeOptions } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file";
+import { detectRuntime } from "../../lib/current-runtime";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
 import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list";
-import { detectRuntime } from "../../lib/current-runtime";
 
 type EnvConfig = Omit<IConfigFile, "default">;
 
@@ -78,7 +78,7 @@ async function buildScript(params: BuildScriptParams) {
   const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
-  if (runtime === '--deno') {
+  if (runtime === "--deno") {
     console.log("bundling with deno");
     execSync(`deno bundle ${analysisFile} -o ${buildFile}`, { stdio: "inherit", cwd: folderPath });
   } else {
@@ -90,11 +90,16 @@ async function buildScript(params: BuildScriptParams) {
     return process.exit();
   }
 
+  const analysis = await account.analysis.info(analysisID).catch((error) => errorHandler(`\n> Analysis ${scriptName} error: ${error}`));
+  if (!analysis) {
+    return process.exit();
+  }
+
   await account.analysis
     .uploadScript(analysisID, {
       content: script,
       name: `${scriptName}.tago.js`,
-      language: runtime === "--deno" ? "deno" : "node" as any,
+      language: analysis.runtime || ((runtime === "--deno" ? "deno-rt2025" : "node-rt2025") as RunTypeOptions),
     })
     .catch((error) => errorHandler(`\n> Script ${scriptName} error: ${error}`))
     .then(() => successMSG(`Script ${scriptName} successfully uploaded to TagoIO!`));
@@ -126,7 +131,7 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   } else {
     const analysisFound: IEnvironment["analysisList"][0] = searchName(
       cmdScriptName,
-      scriptList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      scriptList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
 
     if (!analysisFound) {
@@ -149,14 +154,14 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     let { runtime: runtimeParam } = await account.analysis.info(id);
     let runtime;
     if (options.deno && options.node) {
-      console.error('Error: Cannot specify both --deno and --node flags');
+      console.error("Error: Cannot specify both --deno and --node flags");
       process.exit(1);
     } else if (options.deno) {
       console.log("deploying with deno");
-      runtime = '--deno';
+      runtime = "--deno";
     } else if (options.node) {
       console.log("deploying with node");
-      runtime = '--node';
+      runtime = "--node";
     } else {
       runtime = detectRuntime(runtimeParam || "");
     }

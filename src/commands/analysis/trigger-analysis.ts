@@ -1,6 +1,5 @@
-import kleur from "kleur";
-
 import { Account } from "@tago-io/sdk";
+import kleur from "kleur";
 
 import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

@@ -1,7 +1,5 @@
+import { Account, AnalysisInfo } from "@tago-io/sdk";
 import kleur from "kleur";
-
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
@@ -40,7 +38,7 @@ async function chooseAnalysisToUpdateRunOnMode(analysisList: AnalysisInfo[]): Pr
   // Prompts the user to choose an analysis from a list.
   const selectedAnalysis = await chooseFromList(
     analysisList.sort((a) => (a.run_on === "external" ? -1 : 1)).map((x) => ({ value: x, title: colorAnalysisName(x) })),
-    "Choose the analysis you want to update the run_on mode for:"
+    "Choose the analysis you want to update the run_on mode for:",
   );
 
   // Handles the case where the user cancels the selection.

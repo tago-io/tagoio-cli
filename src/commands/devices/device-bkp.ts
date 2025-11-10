@@ -1,10 +1,8 @@
-import { readFileSync, writeFileSync } from "fs";
+import { Account, Data, Device, DeviceInfo, DeviceItem, Utils } from "@tago-io/sdk";
 import axios from "axios";
+import { readFileSync, writeFileSync } from "fs";
 import kleur from "kleur";
 import { DateTime } from "luxon";
-
-import { Account, Device, Utils } from "@tago-io/sdk";
-import { Data, DeviceInfo, DeviceItem } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

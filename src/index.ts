@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import dotenv from "dotenv";
+import { readFileSync } from "fs";
 import kleur from "kleur";
 
 import { analysisCommands } from "./commands/analysis";
