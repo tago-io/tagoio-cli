@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 
-import { Account } from "@tago-io/sdk";
+import { Account, RunTypeOptions } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file";
 import { getCurrentFolder } from "../../lib/get-current-folder";
@@ -90,11 +90,16 @@ async function buildScript(params: BuildScriptParams) {
     return process.exit();
   }
 
+  const analysis = await account.analysis.info(analysisID).catch((error) => errorHandler(`\n> Analysis ${scriptName} error: ${error}`));
+  if (!analysis) {
+    return process.exit();
+  }
+
   await account.analysis
     .uploadScript(analysisID, {
       content: script,
       name: `${scriptName}.tago.js`,
-      language: runtime === "--deno" ? "deno" : "node" as any,
+      language: analysis.runtime || (runtime === "--deno" ? "deno-rt2025" : "node-rt2025") as RunTypeOptions,
     })
     .catch((error) => errorHandler(`\n> Script ${scriptName} error: ${error}`))
     .then(() => successMSG(`Script ${scriptName} successfully uploaded to TagoIO!`));
