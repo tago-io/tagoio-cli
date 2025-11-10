@@ -6,16 +6,17 @@ import { IExportHolder } from "../types";
 async function accessExport(account: Account, import_account: Account, export_holder: IExportHolder) {
   console.info("Exporting access rules: started");
 
-  // @ts-expect-error we are looking only for keys
   const list = await account.accessManagement.list({
     amount: 10000,
     fields: ["id", "name", "tags"],
+    // @ts-expect-error we are looking only for keys
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
-  // @ts-expect-error we are looking only for keys
+
   const import_list = await import_account.accessManagement.list({
     amount: 10000,
     fields: ["id", "tags"],
+    // @ts-expect-error we are looking only for keys
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 

@@ -93,10 +93,10 @@ async function analysisExport(account: Account, import_account: Account, export_
     // @ts-expect-error we are looking only for keys
     .list({ amount: 99, fields: ["id", "name", "tags", "variables"], filter: { tags: [{ key: export_holder.config.export_tag }] } })
     .then((r) => r.reverse());
-  // @ts-expect-error we are looking only for keys
   const import_list = await import_account.analysis.list({
     amount: 99,
     fields: ["id", "tags", "variables"],
+    // @ts-expect-error we are looking only for keys
     filter: { tags: [{ key: export_holder.config.export_tag }] },
   });
 
