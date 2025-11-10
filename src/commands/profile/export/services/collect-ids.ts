@@ -1,5 +1,4 @@
-import { Account, Utils } from "@tago-io/sdk";
-import { DeviceListItem, TagsObj } from "@tago-io/sdk";
+import { Account, DeviceListItem, TagsObj, Utils } from "@tago-io/sdk";
 
 import { Entity, IExportHolder } from "../types";
 

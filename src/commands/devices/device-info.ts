@@ -1,5 +1,4 @@
-import { Account, Device } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk";
+import { Account, Device, DeviceInfo } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG } from "../../lib/messages";
@@ -68,7 +67,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
         last_input: mapDate(deviceInfo.last_input, options),
         updated_at: mapDate(deviceInfo.updated_at, options),
       },
-      { depth: null }
+      { depth: null },
     );
     return;
   }

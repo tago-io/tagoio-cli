@@ -1,6 +1,5 @@
-import prompts from "prompts";
-
 import { Account } from "@tago-io/sdk";
+import prompts from "prompts";
 
 import { errorHandler } from "../lib/messages";
 

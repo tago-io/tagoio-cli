@@ -1,7 +1,5 @@
+import { Account, OTPType } from "@tago-io/sdk";
 import prompts from "prompts";
-
-import { Account } from "@tago-io/sdk";
-import { OTPType } from "@tago-io/sdk";
 
 import { addHttpsToUrl } from "../lib/add-https-to-url";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
@@ -41,7 +39,7 @@ async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | 
     urlSSE = urlSSE.replace("api.", "sse.");
 
     const sseUrl = new URL(urlSSE);
-    sseUrl.pathname = '/events';
+    sseUrl.pathname = "/events";
     urlSSE = sseUrl.toString();
   }
 

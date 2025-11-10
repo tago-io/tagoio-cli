@@ -1,14 +1,14 @@
-import { spawn, SpawnOptions } from "node:child_process";
+import { SpawnOptions, spawn } from "node:child_process";
 import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
+import { detectRuntime } from "../../lib/current-runtime";
 import { getCurrentFolder } from "../../lib/get-current-folder";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { searchName } from "../../lib/search-name";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
-import { detectRuntime } from "../../lib/current-runtime";
 
 /**
  * Builds the command to run the analysis.
@@ -19,7 +19,7 @@ import { detectRuntime } from "../../lib/current-runtime";
  * @param options.runtime - The runtime to use ('deno' or 'node').
  * @returns The built command as a string.
  */
-function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean}, runtimeParam: string): string {
+function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, runtimeParam: string): string {
   let cmd: string = "";
   const runtime = runtimeParam === "--deno" ? "deno" : "node";
 
@@ -60,7 +60,10 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean}, ru
  * @param options - The options for running the script.
  * @returns void
  */
-async function runAnalysis(scriptName: string | undefined, options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean; deno: boolean; node: boolean }) {
+async function runAnalysis(
+  scriptName: string | undefined,
+  options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean; deno: boolean; node: boolean },
+) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
@@ -73,7 +76,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     scriptName = scriptName.toLowerCase();
     scriptToRun = searchName(
       scriptName,
-      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      analysisList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
   } else {
     scriptToRun = await pickAnalysisFromConfig(analysisList);
@@ -94,7 +97,7 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
     T_EXTERNAL: "external",
     T_ANALYSIS_TOKEN: analysisToken,
     T_ANALYSIS_ID: scriptToRun.id,
-  }
+  };
 
   if (typeof config.profileRegion === "object") {
     analysisEnv.TAGOIO_API = config.profileRegion.api;
@@ -119,16 +122,16 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   let runtime;
   if (options.deno && options.node) {
-    console.error('Error: Cannot specify both --deno and --node flags');
+    console.error("Error: Cannot specify both --deno and --node flags");
     process.exit(1);
   } else if (options.deno) {
-    runtime = '--deno';
+    runtime = "--deno";
   } else if (options.node) {
-    runtime = '--node';
+    runtime = "--node";
   } else {
     runtime = detectRuntime(runtimeParam || "");
   }
-  
+
   const cmd = _buildCMD(options, runtime);
 
   if (run_on === "tago") {

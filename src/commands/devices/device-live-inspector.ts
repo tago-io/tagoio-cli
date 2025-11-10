@@ -1,6 +1,5 @@
+import { Account, Device, DeviceInfo } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
-import { Account, Device } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";

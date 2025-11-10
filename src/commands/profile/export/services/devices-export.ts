@@ -27,7 +27,9 @@ async function deviceExport(account: Account, import_account: Account, export_ho
 
     const token = await Utils.getTokenByName(account, device_id);
 
-    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((device) => device.tags.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || {
+      id: null,
+    };
 
     let new_token: string;
     const new_device = replaceObj(device, export_holder.devices);
@@ -55,7 +57,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
         active: new_device.active,
         visible: new_device.visible,
       });
-      new_token = await Utils.getTokenByName(import_account, target_id) as string;
+      new_token = (await Utils.getTokenByName(import_account, target_id)) as string;
     }
 
     export_holder.devices[device_id] = target_id;

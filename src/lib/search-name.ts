@@ -5,7 +5,7 @@ function orderNames(key: string, names: string[]) {
     ...names.map((x) => {
       const argValue = x.toLowerCase().replace(".ts", "");
       return stringComparison.cosine.similarity(key, argValue);
-    })
+    }),
   );
 
   return similarity;

@@ -1,9 +1,7 @@
-import zlib from "zlib";
+import { Account, AnalysisListItem } from "@tago-io/sdk";
 import axios from "axios";
 import prompts from "prompts";
-
-import { Account } from "@tago-io/sdk";
-import { AnalysisListItem } from "@tago-io/sdk";
+import zlib from "zlib";
 
 import { infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
@@ -29,7 +27,10 @@ async function choose_variable(key: string, values: string[]) {
   return variable;
 }
 
-function separate_variable_with_duplicate_values(export_analysis: AnalysisListItem<"id" | "name" | "variables">[], import_analysis: AnalysisListItem<"id" | "name" | "variables">[]) {
+function separate_variable_with_duplicate_values(
+  export_analysis: AnalysisListItem<"id" | "name" | "variables">[],
+  import_analysis: AnalysisListItem<"id" | "name" | "variables">[],
+) {
   const values_by_keys: any = {};
   for (const item of [...export_analysis, ...import_analysis]) {
     if (!item.variables) {
@@ -57,7 +58,7 @@ async function fixEnvironmentVariables(
   import_account: Account,
   export_analysis: AnalysisListItem<"id" | "name" | "variables">[],
   import_analysis: AnalysisListItem<"id" | "name" | "variables">[],
-  analysis_info: { id: string; variables: { key: string; value: string } }[]
+  analysis_info: { id: string; variables: { key: string; value: string } }[],
 ) {
   const variables_with_duplicate_values = separate_variable_with_duplicate_values(export_analysis, import_analysis);
 
@@ -93,7 +94,11 @@ async function analysisExport(account: Account, import_account: Account, export_
     .list({ amount: 99, fields: ["id", "name", "tags", "variables"], filter: { tags: [{ key: export_holder.config.export_tag }] } })
     .then((r) => r.reverse());
   // @ts-expect-error we are looking only for keys
-  const import_list = await import_account.analysis.list({ amount: 99, fields: ["id", "tags", "variables"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  const import_list = await import_account.analysis.list({
+    amount: 99,
+    fields: ["id", "tags", "variables"],
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
+  });
 
   const analysis_info = [];
   for (const { id: analysis_id, name } of list) {
@@ -101,7 +106,9 @@ async function analysisExport(account: Account, import_account: Account, export_
     const analysis = await account.analysis.info(analysis_id);
     const export_id = analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
-    let { id: target_id } = import_list.find((analysis) => analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((analysis) =>
+      analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id),
+    ) || { id: null };
 
     const new_analysis = replaceObj(analysis, { ...export_holder.devices, ...export_holder.tokens });
     if (!target_id) {

@@ -58,7 +58,7 @@ Example:
     $ tagoio export --from dev --to prod
     $ tagoio export --from dev --to prod -e dashboards -e actions -e analysis
     $ tagoio export -ft cb8a1d42-0f28-4ee7-9862-839920eb1cb1 -tt eb8a1d42-0f28-4ee7-9862-839920eb1cb0
-  `
+  `,
     );
 }
 

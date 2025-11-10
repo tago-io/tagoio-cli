@@ -21,7 +21,7 @@ Example:
     $ tagoio copy-tab
     $ tagoio copy-tab 62151835435d540010b768c4 --from 1688653060637 --to 2688653060638
     $ tagoio copy-tab 62151835435d540010b768c4 --env dev
-       `
+       `,
     );
 }
 

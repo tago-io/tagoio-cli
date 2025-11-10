@@ -35,7 +35,7 @@ function deviceCommands(program: Command) {
 Example:
     $ tagoio device-inspector 62151835435d540010b768c4
     $ tagoio device-inspector 62151835435d540010b768c4 --env dev
-       `
+       `,
     );
 
   program
@@ -53,7 +53,7 @@ Example:
       `
 
 Example:
-    $ tagoio device-info 62151835435d540010b768c4`
+    $ tagoio device-info 62151835435d540010b768c4`,
     );
 
   program
@@ -77,7 +77,7 @@ Example:
     $ tagoio device-list
     $ tagoio device-list --name Device -s
     $ tagoio device-list -t device_type -v sensor
-       `
+       `,
     );
 
   const isValidQuery = (query: any) => ["count", "sum", "avg", "min", "max", "first", "last"].includes(query);
@@ -106,7 +106,7 @@ Example:
      $ tagoio data 62151835435d540010b768c4 --post '{ "variable": "temperature", "value": 32 }'
      $ tagoio data 62151835435d540010b768c4
      $ tagoio data 62151835435d540010b768c4 -v temperature -qty 1
-     `
+     `,
     );
 
   program
@@ -126,7 +126,7 @@ Example:
    $ tagoio bkp
    $ tagoio bkp 62151835435d540010b768c4
    $ tagoio bkp 62151835435d540010b768c4 --local
-   `
+   `,
     );
 
   program
@@ -144,7 +144,7 @@ Example:
 Example:
    $ tagoio device-network 62151835435d540010b768c4 --n 62151835435d540010b768c4 --c 62151835435d540010b768c4
    $ tagoio nc 62151835435d540010b768c4 --n 62151835435d540010b768c4
-   `
+   `,
     );
 
   program
@@ -164,7 +164,7 @@ Example:
   Example:
      $ tagoio device-type
      $ tagoio device-type 62151835435d540010b768c4
-     `
+     `,
     );
 
   program
@@ -182,7 +182,7 @@ Example:
 Example:
    $ tagoio device-copy
    $ tagoio device-copy --to 62151835435d540010b768c4 --from 78151835435d540010b768c4
-   `
+   `,
     );
 }
 
