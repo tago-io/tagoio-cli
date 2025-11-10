@@ -41,19 +41,19 @@
   "author": "TagoIO LLC",
   "license": "ISC",
   "dependencies": {
-    "@swc-node/register": "^1.10.10",
-    "@swc/cli": "^0.7.8",
-    "@swc/core": "^1.13.3",
+    "@swc-node/register": "^1.11.1",
+    "@swc/cli": "^0.7.9",
+    "@swc/core": "^1.15.1",
     "@tago-io/sdk": "^12.2.1",
     "async": "^3.2.6",
     "axios": "^1.11.0",
-    "commander": "^14.0.0",
+    "commander": "^14.0.2",
     "dotenv": "^17.2.1",
     "envfile": "^7.1.0",
     "eventsource": "^4.0.0",
     "kleur": "^4.1.5",
     "lodash": "^4.17.21",
-    "luxon": "^3.7.1",
+    "luxon": "^3.7.2",
     "prompts": "^2.4.2",
     "string-comparison": "^1.3.0"
   },
@@ -67,7 +67,7 @@
     "@types/prompts": "^2.4.9",
     "ts-node-dev": "2.0.0",
     "typescript": "^5.9.2",
-    "unplugin-swc": "^1.5.5",
+    "unplugin-swc": "^1.5.8",
     "vitest": "^3.2.4"
   }
 }
