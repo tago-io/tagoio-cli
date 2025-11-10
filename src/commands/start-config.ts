@@ -259,7 +259,6 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     region = {
       api: tagoAPIURL || "",
       sse: tagoSSEURL || "",
-      realtime: "", // Not used in the CLI
     }
   }
 

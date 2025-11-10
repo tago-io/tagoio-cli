@@ -70,7 +70,6 @@ function getProfileRegion(userEnvironment: IEnvironment) {
     region = {
       api: userEnvironment.tagoAPIURL || "",
       sse: userEnvironment.tagoSSEURL || "",
-      realtime: "", // Not used in the CLI
     }
   }
 

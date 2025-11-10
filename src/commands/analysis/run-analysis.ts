@@ -98,9 +98,6 @@ async function runAnalysis(scriptName: string | undefined, options: { environmen
 
   if (typeof config.profileRegion === "object") {
     analysisEnv.TAGOIO_API = config.profileRegion.api;
-    if (config.profileRegion.realtime) {
-      analysisEnv.TAGOIO_REALTIME = config.profileRegion.realtime;
-    }
     if (config.profileRegion.sse) {
       analysisEnv.TAGOIO_SSE = config.profileRegion.sse;
     }
