@@ -18,12 +18,14 @@ function analysisCommands(program: Command) {
     .description(
       `deploy your analysis to TagoIO
     Analysis must be registered in your tagoconfig.ts file first
-    You can register an analysis by using ${kleur.italic("tagoio init")}`
+    You can register an analysis by using ${kleur.italic("tagoio init")}`,
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .allowExcessArguments(true)
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-s, --silent", "will not prompt to confirm the deploy")
+    .option("--deno", "Force build for Deno runtime", false)
+    .option("--node", "Force build for Node.js runtime", false)
     .action(deployAnalysis)
     .addHelpText(
       "after",
@@ -31,7 +33,11 @@ function analysisCommands(program: Command) {
 Example:
     $ tagoio deploy all
     $ tagoio deploy all -e stage
-    $ tagoio deploy dashboard-handler`
+    $ tagoio deploy dashboard-handler
+    $ tagoio deploy dashboard-handler --deno
+    $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy --node
+    $ tagoio deploy --deno`,
     );
 
   program
@@ -43,13 +49,15 @@ Example:
     If name is not provided, you will be prompted to select which analysis you want to run.
 
     Note: Analysis will automatically be edited to run in external at TagoIO side.
-    To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`
+    To change it back to run at TagoIO, use ${kleur.italic("tagoio am")}`,
     )
     .argument("[name]", "partial name of the analysis in config.js")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-d, --debug", "run with --inspector for debug")
     .option("-c, --clear", "Will clear screen on restart")
     .option("--tsnd", "run with ts-node-dev if installed globally")
+    .option("--deno", "Force build for Deno runtime", false)
+    .option("--node", "Force build for Node.js runtime", false)
     .action(runAnalysis)
     .addHelpText(
       "after",
@@ -60,7 +68,11 @@ Example:
     $ tagoio run dash
     $ tagoio run dashboard-handler -d
     $ tagoio run dashboard-handler -d -c
-       `
+    $ tagoio run dashboard-handler --deno
+    $ tagoio run dashboard-handler --node
+    $ tagoio run --deno
+    $ tagoio run --node
+       `,
     );
 
   program
@@ -77,7 +89,7 @@ Example:
       `
 Example:
     $ tagoio analysis-trigger dash
-    $ tagoio analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`
+    $ tagoio analysis-trigger dash --json "${JSON.stringify([{ variable: "test" }])}"`,
     );
 
   program
@@ -92,7 +104,7 @@ Example:
       `
 
 Example:
-    $ tagoio analysis-console 62151835435d540010b768c4`
+    $ tagoio analysis-console 62151835435d540010b768c4`,
     );
 
   program
@@ -108,7 +120,7 @@ Example:
       `
 
 Example:
-    $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+    $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`,
     );
 
   program
@@ -119,7 +131,7 @@ Example:
       `change an analysis or group of analysis to run on tago/external
 
     If name is not provided, you will be prompted to select which analysis you want to update.
-    Analysis in external mode are displayed first.`
+    Analysis in external mode are displayed first.`,
     )
     .argument("[name]", "partial analysis name to filter the list")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -131,7 +143,7 @@ Example:
       `
 
 Example:
-     $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`
+     $ tagoio analysis-duplicate 62151835435d540010b768c4 --name "Duplicated Analysis"`,
     );
 
   return program;

@@ -1,13 +1,10 @@
-import { readdirSync } from "fs";
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
-
-import { Account } from "@tago-io/sdk";
-import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
-import { AnalysisInfo, AnalysisListItem } from "@tago-io/sdk/lib/types";
-
-import { IEnvironment, getConfigFile, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
+import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
 import { readToken, writeToken } from "../lib/token";
 import { promptTextToEnter } from "../prompt/text-prompt";
@@ -16,6 +13,38 @@ import { getTagoDeployURL, tagoLogin } from "./login";
 interface ConfigOptions {
   token: string | void;
   environment: string | void;
+}
+
+interface AnalysisFile {
+  filename: string;
+  relativePath: string;
+}
+
+const analysisPath = "./src/analysis";
+
+/**
+ * Recursively scans a directory and its subdirectories for analysis files.
+ * @param dirPath - The directory path to scan.
+ * @param basePath - The base analysis path for relative path calculation.
+ * @returns An array of file paths with their relative paths.
+ */
+function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): AnalysisFile[] {
+  const files: AnalysisFile[] = [];
+  const items = readdirSync(dirPath);
+
+  for (const item of items) {
+    const fullPath = join(dirPath, item);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      files.push(...scanAnalysisFiles(fullPath, basePath));
+    } else if (item.endsWith(".ts") || item.endsWith(".js")) {
+      const relativePath = dirPath === basePath ? "" : dirPath.replace(basePath + "/", "").replace(analysisPath + "/", "");
+      files.push({ filename: item, relativePath });
+    }
+  }
+
+  return files;
 }
 
 /**
@@ -71,24 +100,17 @@ async function chooseAnalysis(analysisOptions: any[]) {
  * @param oldList - An optional array of previously selected analyses.
  * @returns An array of selected analyses with their IDs, names, and file names.
  */
-async function getAnalysisList(
-  account: Account,
-  oldList: IEnvironment["analysisList"] = [],
-) {
-  const analysisList = await account.analysis
-    .list({ amount: 35, fields: ["id", "name", "tags"] })
-    .catch(errorHandler);
+async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
+  const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
 
   if (!analysisList) {
     return [];
   }
 
-  const getName = (analysis: AnalysisListItem) =>
-    `[${analysis.id}] ${analysis.name}`;
+  const getName = (analysis: AnalysisListItem<"id" | "name" | "tags">) => `[${analysis.id}] ${analysis.name}`;
 
   const oldIDList = new Set(oldList.map((x) => x.id));
-  const configList: AnalysisListItem<"id" | "name" | "tags">[] =
-    analysisList.filter((x) => oldIDList.has(x.id));
+  const configList: AnalysisListItem<"id" | "name" | "tags">[] = analysisList.filter((x) => oldIDList.has(x.id));
 
   const analysisOptions = analysisList.map((x) => ({
     title: getName(x),
@@ -114,21 +136,14 @@ async function getAnalysisList(
  * @param analysisPath - The path to search for analysis scripts.
  * @returns A Promise that resolves to the updated analysis list with the selected script file names.
  */
-async function getAnalysisScripts(
-  analysisList: IEnvironment["analysisList"],
-  analysisPath: string,
-) {
-  infoMSG(`Searching for files at ${analysisPath}`);
-  let files: Choice[] = readdirSync(analysisPath)
-    .filter((x) => x.endsWith(".ts") || x.endsWith(".js") || x.endsWith(".py"))
-    .map((x) => ({ title: x }));
+async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
+  analysisPath = analysisPath.replace("./", "");
+  infoMSG(`Searching for files at ${analysisPath} and subfolders`);
+  let files: Choice[] = scanAnalysisFiles(analysisPath).map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
 
   for (const analysis of analysisList) {
     files = files.sort((a, b) =>
-      stringComparison.cosine.distance(analysis.name, a.title) >
-        stringComparison.cosine.distance(analysis.name, b.title)
-        ? 1
-        : -1,
+      stringComparison.cosine.distance(analysis.name, a.title) > stringComparison.cosine.distance(analysis.name, b.title) ? 1 : -1,
     );
 
     const editFile = files.find((x) => x.title === analysis.fileName);
@@ -146,12 +161,16 @@ async function getAnalysisScripts(
       continue;
     }
 
+    const file = files.find((x) => x.value === response);
+    analysis.fileName = file?.title as string;
+    if (file?.description && file?.description?.length > 0) {
+      analysis.path = file?.description as string;
+    }
+
     const fileIndex = files.findIndex((x) => x.title === response);
     if (fileIndex !== -1) {
       files.splice(fileIndex, 1);
     }
-
-    analysis.fileName = response;
   }
   return analysisList;
 }
@@ -179,6 +198,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   }
 
   let tagoAPIURL, tagoSSEURL: string | undefined;
+
   // Get token from file or prompt user to create one
   if (!token) {
     token = readToken(environment);
@@ -187,9 +207,12 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
       token = data?.profileToken;
       tagoAPIURL = data?.tagoDeployUrl;
       tagoSSEURL = data?.tagoDeploySse;
+    } else {
+      tagoAPIURL = configFile[environment]?.tagoAPIURL;
+      tagoSSEURL = configFile[environment]?.tagoSSEURL;
     }
   } else {
-    const urlConfig = await getTagoDeployURL()
+    const urlConfig = await getTagoDeployURL();
     writeToken(token, environment);
     tagoAPIURL = urlConfig?.urlAPI || "";
     tagoSSEURL = urlConfig?.urlSSE || "";
@@ -197,17 +220,11 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
 
   // Prompt user to enter analysis and build paths if not found in config file
   if (!configFile.analysisPath) {
-    configFile.analysisPath = await promptTextToEnter(
-      `Enter the path of your ${kleur.cyan("analysis")} folder: `,
-      "./src/analysis",
-    );
+    configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
   }
 
   if (!configFile.buildPath) {
-    configFile.buildPath = await promptTextToEnter(
-      `Enter the path of your ${kleur.cyan("building")} folder (typescript): `,
-      "./build",
-    );
+    configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
   }
 
   // Return if token is not found
@@ -220,8 +237,7 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     region = {
       api: tagoAPIURL || "",
       sse: tagoSSEURL || "",
-      realtime: "", // Not used in the CLI
-    }
+    };
   }
 
   // Get account info and analysis list
@@ -231,14 +247,8 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
   if (!accountInfo) {
     return;
   }
-  let analysisList = await getAnalysisList(
-    account,
-    configFile[environment]?.analysisList,
-  );
-  analysisList = await getAnalysisScripts(
-    analysisList,
-    configFile.analysisPath,
-  );
+  let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
+  analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
   // Create new environment object and write to config file
   const newEnv: IEnvironment = {

@@ -9,8 +9,7 @@
   "logo": "https://api.tago.io/file/631f6a9c4f2f5200183d7273/header.png",
   "signup_logo": "",
   "signup_logo_options": {},
-  "sidebar_buttons": [
-  ],
+  "sidebar_buttons": [],
   "signup_fields": [
     {
       "name": "",
@@ -257,6 +256,5 @@
       "email_owner": true
     }
   },
-  "signin_buttons": [
-  ]
+  "signin_buttons": []
 }

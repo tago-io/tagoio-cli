@@ -8,8 +8,12 @@ async function actionsExport(account: Account, import_account: Account, export_h
 
   // @ts-expect-error we are looking only for keys
   const list = await account.actions.list({ amount: 10000, fields: ["id", "name", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
-  // @ts-expect-error we are looking only for keys
-  const import_list = await import_account.actions.list({ amount: 10000, fields: ["id", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  const import_list = await import_account.actions.list({
+    amount: 10000,
+    fields: ["id", "tags"],
+    // @ts-expect-error we are looking only for keys
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
+  });
 
   for (const { id: action_id, name } of list) {
     await new Promise((resolve) => setTimeout(resolve, 250)); // sleep
@@ -17,7 +21,9 @@ async function actionsExport(account: Account, import_account: Account, export_h
     const action = await account.actions.info(action_id);
     const export_id = action.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
-    let { id: target_id } = import_list.find((action) => action.tags?.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || { id: null };
+    let { id: target_id } = import_list.find((action) => action.tags?.find((tag) => tag.key === export_holder.config.export_tag && tag.value == export_id)) || {
+      id: null,
+    };
 
     const new_action = replaceObj(action, { ...export_holder.devices, ...export_holder.analysis });
     for (const trigger of new_action.trigger) {

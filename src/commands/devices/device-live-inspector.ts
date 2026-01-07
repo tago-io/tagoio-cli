@@ -1,34 +1,30 @@
-import { io } from "socket.io-client";
-
-import { Account, Device } from "@tago-io/sdk";
-import { DeviceInfo } from "@tago-io/sdk/lib/types";
+import { Account, Device, DeviceInfo } from "@tago-io/sdk";
+import { EventSource } from "eventsource";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
+import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
 
 /**
- * Creates a new socket connection to the TagoIO Realtime API.
+ * Creates a new SSE connection to the TagoIO Realtime API.
  * @param profileToken - The user's profile token.
- * @returns A socket instance connected to the TagoIO Realtime API.
+ * @param deviceID - The ID of the device to inspect.
+ * @param urlSSERealtime - The URL of the TagoIO SSE Realtime API.
+ * @returns An EventSource instance connected to the TagoIO Realtime API.
  */
-function apiSocket(profileToken: string) {
-  const socket = io("wss://realtime.tago.io", {
-    reconnectionDelay: 10_000,
-    reconnection: true,
-    transports: ["websocket"],
-    query: {
-      token: profileToken,
-    },
-  });
+function apiSSE(profileToken: string, deviceID: string, urlSSERealtime?: string) {
+  const url = urlSSERealtime || "https://sse.tago.io/events";
+  const sse = new EventSource(`${url}?channel=device_inspector.${deviceID}&token=${profileToken}`);
 
-  return socket;
+  return sse;
 }
 
 interface ScopeContent {
+  connection_id: string;
+  content: string;
+  device_id: string;
   timestamp: string;
   title: string;
-  content: string;
 }
 
 /**
@@ -47,35 +43,14 @@ function displayMessage(scope: ScopeContent) {
 }
 
 /**
- * Sets up the socket connection and event listeners for device live inspection.
- * @param socket - The socket connection to TagoIO.
+ * Sets up the SSE connection and event listeners for device live inspection.
+ * @param sse - The SSE connection to TagoIO.
  * @param deviceIdOrToken - The ID or token of the device to inspect.
  * @param deviceInfo - Information about the device being inspected.
  */
-function setupSocket(socket: ReturnType<typeof apiSocket>, deviceIdOrToken: string, deviceInfo: DeviceInfo) {
-  socket.on("connect", () => {
-    successMSG("Connected to TagoIO, Getting device information...");
-    socket.emit("attach", "device", deviceIdOrToken);
-    socket.emit("attach", {
-      resourceName: "device",
-      resourceID: deviceIdOrToken,
-    });
-  });
-
-  socket.on("disconnect", () => infoMSG("Disconnected from TagoIO.\n\n"));
-
-  socket.on("error", (e: Error) => errorHandler(`Connection error: ${e}`));
-
-  socket.on("ready", () => {
-    const deviceName = deviceInfo?.name || deviceIdOrToken;
-    successMSG(`Device [${highlightMSG(deviceName)}] found successfully.`);
-    successMSG(`Waiting for logs...`);
-  });
-
-  /**
-   * Event listener for device inspection messages.
-   */
-  socket.on("device::inspection", (scope: ScopeContent | ScopeContent[]) => {
+function setupSSE(sse: ReturnType<typeof apiSSE>, deviceIdOrToken: string, deviceInfo: DeviceInfo) {
+  sse.onmessage = (event) => {
+    const scope = JSON.parse(event.data).payload as ScopeContent;
     if (Array.isArray(scope)) {
       for (const item of scope) {
         displayMessage(item);
@@ -83,7 +58,18 @@ function setupSocket(socket: ReturnType<typeof apiSocket>, deviceIdOrToken: stri
     } else {
       displayMessage(scope);
     }
-  });
+  };
+
+  sse.onerror = (error) => {
+    errorHandler("Connection error");
+    console.error(error);
+  };
+
+  sse.onopen = () => {
+    const deviceName = deviceInfo?.name || deviceIdOrToken;
+    successMSG(`Device [${highlightMSG(deviceName)}] found successfully.`);
+    successMSG(`Waiting for logs...`);
+  };
 }
 
 interface IOptions {
@@ -125,8 +111,8 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     deviceIdOrToken = deviceInfo.id;
   }
 
-  const socket = apiSocket(config.profileToken);
-  setupSocket(socket, deviceIdOrToken, deviceInfo);
+  const sse = apiSSE(config.profileToken, deviceInfo.id, config?.tagoSSEURL);
+  setupSSE(sse, deviceIdOrToken, deviceInfo);
 }
 
 export { inspectorConnection };

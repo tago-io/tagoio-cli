@@ -1,9 +1,7 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+import { Account, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
-
-/* eslint-disable @typescript-eslint/unbound-method */
-import { Account } from "@tago-io/sdk";
-import { TagsObj } from "@tago-io/sdk/lib/types";
 
 import { getEnvironmentConfig } from "../../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";

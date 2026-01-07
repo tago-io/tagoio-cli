@@ -1,7 +1,5 @@
+import { Account, DashboardInfo } from "@tago-io/sdk";
 import { queue } from "async";
-
-import { Account } from "@tago-io/sdk";
-import { DashboardInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../../../../lib/messages";
 import { chooseFromList } from "../../../../prompt/choose-from-list";
@@ -42,7 +40,13 @@ async function updateDashboard({ label, dash_id, import_list, export_holder, exp
   export_holder.dashboards[dash_id] = importDash.id;
 }
 
-async function resolveDashboardTarget(importAccount: Account, export_id: string, import_list: DashboardInfo[], content: DashboardInfo, export_holder: IExportHolder) {
+async function resolveDashboardTarget(
+  importAccount: Account,
+  export_id: string,
+  import_list: DashboardInfo[],
+  content: DashboardInfo,
+  export_holder: IExportHolder,
+) {
   const import_dashboard = import_list.find((dash) => {
     const import_id = dash.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
     return import_id && import_id === export_id;
@@ -79,8 +83,13 @@ async function resolveDashboardTarget(importAccount: Account, export_id: string,
 async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder, options: IExportOptions) {
   console.info("Exporting dashboard: started");
 
-  // @ts-expect-error we are looking only for keys
-  let exportList = await exportAccount.dashboards.list({ page: 1, amount: 10000, fields: ["id", "label", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  let exportList = await exportAccount.dashboards.list({
+    page: 1,
+    amount: 10000,
+    fields: ["id", "label", "tags"],
+    // @ts-expect-error we are looking only for keys
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
+  });
   if (exportList.length > 0 && options.pick) {
     const choices = exportList.map((item) => ({ title: item.label, value: item }));
     exportList = await chooseFromList(choices, "Choose the dashboards you want to export:");
@@ -89,8 +98,13 @@ async function dashboardExport(exportAccount: Account, importAccount: Account, e
     }
   }
 
-  // @ts-expect-error we are looking only for keys
-  const import_list = await importAccount.dashboards.list({ page: 1, amount: 10000, fields: ["id", "label", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
+  const import_list = await importAccount.dashboards.list({
+    page: 1,
+    amount: 10000,
+    fields: ["id", "label", "tags"],
+    // @ts-expect-error we are looking only for keys
+    filter: { tags: [{ key: export_holder.config.export_tag }] },
+  });
 
   const dashboardQueue = queue(updateDashboard, 3);
   dashboardQueue.error(errorHandler);

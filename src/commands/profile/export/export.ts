@@ -1,7 +1,6 @@
+import { Account } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
-
-import { Account } from "@tago-io/sdk";
 
 import { addOnGitIgnore } from "../../../lib/add-to-gitignore";
 import { getEnvironmentConfig } from "../../../lib/config-file";

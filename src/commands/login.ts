@@ -1,8 +1,7 @@
+import { Account, OTPType } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { Account } from "@tago-io/sdk";
-import { OTPType } from "@tago-io/sdk/lib/types";
-
+import { addHttpsToUrl } from "../lib/add-https-to-url";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
 import { writeToken } from "../lib/token";
 
@@ -19,23 +18,33 @@ async function getTagoDeployURL(): Promise<{ urlAPI: string; urlSSE: string } | 
     return;
   }
 
-  const { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: ", hint: "https://api.tago.io" });
+  let { urlAPI } = await prompts({ type: "text", name: "urlAPI", message: "Set the URL for the API service: ", hint: "https://api.tago.io" });
   if (!urlAPI) {
     return;
   }
 
+  urlAPI = addHttpsToUrl(urlAPI);
+
   const sanitizedUrlAPI = new URL(urlAPI).origin;
 
   let { urlSSE } = await prompts({ type: "text", name: "urlSSE", message: "Set the URL for the SSE service: ", hint: "https://sse.tago.io" });
+
+  urlSSE = addHttpsToUrl(urlSSE);
+
   if (!urlSSE) {
     urlSSE = sanitizedUrlAPI.replace("https://api.", "https://sse.");
   }
 
   if (urlSSE) {
+    urlSSE = urlSSE.replace("api.", "sse.");
+
     const sseUrl = new URL(urlSSE);
-    sseUrl.pathname = '/events';
+    sseUrl.pathname = "/events";
     urlSSE = sseUrl.toString();
   }
+
+  process.env.TAGOIO_API = sanitizedUrlAPI;
+  process.env.TAGOIO_SSE = urlSSE;
 
   return { urlAPI: sanitizedUrlAPI, urlSSE };
 }

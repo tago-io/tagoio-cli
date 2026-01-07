@@ -1,7 +1,6 @@
+import { Account } from "@tago-io/sdk";
 import axios from "axios";
 import kleur from "kleur";
-
-import { Account } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
@@ -14,7 +13,6 @@ interface BucketSettings {
 }
 
 type environmentConfigResponse = NonNullable<ReturnType<typeof getEnvironmentConfig>>;
-
 
 async function updateDevice(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -35,7 +33,9 @@ async function updateDevice(config: environmentConfigResponse, deviceID: string,
     await account.devices.tokenCreate(deviceID, { serie_number: serieNumber, name: token.name, permission: "full" });
   }
 
-  successMSG(`Device ${kleur.blue(deviceID)} has been successfully updated to use the ${kleur.cyan(settings.network)} network along with the ${kleur.cyan(settings.connector)} connector.`);
+  successMSG(
+    `Device ${kleur.blue(deviceID)} has been successfully updated to use the ${kleur.cyan(settings.network)} network along with the ${kleur.cyan(settings.connector)} connector.`,
+  );
 }
 
 async function changeNetworkOrConnector(id: string, options: { environment: string; networkID: string; connectorID: string }) {
@@ -86,4 +86,4 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
   await updateDevice(config, deviceID, updateInfo);
 }
 
-export { changeNetworkOrConnector }
+export { changeNetworkOrConnector };

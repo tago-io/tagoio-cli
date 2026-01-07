@@ -1,8 +1,7 @@
-import { join } from "path";
-import kleur from "kleur";
-import prompts from "prompts";
-
 import { Account } from "@tago-io/sdk";
+import kleur from "kleur";
+import { join } from "path";
+import prompts from "prompts";
 
 import { errorHandler } from "../lib/messages";
 

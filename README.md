@@ -70,8 +70,8 @@ List of commands of the CLI
 | list-env | list all your environment and show current default |
 | | |
 | **Analysis** | |
-| deploy, analysis-deploy [name] | deploy your analysis to TagoIO |
-| run, analysis-run [name] | run your TagoIO analysis from your machine. |
+| deploy, analysis-deploy [name] | deploy your analysis to TagoIO (supports `--deno`, `--node` runtime flags) |
+| run, analysis-run [name] | run your TagoIO analysis from your machine (supports `--deno` and `--node` runtime flags) |
 | at, analysis-trigger [name] | send a signal to trigger your analysis TagoIO |
 | ac, analysis-console [name] | connect to your Analysis Console |
 | ad, analysis-duplicate [ID] | duplicate your Analysis |
@@ -172,7 +172,9 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
 - **tagoio deploy**: This command deploys your project to the TagoIO platform.
   
   ```sh
-  tagoio deploy
+  tagoio deploy           # Detect the current runtime
+  tagoio deploy --deno    # Force Deno runtime
+  tagoio deploy --node    # Force Node.js runtime
   ```
 
 - **tagoio trigger**: Use this command to trigger specific actions or events in your project.
@@ -184,7 +186,9 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
 - **tagoio run**: This command allows you to run your project locally for testing and development.
   
   ```sh
-  tagoio run
+  tagoio run            # Detect the current runtime
+  tagoio run --deno     # Force Deno runtime
+  tagoio run --node     # Force Node.js runtime
   ```
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { readFileSync } from "fs";
 import { Command } from "commander";
 import dotenv from "dotenv";
+import { readFileSync } from "fs";
 import kleur from "kleur";
 
 import { analysisCommands } from "./commands/analysis";
@@ -22,7 +22,7 @@ import { updater } from "./lib/notify-update";
  * Loads the package.json file from the CLI directory.
  */
 const packageJSON = JSON.parse(readFileSync(resolveCLIPath("./package.json")).toString());
-dotenv.config({ path: ENV_FILE_PATH });
+dotenv.config({ path: ENV_FILE_PATH, quiet: true });
 
 const indexConfigFile = getConfigFile();
 const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
@@ -87,7 +87,7 @@ async function initiateCMD() {
 Example:
     $ tagoio init
     $ tagoio init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
-    $ tagoio init --env dev`
+    $ tagoio init --env dev`,
     );
 
   program
@@ -106,7 +106,7 @@ Example:
 Example:
     $ tagoio login
     $ tagoio login -u tago@tago.io -p 12345678
-    $ tagoio login -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0`
+    $ tagoio login -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0`,
     );
 
   program
@@ -119,7 +119,7 @@ Example:
       `
 Example:
      $ tagoio set-env
-     $ tagoio set-env dev`
+     $ tagoio set-env dev`,
     );
 
   program
@@ -130,7 +130,7 @@ Example:
       "after",
       `
 Example:
-   $ tagoio list-env`
+   $ tagoio list-env`,
     );
 
   await getAllCommands(program);

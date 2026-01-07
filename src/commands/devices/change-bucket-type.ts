@@ -1,7 +1,6 @@
+import { Account } from "@tago-io/sdk";
 import axios from "axios";
 import kleur from "kleur";
-
-import { Account } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";

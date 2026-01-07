@@ -1,7 +1,5 @@
+import { Account, AnalysisInfo } from "@tago-io/sdk";
 import prompts from "prompts";
-
-import { Account } from "@tago-io/sdk";
-import { AnalysisInfo } from "@tago-io/sdk/lib/types";
 
 import { errorHandler } from "../lib/messages";
 

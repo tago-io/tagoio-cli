@@ -3,7 +3,7 @@
 // * This file is global types, it's used to remove "implicitly has an 'any' type" errors.
 // ? ====================================================================================
 
-import { GenericModuleParams } from "@tago-io/sdk/lib/common/TagoIOModule";
+import { GenericModuleParams } from "@tago-io/sdk";
 
 interface IExportHolder {
   dashboards: { [key: string]: string };

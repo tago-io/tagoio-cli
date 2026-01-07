@@ -62,8 +62,8 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     if (!target_id) {
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
-      const export_device = new Device({ token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
-      const import_device = new Device({ token: new_token, region: !process.env.TAGOIO_API ? "us-e1" : "env" });
+      const export_device = new Device({ token, region: config.import.region });
+      const import_device = new Device({ token: new_token, region: config.export.region });
 
       for await (const items of export_device.getDataStreaming({ variables: config.data })) {
         await import_device.sendData(items).catch(errorHandler);
@@ -80,7 +80,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
         active: new_device.active,
         visible: new_device.visible,
       });
-      new_token = await Utils.getTokenByName(import_account, target_id);
+      new_token = (await Utils.getTokenByName(import_account, target_id)) as string;
       // TODO: Check whether to update the CFG for devices that already exist.
     }
 
@@ -88,7 +88,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     await _generateDeviceToken(account, import_account, target_id, new_token, device_id);
 
     export_holder.devices[device_id] = target_id;
-    export_holder.tokens[token] = new_token;
+    export_holder.tokens[token as string] = new_token;
   }
 
   console.info("Exporting devices: finished");

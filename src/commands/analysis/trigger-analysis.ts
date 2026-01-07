@@ -1,6 +1,5 @@
-import kleur from "kleur";
-
 import { Account } from "@tago-io/sdk";
+import kleur from "kleur";
 
 import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
@@ -37,7 +36,7 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
   } else {
     script = searchName(
       scriptName,
-      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x }))
+      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
   }
 
@@ -49,7 +48,7 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
   infoMSG(`Analysis found: ${script.name} [${script.id}].`);
 
   try {
-    await account.analysis.run(script.id, options.json);
+    await account.analysis.run(script.id, options.json as any);
     successMSG(`Analysis triggered: ${kleur.cyan(script?.name || "")} [${script?.id}]`);
   } catch (error) {
     errorHandler(error);
