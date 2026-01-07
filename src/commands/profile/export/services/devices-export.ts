@@ -81,7 +81,6 @@ async function deviceExport(account: Account, import_account: Account, export_ho
         visible: new_device.visible,
       });
       new_token = (await Utils.getTokenByName(import_account, target_id)) as string;
-      // TODO: Check whether to update the CFG for devices that already exist.
     }
 
     // Replace the device token if the token being exported has the serial_number
