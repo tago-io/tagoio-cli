@@ -7,7 +7,7 @@ import { IExport, IExportHolder } from "../types";
 /**
  * @description Replace the device token if the token being exported has the serial_number
  */
-async function _generateDeviceToken(account: Account, import_account: Account, target_id: string, new_token: string, device_id: string) {
+async function _generateDeviceToken(account: Account, import_account: Account, target_id: string, device_id: string) {
   let device_tokens = await account.devices.tokenList(device_id, { fields: ["name", "permission", "expire_time", "serie_number"] });
   device_tokens = device_tokens.filter((token) => token.serie_number);
 
@@ -15,7 +15,17 @@ async function _generateDeviceToken(account: Account, import_account: Account, t
     return;
   }
 
-  await import_account.devices.tokenDelete(new_token).catch(errorHandler);
+  const token_list = await import_account.devices.tokenList(target_id, { fields: ["serie_number", "token"] } ).then((tokens) => {
+    const tokens_with_serial_number = tokens.filter((t) => t.serie_number);
+    if (tokens_with_serial_number) {
+      return tokens_with_serial_number.map((t) => t.token);
+    }
+    return [];
+  });
+
+  for (const token of token_list) {
+    await import_account.devices.tokenDelete(token).catch(errorHandler);
+  }
 
   for (const token of device_tokens) {
     await import_account.devices
@@ -62,7 +72,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     if (!target_id) {
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
-      const export_device = new Device({ token, region: config.import.region });
+      const export_device = new Device({ token: token as string, region: config.import.region });
       const import_device = new Device({ token: new_token, region: config.export.region });
 
       for await (const items of export_device.getDataStreaming({ variables: config.data })) {
@@ -84,7 +94,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     }
 
     // Replace the device token if the token being exported has the serial_number
-    await _generateDeviceToken(account, import_account, target_id, new_token, device_id);
+    await _generateDeviceToken(account, import_account, target_id, device_id);
 
     export_holder.devices[device_id] = target_id;
     export_holder.tokens[token as string] = new_token;
