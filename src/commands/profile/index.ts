@@ -2,6 +2,7 @@ import { Command, Option } from "commander";
 import kleur from "kleur";
 
 import { errorHandler, highlightMSG } from "../../lib/messages";
+import { createBackup } from "./backup/create";
 import { startExport } from "./export/export";
 import { ENTITY_ORDER } from "./export/types";
 
@@ -58,6 +59,28 @@ Example:
     $ tagoio export --from dev --to prod
     $ tagoio export --from dev --to prod -e dashboards -e actions -e analysis
     $ tagoio export -ft cb8a1d42-0f28-4ee7-9862-839920eb1cb1 -tt eb8a1d42-0f28-4ee7-9862-839920eb1cb0
+  `,
+    );
+
+  const backupCommand = program.command("backup").description("profile backup management commands");
+
+  backupCommand
+    .command("create")
+    .description("create a new profile backup")
+    .action(createBackup)
+    .addHelpText(
+      "after",
+      `
+    Create a new backup for your current profile. The backup includes user files, dashboard history,
+    analysis scripts, and resource configurations.
+
+    ${kleur.bold("Important Notes")}:
+    - Backup creation is ${highlightMSG("asynchronous")} and may take several minutes to complete.
+    - You can only create ${highlightMSG("one backup per day")} per account.
+    - This feature is ${highlightMSG("not available")} on the Free plan.
+
+Example:
+    $ tagoio backup create
   `,
     );
 }
