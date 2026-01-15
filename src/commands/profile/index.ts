@@ -4,6 +4,7 @@ import kleur from "kleur";
 import { errorHandler, highlightMSG } from "../../lib/messages";
 import { createBackup } from "./backup/create";
 import { listBackups } from "./backup/list";
+import { restoreBackup } from "./backup/restore";
 import { startExport } from "./export/export";
 import { ENTITY_ORDER } from "./export/types";
 
@@ -108,6 +109,31 @@ Example:
     $ tagoio backup list
     $ tagoio backup list --page 1 --amount 10
     $ tagoio backup list --order-by created_at --order asc
+  `,
+    );
+
+  backupCommand
+    .command("restore")
+    .description("restore profile from a backup")
+    .action(restoreBackup)
+    .addHelpText(
+      "after",
+      `
+    Interactively restore your profile from a completed backup.
+
+    ${kleur.bold("Restore Flow")}:
+    1. Select a backup from the list of completed backups
+    2. Enter your account password (and OTP if 2FA is enabled)
+    3. Review the backup contents summary
+    4. Confirm and execute the restoration
+
+    ${kleur.bold("Important Notes")}:
+    - Only backups with status ${highlightMSG("completed")} can be restored.
+    - ${highlightMSG("New IDs")} will be generated for all restored resources.
+    - The download URL is valid for ${highlightMSG("2 hours")}.
+
+Example:
+    $ tagoio backup restore
   `,
     );
 }
