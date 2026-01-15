@@ -3,6 +3,7 @@ import kleur from "kleur";
 
 import { errorHandler, highlightMSG } from "../../lib/messages";
 import { createBackup } from "./backup/create";
+import { listBackups } from "./backup/list";
 import { startExport } from "./export/export";
 import { ENTITY_ORDER } from "./export/types";
 
@@ -81,6 +82,32 @@ Example:
 
 Example:
     $ tagoio backup create
+  `,
+    );
+
+  backupCommand
+    .command("list")
+    .description("list all profile backups")
+    .option("--page <number>", "page number for pagination", parseInt)
+    .option("--amount <number>", "number of backups per page", parseInt)
+    .option("--order-by <field>", "field to order by (default: created_at)")
+    .option("--order <direction>", "sort direction: asc or desc (default: desc)")
+    .action(listBackups)
+    .addHelpText(
+      "after",
+      `
+    List all backups for your current profile. Displays backup ID, status, creation date, and file size.
+
+    ${kleur.bold("Backup Statuses")}:
+    - ${highlightMSG("queued")}: Awaiting processing
+    - ${highlightMSG("processing")}: Backup generation in progress
+    - ${highlightMSG("completed")}: Ready for download
+    - ${highlightMSG("failed")}: Generation unsuccessful
+
+Example:
+    $ tagoio backup list
+    $ tagoio backup list --page 1 --amount 10
+    $ tagoio backup list --order-by created_at --order asc
   `,
     );
 }

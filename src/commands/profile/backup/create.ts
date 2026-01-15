@@ -4,16 +4,7 @@ import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../../lib/config-file";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-
-interface BackupCreateResponse {
-  status: boolean;
-  result: string;
-}
-
-interface BackupErrorResponse {
-  status: boolean;
-  message: string;
-}
+import { BackupCreateResponse, BackupErrorResponse } from "./types";
 
 async function createBackup() {
   const config = getEnvironmentConfig();
