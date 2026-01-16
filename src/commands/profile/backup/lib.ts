@@ -1,3 +1,18 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/** Reads and parses a JSON file from the backup resources folder. */
+function readBackupFile<T>(extractDir: string, filename: string): T[] {
+  const filePath = join(extractDir, "resources", filename);
+
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    return JSON.parse(content);
+  } catch {
+    return [];
+  }
+}
+
 /** Formats bytes into human-readable file size. */
 function formatFileSize(bytes?: number): string {
   if (!bytes) {
@@ -41,4 +56,4 @@ function handleBackupError(error: unknown, fallbackMessage: string): void {
   errorHandler(fallbackMessage);
 }
 
-export { formatDate, formatFileSize, handleBackupError };
+export { formatDate, formatFileSize, handleBackupError, readBackupFile };

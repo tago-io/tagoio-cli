@@ -6,6 +6,7 @@ import { pipeline } from "node:stream/promises";
 import { Account } from "@tago-io/sdk";
 import axios from "axios";
 import kleur from "kleur";
+import ora from "ora";
 import prompts from "prompts";
 import unzipper from "unzipper";
 
@@ -15,6 +16,8 @@ import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/me
 import { confirmPrompt } from "../../../prompt/confirm";
 import { pickFromList } from "../../../prompt/pick-from-list";
 import { formatDate, formatFileSize, handleBackupError } from "./lib";
+import { restoreAccessManagement } from "./resources/access-management";
+import { restoreActions } from "./resources/actions";
 import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
 
 interface BackupSummary {
@@ -90,16 +93,19 @@ function analyzeBackupContents(extractDir: string): BackupSummary[] {
   return summary.sort((a, b) => a.resource.localeCompare(b.resource));
 }
 
-/** Displays backup summary table with total resource count. */
-function displayBackupSummary(summary: BackupSummary[]): void {
+/** Displays backup summary table with total resource count. Returns total count. */
+function displayBackupSummary(summary: BackupSummary[]): number {
+  const totalResources = summary.reduce((acc, item) => acc + item.count, 0);
+
   console.info("");
   console.info(kleur.bold("Backup Contents:"));
   console.info(kleur.gray("─".repeat(40)));
 
   console.table(summary.map((item) => ({ Resource: item.resource, Count: item.count })));
 
-  const totalResources = summary.reduce((acc, item) => acc + item.count, 0);
   infoMSG(`Total resources to restore: ${highlightMSG(totalResources.toString())}`);
+
+  return totalResources;
 }
 
 /** Fetches available backups for a profile. */
@@ -136,14 +142,14 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   mkdirSync(tempDir, { recursive: true });
   mkdirSync(extractDir, { recursive: true });
 
-  infoMSG("Downloading backup file...");
+  const spinner = ora("Downloading backup file...").start();
   const response = await axios.get(downloadUrl, { responseType: "stream" });
   await pipeline(response.data, createWriteStream(zipPath));
-  successMSG("Backup downloaded successfully.");
+  spinner.succeed("Backup downloaded successfully.");
 
-  infoMSG("Extracting backup contents...");
+  spinner.start("Extracting backup contents...");
   await createReadStream(zipPath).pipe(unzipper.Extract({ path: extractDir })).promise();
-  successMSG("Backup extracted successfully.");
+  spinner.succeed("Backup extracted successfully.");
 
   return extractDir;
 }
@@ -271,8 +277,14 @@ async function restoreBackup() {
       return;
     }
 
-    displayBackupSummary(summary);
-    console.info("");
+    const totalResources = displayBackupSummary(summary);
+
+    if (totalResources > 50) {
+      displayWarning([
+        { text: "This backup contains a large number of resources.", bold: true },
+        { text: "The restoration process may take several minutes to complete.", bold: false },
+      ]);
+    }
 
     if (!(await confirmPrompt("Do you want to restore these resources to your profile?"))) {
       infoMSG("Restoration cancelled by user.");
@@ -280,9 +292,17 @@ async function restoreBackup() {
     }
 
     console.info("");
-    infoMSG(`Backup ready at: ${highlightMSG(extractDir)}`);
+    infoMSG("Starting resource restoration...\n");
 
-    // TODO: Execute restoration scripts
+    const accessResult = await restoreAccessManagement(account, extractDir);
+    console.info("");
+
+    const actionsResult = await restoreActions(account, extractDir);
+
+    console.info("");
+    successMSG("Restoration completed!");
+    infoMSG(`Access Management: ${accessResult.created} created, ${accessResult.updated} updated, ${accessResult.failed} failed`);
+    infoMSG(`Actions: ${actionsResult.created} created, ${actionsResult.updated} updated, ${actionsResult.failed} failed`);
   } catch (error) {
     handleBackupError(error, "Failed to restore backup");
   }

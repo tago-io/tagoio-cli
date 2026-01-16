@@ -50,3 +50,9 @@ export interface BackupDownloadResponse {
   status: boolean;
   result: BackupDownloadResult;
 }
+
+export interface RestoreResult {
+  created: number;
+  updated: number;
+  failed: number;
+}
