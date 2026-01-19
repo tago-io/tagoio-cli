@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Account, AccessInfo } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -6,17 +6,8 @@ import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
 import { readBackupFile } from "../lib";
 import { RestoreResult } from "../types";
 
-interface BackupPolicy {
-  id: string;
-  name: string;
-  permissions: Array<{ effect: "allow" | "deny"; action: string[]; resource: string[] }>;
-  targets: [];
-  tags?: Array<{ key: string; value: string }>;
-  active?: boolean;
-}
-
 interface RestoreTask {
-  policy: BackupPolicy;
+  policy: AccessInfo;
   exists: boolean;
 }
 
@@ -64,7 +55,7 @@ async function restoreAccessManagement(account: Account, extractDir: string): Pr
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading access management data from backup...");
-  const backupPolicies = readBackupFile<BackupPolicy>(extractDir, "access_management.json");
+  const backupPolicies = readBackupFile<AccessInfo>(extractDir, "access_management.json");
 
   if (backupPolicies.length === 0) {
     infoMSG("No access management policies found in backup.");

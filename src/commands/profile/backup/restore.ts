@@ -18,6 +18,14 @@ import { pickFromList } from "../../../prompt/pick-from-list";
 import { formatDate, formatFileSize, handleBackupError } from "./lib";
 import { restoreAccessManagement } from "./resources/access-management";
 import { restoreActions } from "./resources/actions";
+import { restoreAnalysis } from "./resources/analysis";
+import { restoreConnectors } from "./resources/connectors";
+import { restoreDashboards } from "./resources/dashboards";
+import { restoreDevices } from "./resources/devices";
+import { restoreDictionaries } from "./resources/dictionaries";
+import { restoreNetworks } from "./resources/networks";
+import { restoreProfile } from "./resources/profile";
+import { restoreRun } from "./resources/run";
 import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
 
 interface BackupSummary {
@@ -279,7 +287,7 @@ async function restoreBackup() {
 
     const totalResources = displayBackupSummary(summary);
 
-    if (totalResources > 50) {
+    if (totalResources > 1000) {
       displayWarning([
         { text: "This backup contains a large number of resources.", bold: true },
         { text: "The restoration process may take several minutes to complete.", bold: false },
@@ -298,11 +306,43 @@ async function restoreBackup() {
     console.info("");
 
     const actionsResult = await restoreActions(account, extractDir);
+    console.info("");
+
+    const analysisResult = await restoreAnalysis(account, extractDir);
+    console.info("");
+
+    const connectorsResult = await restoreConnectors(account, extractDir);
+    console.info("");
+
+    const dashboardsResult = await restoreDashboards(account, extractDir);
+    console.info("");
+
+    const devicesResult = await restoreDevices(account, extractDir);
+    console.info("");
+
+    const dictionariesResult = await restoreDictionaries(account, extractDir);
+    console.info("");
+
+    const networksResult = await restoreNetworks(account, extractDir);
+    console.info("");
+
+    const profileResult = await restoreProfile(account, extractDir);
+    console.info("");
+
+    const runResult = await restoreRun(account, extractDir);
 
     console.info("");
     successMSG("Restoration completed!");
     infoMSG(`Access Management: ${accessResult.created} created, ${accessResult.updated} updated, ${accessResult.failed} failed`);
     infoMSG(`Actions: ${actionsResult.created} created, ${actionsResult.updated} updated, ${actionsResult.failed} failed`);
+    infoMSG(`Analysis: ${analysisResult.created} created, ${analysisResult.updated} updated, ${analysisResult.failed} failed`);
+    infoMSG(`Connectors: ${connectorsResult.created} created, ${connectorsResult.updated} updated, ${connectorsResult.failed} failed`);
+    infoMSG(`Dashboards: ${dashboardsResult.created} created, ${dashboardsResult.updated} updated, ${dashboardsResult.failed} failed`);
+    infoMSG(`Devices: ${devicesResult.created} created, ${devicesResult.updated} updated, ${devicesResult.failed} failed`);
+    infoMSG(`Dictionaries: ${dictionariesResult.created} created, ${dictionariesResult.updated} updated, ${dictionariesResult.failed} failed`);
+    infoMSG(`Networks: ${networksResult.created} created, ${networksResult.updated} updated, ${networksResult.failed} failed`);
+    infoMSG(`Profile: ${profileResult.created} created, ${profileResult.updated} updated, ${profileResult.failed} failed`);
+    infoMSG(`Run: ${runResult.created} created, ${runResult.updated} updated, ${runResult.failed} failed`);
   } catch (error) {
     handleBackupError(error, "Failed to restore backup");
   }

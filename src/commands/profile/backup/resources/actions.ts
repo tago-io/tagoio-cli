@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Account, ActionInfo } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -6,20 +6,8 @@ import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
 import { readBackupFile } from "../lib";
 import { RestoreResult } from "../types";
 
-interface BackupAction {
-  id: string;
-  name: string;
-  active?: boolean;
-  type?: string;
-  trigger?: unknown[];
-  action: unknown;
-  tags?: Array<{ key: string; value: string }>;
-  description?: string | null;
-  lock?: boolean;
-}
-
 interface RestoreTask {
-  action: BackupAction;
+  action: ActionInfo;
   exists: boolean;
 }
 
@@ -45,12 +33,10 @@ async function processRestoreTask(
     const { id, ...actionData } = action;
 
     if (exists) {
-      // @ts-expect-error backup data structure may differ from SDK types
       await account.actions.edit(id, actionData);
       result.updated++;
       spinner.text = `Restoring actions... (${result.created} created, ${result.updated} updated)`;
     } else {
-      // @ts-expect-error backup data structure may differ from SDK types
       await account.actions.create(actionData);
       result.created++;
       spinner.text = `Restoring actions... (${result.created} created, ${result.updated} updated)`;
@@ -69,7 +55,7 @@ async function restoreActions(account: Account, extractDir: string): Promise<Res
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading actions data from backup...");
-  const backupActions = readBackupFile<BackupAction>(extractDir, "actions.json");
+  const backupActions = readBackupFile<ActionInfo>(extractDir, "actions.json");
 
   if (backupActions.length === 0) {
     infoMSG("No actions found in backup.");
