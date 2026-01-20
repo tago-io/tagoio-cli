@@ -3,6 +3,7 @@ import kleur from "kleur";
 
 import { errorHandler, highlightMSG } from "../../lib/messages";
 import { createBackup } from "./backup/create";
+import { downloadBackup } from "./backup/download";
 import { listBackups } from "./backup/list";
 import { restoreBackup } from "./backup/restore";
 import { startExport } from "./export/export";
@@ -134,6 +135,30 @@ Example:
 
 Example:
     $ tagoio backup restore
+  `,
+    );
+
+  backupCommand
+    .command("download")
+    .description("download a backup file to local folder")
+    .action(downloadBackup)
+    .addHelpText(
+      "after",
+      `
+    Download a backup file to a local folder for safekeeping or manual inspection.
+
+    ${kleur.bold("Download Flow")}:
+    1. Select a backup from the list of completed backups
+    2. Enter your account password (and OTP if 2FA is enabled)
+    3. Backup file is downloaded to ${highlightMSG("profile-backup-download")} folder
+
+    ${kleur.bold("Important Notes")}:
+    - Only backups with status ${highlightMSG("completed")} can be downloaded.
+    - The download URL is valid for ${highlightMSG("2 hours")}.
+    - File is saved as ${highlightMSG("backup-<id>.zip")} in the download folder.
+
+Example:
+    $ tagoio backup download
   `,
     );
 }
