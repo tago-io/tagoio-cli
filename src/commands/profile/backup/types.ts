@@ -1,8 +1,3 @@
-export interface BackupErrorResponse {
-  status: boolean;
-  message: string;
-}
-
 export interface BackupCreateResponse {
   status: boolean;
   result: string;

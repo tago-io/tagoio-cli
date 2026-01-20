@@ -3,19 +3,25 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 
-import { Account } from "@tago-io/sdk";
+import { Resources } from "@tago-io/sdk";
 import axios from "axios";
 import kleur from "kleur";
 import ora from "ora";
-import prompts from "prompts";
 import unzipper from "unzipper";
 
 import { getEnvironmentConfig } from "../../../lib/config-file";
 import { displayWarning } from "../../../lib/display-warning";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
 import { confirmPrompt } from "../../../prompt/confirm";
-import { pickFromList } from "../../../prompt/pick-from-list";
-import { formatDate, formatFileSize, handleBackupError } from "./lib";
+import {
+  fetchBackups,
+  formatDate,
+  formatFileSize,
+  getDownloadUrl,
+  handleBackupError,
+  promptCredentials,
+  selectBackup,
+} from "./lib";
 import { restoreAccessManagement } from "./resources/access-management";
 import { restoreActions } from "./resources/actions";
 import { restoreAnalysis } from "./resources/analysis";
@@ -23,15 +29,40 @@ import { restoreConnectors } from "./resources/connectors";
 import { restoreDashboards } from "./resources/dashboards";
 import { restoreDevices } from "./resources/devices";
 import { restoreDictionaries } from "./resources/dictionaries";
+import { restoreFiles } from "./resources/files";
 import { restoreNetworks } from "./resources/networks";
 import { restoreProfile } from "./resources/profile";
 import { restoreRun } from "./resources/run";
-import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
+import { restoreRunUsers } from "./resources/run-users";
+import { restoreSecrets } from "./resources/secrets";
+import { RestoreResult } from "./types";
 
 interface BackupSummary {
   resource: string;
   count: number;
 }
+
+interface RestoreConfig {
+  name: string;
+  fn: (resources: Resources, extractDir: string) => Promise<RestoreResult>;
+  format: (r: RestoreResult) => string;
+}
+
+const RESTORE_SEQUENCE: RestoreConfig[] = [
+  { name: "Access Management", fn: restoreAccessManagement, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Actions", fn: restoreActions, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Analysis", fn: restoreAnalysis, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Connectors", fn: restoreConnectors, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Dashboards", fn: restoreDashboards, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Devices", fn: restoreDevices, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Dictionaries", fn: restoreDictionaries, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Networks", fn: restoreNetworks, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Profile", fn: restoreProfile, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Run", fn: restoreRun, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Run Users", fn: restoreRunUsers, format: (r) => `${r.created} created, ${r.updated} updated, ${r.failed} failed` },
+  { name: "Files", fn: restoreFiles, format: (r) => `${r.created} uploaded, ${r.failed} failed` },
+  { name: "Secrets", fn: restoreSecrets, format: (r) => `${r.created} created, ${r.updated} skipped, ${r.failed} failed` },
+];
 
 /** Warning messages for restore operation. */
 const RESTORE_WARNING_MESSAGES = [
@@ -116,31 +147,6 @@ function displayBackupSummary(summary: BackupSummary[]): number {
   return totalResources;
 }
 
-/** Fetches available backups for a profile. */
-async function fetchBackups(profileID: string, baseURL: string, token: string): Promise<BackupItem[]> {
-  const url = `${baseURL}/profile/${profileID}/backup?orderBy=created_at,desc`;
-  const response = await axios.get<BackupListResponse>(url, { headers: { Authorization: token } });
-  return response.data.result || [];
-}
-
-/** Requests download URL for a backup with authentication. */
-async function getDownloadUrl(
-  profileID: string,
-  backupID: string,
-  baseURL: string,
-  token: string,
-  credentials: BackupDownloadRequest
-): Promise<string> {
-  const url = `${baseURL}/profile/${profileID}/backup/${backupID}/download`;
-  const response = await axios.post<BackupDownloadResponse>(url, credentials, { headers: { Authorization: token } });
-  const { result } = response.data;
-
-  infoMSG(`Backup size: ${highlightMSG(result.file_size_mb + " MB")}`);
-  infoMSG(`Download expires at: ${highlightMSG(formatDate(result.expire_at))}`);
-
-  return result.url;
-}
-
 /** Downloads and extracts backup to a temporary directory. */
 async function downloadAndExtractBackup(downloadUrl: string, backupID: string): Promise<string> {
   const tempDir = join(tmpdir(), `tagoio-backup-${backupID}-${Date.now()}`);
@@ -162,67 +168,6 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   return extractDir;
 }
 
-/** Prompts user for password and optional OTP credentials. */
-async function promptCredentials(): Promise<BackupDownloadRequest | null> {
-  const { password } = await prompts({ type: "password", name: "password", message: "Enter your account password:" });
-  if (!password) {
-    errorHandler("Password is required to download the backup.");
-    return null;
-  }
-
-  const otpTypeChoices = [
-    { title: "None (2FA not enabled)", value: "none" },
-    { title: "Authenticator App", value: "authenticator" },
-    { title: "SMS", value: "sms" },
-    { title: "Email", value: "email" },
-  ];
-
-  const otpType = await pickFromList(otpTypeChoices, { message: "Select your 2FA method" });
-  if (!otpType) {
-    errorHandler("2FA method selection is required.");
-    return null;
-  }
-
-  let pinCode: string | undefined;
-  if (otpType !== "none") {
-    const { pin } = await prompts({ type: "text", name: "pin", message: "Enter your OTP code:" });
-    if (!pin) {
-      errorHandler("OTP code is required for the selected 2FA method.");
-      return null;
-    }
-    pinCode = pin;
-  }
-
-  return {
-    password,
-    ...(otpType !== "none" && { otp_type: otpType as OtpType }),
-    ...(pinCode && { pin_code: pinCode }),
-  };
-}
-
-/** Selects a completed backup from the list. */
-async function selectBackup(backups: BackupItem[]): Promise<BackupItem | null> {
-  const completedBackups = backups.filter((b) => b.status === "completed");
-
-  if (completedBackups.length === 0) {
-    errorHandler("No completed backups available. Only backups with status 'completed' can be restored.");
-    return null;
-  }
-
-  const choices = completedBackups.map((b) => ({
-    title: `${formatDate(b.created_at)} - ${formatFileSize(b.file_size)} (${b.id})`,
-    value: b.id,
-  }));
-
-  const selectedId = await pickFromList(choices, { message: "Select a backup to restore" });
-  if (!selectedId) {
-    errorHandler("No backup selected");
-    return null;
-  }
-
-  return completedBackups.find((b) => b.id === selectedId) || null;
-}
-
 /** Interactive restore flow for profile backups. */
 async function restoreBackup() {
   const config = getEnvironmentConfig();
@@ -231,8 +176,8 @@ async function restoreBackup() {
     return;
   }
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  const profile = await account.profiles.info("current").catch(errorHandler);
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const profile = await resources.profiles.info("current").catch(errorHandler);
   if (!profile) {
     return;
   }
@@ -244,7 +189,7 @@ async function restoreBackup() {
 
   try {
     const backups = await fetchBackups(profileID, baseURL, config.profileToken);
-    const selectedBackup = await selectBackup(backups);
+    const selectedBackup = await selectBackup(backups, "restore");
     if (!selectedBackup) {
       return;
     }
@@ -272,11 +217,13 @@ async function restoreBackup() {
     console.info("");
 
     infoMSG("Requesting backup download URL...");
-    const downloadUrl = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
+    const downloadResult = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
+    infoMSG(`Backup size: ${highlightMSG(downloadResult.fileSizeMb + " MB")}`);
+    infoMSG(`Download expires at: ${highlightMSG(formatDate(downloadResult.expireAt))}`);
     successMSG("Download URL obtained.");
     console.info("");
 
-    const extractDir = await downloadAndExtractBackup(downloadUrl, selectedBackup.id);
+    const extractDir = await downloadAndExtractBackup(downloadResult.url, selectedBackup.id);
     console.info("");
 
     const summary = analyzeBackupContents(extractDir);
@@ -302,47 +249,18 @@ async function restoreBackup() {
     console.info("");
     infoMSG("Starting resource restoration...\n");
 
-    const accessResult = await restoreAccessManagement(account, extractDir);
-    console.info("");
+    const results: { config: RestoreConfig; result: RestoreResult }[] = [];
 
-    const actionsResult = await restoreActions(account, extractDir);
-    console.info("");
+    for (const config of RESTORE_SEQUENCE) {
+      const result = await config.fn(resources, extractDir);
+      results.push({ config, result });
+      console.info("");
+    }
 
-    const analysisResult = await restoreAnalysis(account, extractDir);
-    console.info("");
-
-    const connectorsResult = await restoreConnectors(account, extractDir);
-    console.info("");
-
-    const dashboardsResult = await restoreDashboards(account, extractDir);
-    console.info("");
-
-    const devicesResult = await restoreDevices(account, extractDir);
-    console.info("");
-
-    const dictionariesResult = await restoreDictionaries(account, extractDir);
-    console.info("");
-
-    const networksResult = await restoreNetworks(account, extractDir);
-    console.info("");
-
-    const profileResult = await restoreProfile(account, extractDir);
-    console.info("");
-
-    const runResult = await restoreRun(account, extractDir);
-
-    console.info("");
     successMSG("Restoration completed!");
-    infoMSG(`Access Management: ${accessResult.created} created, ${accessResult.updated} updated, ${accessResult.failed} failed`);
-    infoMSG(`Actions: ${actionsResult.created} created, ${actionsResult.updated} updated, ${actionsResult.failed} failed`);
-    infoMSG(`Analysis: ${analysisResult.created} created, ${analysisResult.updated} updated, ${analysisResult.failed} failed`);
-    infoMSG(`Connectors: ${connectorsResult.created} created, ${connectorsResult.updated} updated, ${connectorsResult.failed} failed`);
-    infoMSG(`Dashboards: ${dashboardsResult.created} created, ${dashboardsResult.updated} updated, ${dashboardsResult.failed} failed`);
-    infoMSG(`Devices: ${devicesResult.created} created, ${devicesResult.updated} updated, ${devicesResult.failed} failed`);
-    infoMSG(`Dictionaries: ${dictionariesResult.created} created, ${dictionariesResult.updated} updated, ${dictionariesResult.failed} failed`);
-    infoMSG(`Networks: ${networksResult.created} created, ${networksResult.updated} updated, ${networksResult.failed} failed`);
-    infoMSG(`Profile: ${profileResult.created} created, ${profileResult.updated} updated, ${profileResult.failed} failed`);
-    infoMSG(`Run: ${runResult.created} created, ${runResult.updated} updated, ${runResult.failed} failed`);
+    for (const { config, result } of results) {
+      infoMSG(`${config.name}: ${config.format(result)}`);
+    }
   } catch (error) {
     handleBackupError(error, "Failed to restore backup");
   }

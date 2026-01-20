@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import axios from "axios";
+import prompts from "prompts";
+
 import { errorHandler } from "../../../lib/messages";
+import { pickFromList } from "../../../prompt/pick-from-list";
+import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
 
 /** Extracts error message from various error types including SDK error objects. */
 function getErrorMessage(error: unknown): string {
@@ -80,4 +85,102 @@ function handleBackupError(error: unknown, fallbackMessage: string): void {
   errorHandler(fallbackMessage);
 }
 
-export { formatDate, formatFileSize, getErrorMessage, handleBackupError, readBackupFile, readBackupSingleFile };
+/** Fetches available backups for a profile. */
+async function fetchBackups(profileID: string, baseURL: string, token: string): Promise<BackupItem[]> {
+  const url = `${baseURL}/profile/${profileID}/backup?orderBy=created_at,desc`;
+  const response = await axios.get<BackupListResponse>(url, { headers: { Authorization: token } });
+  return response.data.result || [];
+}
+
+/** Requests download URL for a backup with authentication. */
+async function getDownloadUrl(
+  profileID: string,
+  backupID: string,
+  baseURL: string,
+  token: string,
+  credentials: BackupDownloadRequest
+): Promise<{ url: string; fileSizeMb: string; expireAt: string }> {
+  const url = `${baseURL}/profile/${profileID}/backup/${backupID}/download`;
+  const response = await axios.post<BackupDownloadResponse>(url, credentials, { headers: { Authorization: token } });
+  const { result } = response.data;
+
+  return {
+    url: result.url,
+    fileSizeMb: result.file_size_mb,
+    expireAt: result.expire_at,
+  };
+}
+
+/** Prompts user for password and optional OTP credentials. */
+async function promptCredentials(): Promise<BackupDownloadRequest | null> {
+  const { password } = await prompts({ type: "password", name: "password", message: "Enter your resources password:" });
+  if (!password) {
+    errorHandler("Password is required to download the backup.");
+    return null;
+  }
+
+  const otpTypeChoices = [
+    { title: "None (2FA not enabled)", value: "none" },
+    { title: "Authenticator App", value: "authenticator" },
+    { title: "SMS", value: "sms" },
+    { title: "Email", value: "email" },
+  ];
+
+  const otpType = await pickFromList(otpTypeChoices, { message: "Select your 2FA method" });
+  if (!otpType) {
+    errorHandler("2FA method selection is required.");
+    return null;
+  }
+
+  let pinCode: string | undefined;
+  if (otpType !== "none") {
+    const { pin } = await prompts({ type: "text", name: "pin", message: "Enter your OTP code:" });
+    if (!pin) {
+      errorHandler("OTP code is required for the selected 2FA method.");
+      return null;
+    }
+    pinCode = pin;
+  }
+
+  return {
+    password,
+    ...(otpType !== "none" && { otp_type: otpType as OtpType }),
+    ...(pinCode && { pin_code: pinCode }),
+  };
+}
+
+/** Selects a completed backup from the list. */
+async function selectBackup(backups: BackupItem[], action: string): Promise<BackupItem | null> {
+  const completedBackups = backups.filter((b) => b.status === "completed");
+
+  if (completedBackups.length === 0) {
+    errorHandler(`No completed backups available. Only backups with status 'completed' can be ${action}.`);
+    return null;
+  }
+
+  const choices = completedBackups.map((b) => ({
+    title: `${formatDate(b.created_at)} - ${formatFileSize(b.file_size)} (${b.id})`,
+    value: b.id,
+  }));
+
+  const selectedId = await pickFromList(choices, { message: `Select a backup to ${action}` });
+  if (!selectedId) {
+    errorHandler("No backup selected");
+    return null;
+  }
+
+  return completedBackups.find((b) => b.id === selectedId) || null;
+}
+
+export {
+  fetchBackups,
+  formatDate,
+  formatFileSize,
+  getDownloadUrl,
+  getErrorMessage,
+  handleBackupError,
+  promptCredentials,
+  readBackupFile,
+  readBackupSingleFile,
+  selectBackup,
+};
