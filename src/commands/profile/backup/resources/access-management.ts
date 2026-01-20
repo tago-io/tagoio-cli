@@ -1,4 +1,4 @@
-import { Account, AccessInfo } from "@tago-io/sdk";
+import { AccessInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 3;
 const DELAY_BETWEEN_REQUESTS_MS = 300;
 
 /** Fetches all existing access policy IDs from the profile. */
-async function fetchExistingPolicyIds(account: Account): Promise<Set<string>> {
-  const policies = await account.accessManagement.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingPolicyIds(resources: Resources): Promise<Set<string>> {
+  const policies = await resources.accessManagement.list({ amount: 10000, fields: ["id"] });
   return new Set(policies.map((p) => p.id));
 }
 
 /** Processes a single access policy restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...policyData } = policy;
 
     if (exists) {
-      await account.accessManagement.edit(id, policyData);
+      await resources.accessManagement.edit(id, policyData);
       result.updated++;
       spinner.text = `Restoring access policies... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.accessManagement.create(policyData);
+      await resources.accessManagement.create(policyData);
       result.created++;
       spinner.text = `Restoring access policies... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores access management policies from backup. */
-async function restoreAccessManagement(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreAccessManagement(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading access management data from backup...");
@@ -65,14 +65,14 @@ async function restoreAccessManagement(account: Account, extractDir: string): Pr
   infoMSG(`Found ${highlightMSG(backupPolicies.length.toString())} access policies in backup.`);
 
   infoMSG("Fetching existing access policies from profile...");
-  const existingIds = await fetchExistingPolicyIds(account);
+  const existingIds = await fetchExistingPolicyIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing policies in profile.`);
 
   console.info("");
   const spinner = ora("Restoring access policies...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {

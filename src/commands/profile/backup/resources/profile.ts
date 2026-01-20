@@ -1,4 +1,4 @@
-import { Account, ProfileInfo } from "@tago-io/sdk";
+import { ProfileInfo, Resources } from "@tago-io/sdk";
 import ora from "ora";
 
 import { highlightMSG, infoMSG } from "../../../../lib/messages";
@@ -50,8 +50,14 @@ function transformToProfileInfo(backup: BackupProfile): Partial<ProfileInfo> {
   };
 }
 
+/** Checks if profile exists in the resources. */
+async function profileExists(resources: Resources, profileId: string): Promise<boolean> {
+  const profiles = await resources.profiles.list();
+  return profiles.some((p) => p.id === profileId);
+}
+
 /** Restores profile settings from backup. */
-async function restoreProfile(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreProfile(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading profile data from backup...");
@@ -68,10 +74,19 @@ async function restoreProfile(account: Account, extractDir: string): Promise<Res
   const spinner = ora("Restoring profile settings...").start();
 
   try {
+    const exists = await profileExists(resources, backupProfile.id);
     const profileData = transformToProfileInfo(backupProfile);
-    await account.profiles.edit(backupProfile.id, profileData);
-    result.updated++;
-    spinner.succeed(`Profile restored: ${backupProfile.name}`);
+
+    if (exists) {
+      await resources.profiles.edit(backupProfile.id, profileData);
+      result.updated++;
+      spinner.succeed(`Profile updated: ${backupProfile.name}`);
+    } else {
+      const { id: newProfileId } = await resources.profiles.create({ name: backupProfile.name });
+      await resources.profiles.edit(newProfileId, profileData);
+      result.created++;
+      spinner.succeed(`Profile created: ${backupProfile.name}`);
+    }
   } catch (error) {
     result.failed++;
     spinner.fail(`Failed to restore profile: ${getErrorMessage(error)}`);

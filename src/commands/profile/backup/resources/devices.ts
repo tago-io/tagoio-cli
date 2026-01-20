@@ -1,4 +1,4 @@
-import { Account, DeviceInfo } from "@tago-io/sdk";
+import { DeviceInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -16,14 +16,14 @@ const EDIT_CONCURRENCY = 3;
 const DELAY_BETWEEN_REQUESTS_MS = 100;
 
 /** Fetches all existing device IDs from the profile. */
-async function fetchExistingDeviceIds(account: Account): Promise<Set<string>> {
-  const devices = await account.devices.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingDeviceIds(resources: Resources): Promise<Set<string>> {
+  const devices = await resources.devices.list({ amount: 10000, fields: ["id"] });
   return new Set(devices.map((d) => d.id));
 }
 
 /** Processes a single device creation task. */
 async function processCreateTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -32,7 +32,7 @@ async function processCreateTask(
 
   try {
     const { ...deviceData } = device;
-    await account.devices.create(deviceData);
+    await resources.devices.create(deviceData);
     result.created++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
     await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
@@ -44,7 +44,7 @@ async function processCreateTask(
 
 /** Processes a single device edit task. */
 async function processEditTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -53,7 +53,7 @@ async function processEditTask(
 
   try {
     const { id, network: _network, connector: _connector, updated_at: _updated_at, ...deviceData } = device;
-    await account.devices.edit(id, deviceData);
+    await resources.devices.edit(id, deviceData);
     result.updated++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
     await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
@@ -64,7 +64,7 @@ async function processEditTask(
 }
 
 /** Restores devices from backup. */
-async function restoreDevices(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreDevices(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading devices data from backup...");
@@ -78,7 +78,7 @@ async function restoreDevices(account: Account, extractDir: string): Promise<Res
   infoMSG(`Found ${highlightMSG(backupDevices.length.toString())} devices in backup.`);
 
   infoMSG("Fetching existing devices from profile...");
-  const existingIds = await fetchExistingDeviceIds(account);
+  const existingIds = await fetchExistingDeviceIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing devices in profile.`);
 
   const devicesToCreate: RestoreTask[] = [];
@@ -97,11 +97,11 @@ async function restoreDevices(account: Account, extractDir: string): Promise<Res
   const spinner = ora("Restoring devices...").start();
 
   const createQueue = queue<RestoreTask>(async (task) => {
-    await processCreateTask(account, task, result, spinner);
+    await processCreateTask(resources, task, result, spinner);
   }, CREATE_CONCURRENCY);
 
   const editQueue = queue<RestoreTask>(async (task) => {
-    await processEditTask(account, task, result, spinner);
+    await processEditTask(resources, task, result, spinner);
   }, EDIT_CONCURRENCY);
 
   createQueue.error((error) => {

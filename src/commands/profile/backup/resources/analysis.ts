@@ -1,4 +1,4 @@
-import { Account, AnalysisInfo } from "@tago-io/sdk";
+import { AnalysisInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 10;
 const DELAY_BETWEEN_REQUESTS_MS = 100;
 
 /** Fetches all existing analysis IDs from the profile. */
-async function fetchExistingAnalysisIds(account: Account): Promise<Set<string>> {
-  const analyses = await account.analysis.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingAnalysisIds(resources: Resources): Promise<Set<string>> {
+  const analyses = await resources.analysis.list({ amount: 10000, fields: ["id"] });
   return new Set(analyses.map((a) => a.id));
 }
 
 /** Processes a single analysis restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...analysisData } = analysis;
 
     if (exists) {
-      await account.analysis.edit(id, analysisData);
+      await resources.analysis.edit(id, analysisData);
       result.updated++;
       spinner.text = `Restoring analysis... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.analysis.create(analysisData);
+      await resources.analysis.create(analysisData);
       result.created++;
       spinner.text = `Restoring analysis... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores analysis from backup. */
-async function restoreAnalysis(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreAnalysis(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading analysis data from backup...");
@@ -65,14 +65,14 @@ async function restoreAnalysis(account: Account, extractDir: string): Promise<Re
   infoMSG(`Found ${highlightMSG(backupAnalyses.length.toString())} analysis in backup.`);
 
   infoMSG("Fetching existing analysis from profile...");
-  const existingIds = await fetchExistingAnalysisIds(account);
+  const existingIds = await fetchExistingAnalysisIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing analysis in profile.`);
 
   console.info("");
   const spinner = ora("Restoring analysis...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {

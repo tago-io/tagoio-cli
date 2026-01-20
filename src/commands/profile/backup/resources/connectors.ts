@@ -1,4 +1,4 @@
-import { Account, ConnectorInfo } from "@tago-io/sdk";
+import { ConnectorInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 5;
 const DELAY_BETWEEN_REQUESTS_MS = 150;
 
 /** Fetches all existing connector IDs from the profile. */
-async function fetchExistingConnectorIds(account: Account): Promise<Set<string>> {
-  const connectors = await account.integration.connectors.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingConnectorIds(resources: Resources): Promise<Set<string>> {
+  const connectors = await resources.integration.connectors.list({ amount: 10000, fields: ["id"] });
   return new Set(connectors.map((c) => c.id));
 }
 
 /** Processes a single connector restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...connectorData } = connector;
 
     if (exists) {
-      await account.integration.connectors.edit(id, connectorData);
+      await resources.integration.connectors.edit(id, connectorData);
       result.updated++;
       spinner.text = `Restoring connectors... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.integration.connectors.create(connectorData);
+      await resources.integration.connectors.create(connectorData);
       result.created++;
       spinner.text = `Restoring connectors... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores connectors from backup. */
-async function restoreConnectors(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreConnectors(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading connectors data from backup...");
@@ -65,14 +65,14 @@ async function restoreConnectors(account: Account, extractDir: string): Promise<
   infoMSG(`Found ${highlightMSG(backupConnectors.length.toString())} connectors in backup.`);
 
   infoMSG("Fetching existing connectors from profile...");
-  const existingIds = await fetchExistingConnectorIds(account);
+  const existingIds = await fetchExistingConnectorIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing connectors in profile.`);
 
   console.info("");
   const spinner = ora("Restoring connectors...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {

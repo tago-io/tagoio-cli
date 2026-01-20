@@ -1,4 +1,4 @@
-import { Account, DashboardInfo } from "@tago-io/sdk";
+import { DashboardInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 10;
 const DELAY_BETWEEN_REQUESTS_MS = 100;
 
 /** Fetches all existing dashboard IDs from the profile. */
-async function fetchExistingDashboardIds(account: Account): Promise<Set<string>> {
-  const dashboards = await account.dashboards.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingDashboardIds(resources: Resources): Promise<Set<string>> {
+  const dashboards = await resources.dashboards.list({ amount: 10000, fields: ["id"] });
   return new Set(dashboards.map((d) => d.id));
 }
 
 /** Processes a single dashboard restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...dashboardData } = dashboard;
 
     if (exists) {
-      await account.dashboards.edit(id, dashboardData);
+      await resources.dashboards.edit(id, dashboardData);
       result.updated++;
       spinner.text = `Restoring dashboards... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.dashboards.create(dashboardData);
+      await resources.dashboards.create(dashboardData);
       result.created++;
       spinner.text = `Restoring dashboards... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores dashboards from backup. */
-async function restoreDashboards(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreDashboards(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading dashboards data from backup...");
@@ -65,14 +65,14 @@ async function restoreDashboards(account: Account, extractDir: string): Promise<
   infoMSG(`Found ${highlightMSG(backupDashboards.length.toString())} dashboards in backup.`);
 
   infoMSG("Fetching existing dashboards from profile...");
-  const existingIds = await fetchExistingDashboardIds(account);
+  const existingIds = await fetchExistingDashboardIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing dashboards in profile.`);
 
   console.info("");
   const spinner = ora("Restoring dashboards...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {

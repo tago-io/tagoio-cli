@@ -1,4 +1,4 @@
-import { Account, ActionInfo } from "@tago-io/sdk";
+import { ActionInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 10;
 const DELAY_BETWEEN_REQUESTS_MS = 100;
 
 /** Fetches all existing action IDs from the profile. */
-async function fetchExistingActionIds(account: Account): Promise<Set<string>> {
-  const actions = await account.actions.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingActionIds(resources: Resources): Promise<Set<string>> {
+  const actions = await resources.actions.list({ amount: 10000, fields: ["id"] });
   return new Set(actions.map((a) => a.id));
 }
 
 /** Processes a single action restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...actionData } = action;
 
     if (exists) {
-      await account.actions.edit(id, actionData);
+      await resources.actions.edit(id, actionData);
       result.updated++;
       spinner.text = `Restoring actions... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.actions.create(actionData);
+      await resources.actions.create(actionData);
       result.created++;
       spinner.text = `Restoring actions... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores actions from backup. */
-async function restoreActions(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreActions(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading actions data from backup...");
@@ -65,14 +65,14 @@ async function restoreActions(account: Account, extractDir: string): Promise<Res
   infoMSG(`Found ${highlightMSG(backupActions.length.toString())} actions in backup.`);
 
   infoMSG("Fetching existing actions from profile...");
-  const existingIds = await fetchExistingActionIds(account);
+  const existingIds = await fetchExistingActionIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing actions in profile.`);
 
   console.info("");
   const spinner = ora("Restoring actions...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {

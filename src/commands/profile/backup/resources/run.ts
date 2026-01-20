@@ -1,4 +1,4 @@
-import { Account, RunInfo } from "@tago-io/sdk";
+import { Resources, RunInfo } from "@tago-io/sdk";
 import ora from "ora";
 
 import { highlightMSG, infoMSG } from "../../../../lib/messages";
@@ -10,7 +10,7 @@ interface BackupRun extends RunInfo {
 }
 
 /** Restores run settings from backup. */
-async function restoreRun(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreRun(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading run data from backup...");
@@ -28,7 +28,7 @@ async function restoreRun(account: Account, extractDir: string): Promise<Restore
 
   try {
     const { created_at: _created_at, ...runData } = backupRun;
-    await account.run.edit(runData);
+    await resources.run.edit(runData);
     result.updated++;
     spinner.succeed(`Run restored: ${backupRun.name}`);
   } catch (error) {

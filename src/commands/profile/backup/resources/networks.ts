@@ -1,4 +1,4 @@
-import { Account, NetworkInfo } from "@tago-io/sdk";
+import { NetworkInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
@@ -15,14 +15,14 @@ const CONCURRENCY = 5;
 const DELAY_BETWEEN_REQUESTS_MS = 150;
 
 /** Fetches all existing network IDs from the profile. */
-async function fetchExistingNetworkIds(account: Account): Promise<Set<string>> {
-  const networks = await account.integration.networks.list({ amount: 10000, fields: ["id"] });
+async function fetchExistingNetworkIds(resources: Resources): Promise<Set<string>> {
+  const networks = await resources.integration.networks.list({ amount: 10000, fields: ["id"] });
   return new Set(networks.map((n) => n.id));
 }
 
 /** Processes a single network restoration task. */
 async function processRestoreTask(
-  account: Account,
+  resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
   spinner: ora.Ora
@@ -33,11 +33,11 @@ async function processRestoreTask(
     const { id, ...networkData } = network;
 
     if (exists) {
-      await account.integration.networks.edit(id, networkData);
+      await resources.integration.networks.edit(id, networkData);
       result.updated++;
       spinner.text = `Restoring networks... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await account.integration.networks.create(networkData);
+      await resources.integration.networks.create(networkData);
       result.created++;
       spinner.text = `Restoring networks... (${result.created} created, ${result.updated} updated)`;
     }
@@ -51,7 +51,7 @@ async function processRestoreTask(
 }
 
 /** Restores networks from backup. */
-async function restoreNetworks(account: Account, extractDir: string): Promise<RestoreResult> {
+async function restoreNetworks(resources: Resources, extractDir: string): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading networks data from backup...");
@@ -65,14 +65,14 @@ async function restoreNetworks(account: Account, extractDir: string): Promise<Re
   infoMSG(`Found ${highlightMSG(backupNetworks.length.toString())} networks in backup.`);
 
   infoMSG("Fetching existing networks from profile...");
-  const existingIds = await fetchExistingNetworkIds(account);
+  const existingIds = await fetchExistingNetworkIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing networks in profile.`);
 
   console.info("");
   const spinner = ora("Restoring networks...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {
-    await processRestoreTask(account, task, result, spinner);
+    await processRestoreTask(resources, task, result, spinner);
   }, CONCURRENCY);
 
   restoreQueue.error((error) => {
