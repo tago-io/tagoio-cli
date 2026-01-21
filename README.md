@@ -87,6 +87,12 @@ List of commands of the CLI
 | |
 | **Profiles** | |
 | export, app-export | export an application from one profile to another |
+| |
+| **Backup** | |
+| backup create | create a new profile backup |
+| backup list | list all profile backups |
+| backup restore | restore profile from a backup |
+| backup download | download a backup file to local folder |
 
 ## Analysis Runner
 When writing up your analysis, make sure you have the following lines at end of the code:
