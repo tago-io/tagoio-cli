@@ -89,7 +89,7 @@ async function restoreDictionaries(resources: Resources, extractDir: string, gra
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading dictionaries data from backup...");
-  const backupDictionaries = readBackupFile<BackupDictionary>(extractDir, "dictionaries.json");
+  let backupDictionaries = readBackupFile<BackupDictionary>(extractDir, "dictionaries.json");
 
   if (backupDictionaries.length === 0) {
     infoMSG("No dictionaries found in backup.");
@@ -103,7 +103,7 @@ async function restoreDictionaries(resources: Resources, extractDir: string, gra
       infoMSG("No dictionaries selected. Skipping.");
       return result;
     }
-    backupDictionaries = selected as DictionaryInfo[];
+    backupDictionaries = selected as BackupDictionary[];
   }
 
   infoMSG(`Restoring ${highlightMSG(backupDictionaries.length.toString())} dictionaries...`);
