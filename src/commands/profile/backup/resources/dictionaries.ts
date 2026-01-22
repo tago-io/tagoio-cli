@@ -1,13 +1,31 @@
-import { DictionaryInfo, Resources } from "@tago-io/sdk";
+import { Resources } from "@tago-io/sdk";
 import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile } from "../lib";
 import { RestoreResult } from "../types";
 
+interface BackupLanguage {
+  dictionary: string;
+  code: string;
+  data: Record<string, string>;
+  active: boolean;
+}
+
+interface BackupDictionary {
+  id: string;
+  name: string;
+  slug: string;
+  fallback: string;
+  profile?: string;
+  created_at?: string | Date;
+  updated_at?: string | Date;
+  languages?: BackupLanguage[];
+}
+
 interface RestoreTask {
-  dictionary: DictionaryInfo;
+  dictionary: BackupDictionary;
   exists: boolean;
 }
 
@@ -20,6 +38,17 @@ async function fetchExistingDictionaryIds(resources: Resources): Promise<Set<str
   return new Set(dictionaries.map((d) => d.id));
 }
 
+/** Restores languages for a dictionary. */
+async function restoreLanguages(resources: Resources, dictionaryId: string, languages: BackupLanguage[]): Promise<void> {
+  for (const language of languages) {
+    await resources.dictionaries.languageEdit(dictionaryId, language.code, {
+      dictionary: language.data,
+      active: language.active,
+    });
+    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
+  }
+}
+
 /** Processes a single dictionary restoration task. */
 async function processRestoreTask(
   resources: Resources,
@@ -30,23 +59,28 @@ async function processRestoreTask(
   const { dictionary, exists } = task;
 
   try {
-    const { id, ...dictionaryData } = dictionary;
+    const { id, languages, ...dictionaryData } = dictionary;
+    let dictionaryId = id;
 
     if (exists) {
       await resources.dictionaries.edit(id, dictionaryData);
       result.updated++;
       spinner.text = `Restoring dictionaries... (${result.created} created, ${result.updated} updated)`;
     } else {
-      await resources.dictionaries.create(dictionaryData);
+      const created = await resources.dictionaries.create(dictionaryData);
+      dictionaryId = created.dictionary;
       result.created++;
       spinner.text = `Restoring dictionaries... (${result.created} created, ${result.updated} updated)`;
+    }
+
+    if (languages && languages.length > 0) {
+      await restoreLanguages(resources, dictionaryId, languages);
     }
 
     await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
   } catch (error) {
     result.failed++;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`\nFailed to restore dictionary "${dictionary.name}": ${errorMessage}`);
+    console.error(`\nFailed to restore dictionary "${dictionary.name}": ${getErrorMessage(error)}`);
   }
 }
 
@@ -55,7 +89,7 @@ async function restoreDictionaries(resources: Resources, extractDir: string): Pr
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading dictionaries data from backup...");
-  const backupDictionaries = readBackupFile<DictionaryInfo>(extractDir, "dictionaries.json");
+  const backupDictionaries = readBackupFile<BackupDictionary>(extractDir, "dictionaries.json");
 
   if (backupDictionaries.length === 0) {
     infoMSG("No dictionaries found in backup.");
