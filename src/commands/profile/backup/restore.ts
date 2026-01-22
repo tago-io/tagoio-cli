@@ -1,6 +1,6 @@
-import { createReadStream, createWriteStream, mkdirSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { createReadStream, createWriteStream, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 
 import { Resources } from "@tago-io/sdk";
@@ -12,6 +12,7 @@ import unzipper from "unzipper";
 import { getEnvironmentConfig } from "../../../lib/config-file";
 import { displayWarning } from "../../../lib/display-warning";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
+import { chooseFromList } from "../../../prompt/choose-from-list";
 import { confirmPrompt } from "../../../prompt/confirm";
 import {
   fetchBackups,
@@ -37,6 +38,10 @@ import { restoreRunUsers } from "./resources/run-users";
 import { restoreSecrets } from "./resources/secrets";
 import { RestoreResult } from "./types";
 
+interface RestoreOptions {
+  granular?: boolean | string;
+}
+
 interface BackupSummary {
   resource: string;
   count: number;
@@ -44,7 +49,7 @@ interface BackupSummary {
 
 interface RestoreConfig {
   name: string;
-  fn: (resources: Resources, extractDir: string) => Promise<RestoreResult>;
+  fn: (resources: Resources, extractDir: string, granularItem?: boolean) => Promise<RestoreResult>;
   format: (r: RestoreResult) => string;
 }
 
@@ -168,8 +173,24 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   return extractDir;
 }
 
+/** Prompts user to select which resources to restore. */
+async function selectResourcesToRestore(): Promise<RestoreConfig[] | null> {
+  const choices = RESTORE_SEQUENCE.map((config) => ({
+    title: config.name,
+    value: config.name,
+  }));
+
+  const selected = await chooseFromList(choices, "Select resources to restore:");
+
+  if (!selected || selected.length === 0) {
+    return null;
+  }
+
+  return RESTORE_SEQUENCE.filter((config) => selected.includes(config.name));
+}
+
 /** Interactive restore flow for profile backups. */
-async function restoreBackup() {
+async function restoreBackup(options: RestoreOptions = {}) {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
@@ -241,6 +262,20 @@ async function restoreBackup() {
       ]);
     }
 
+    let restoreSequence = RESTORE_SEQUENCE;
+    const isGranularItem = options.granular === "item";
+
+    if (options.granular) {
+      console.info("");
+      const selectedResources = await selectResourcesToRestore();
+      if (!selectedResources || selectedResources.length === 0) {
+        infoMSG("No resources selected. Restoration cancelled.");
+        return;
+      }
+      restoreSequence = selectedResources;
+      infoMSG(`Selected ${highlightMSG(restoreSequence.length.toString())} resource types to restore.`);
+    }
+
     if (!(await confirmPrompt("Do you want to restore these resources to your profile?"))) {
       infoMSG("Restoration cancelled by user.");
       return;
@@ -251,9 +286,9 @@ async function restoreBackup() {
 
     const results: { config: RestoreConfig; result: RestoreResult }[] = [];
 
-    for (const config of RESTORE_SEQUENCE) {
-      const result = await config.fn(resources, extractDir);
-      results.push({ config, result });
+    for (const restoreConfig of restoreSequence) {
+      const result = await restoreConfig.fn(resources, extractDir, isGranularItem);
+      results.push({ config: restoreConfig, result });
       console.info("");
     }
 
@@ -261,6 +296,10 @@ async function restoreBackup() {
     for (const { config, result } of results) {
       infoMSG(`${config.name}: ${config.format(result)}`);
     }
+
+    const tempDir = dirname(extractDir);
+    rmSync(tempDir, { recursive: true, force: true });
+    infoMSG("Temporary files cleaned up.");
   } catch (error) {
     handleBackupError(error, "Failed to restore backup");
   }

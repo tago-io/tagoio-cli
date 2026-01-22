@@ -4,8 +4,14 @@ import { join } from "node:path";
 import axios from "axios";
 import prompts from "prompts";
 
-import { errorHandler } from "../../../lib/messages";
+import { errorHandler, highlightMSG, infoMSG } from "../../../lib/messages";
 import { pickFromList } from "../../../prompt/pick-from-list";
+
+/** Interface for backup items with id and name for selection. */
+interface BackupSelectableItem {
+  id: string;
+  name: string;
+}
 import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
 
 /** Extracts error message from various error types including SDK error objects. */
@@ -172,6 +178,40 @@ async function selectBackup(backups: BackupItem[], action: string): Promise<Back
   return completedBackups.find((b) => b.id === selectedId) || null;
 }
 
+/** Prompts user to select specific items from a backup resource with searchable multi-select. */
+async function selectItemsFromBackup<T extends BackupSelectableItem>(
+  items: T[],
+  resourceName: string
+): Promise<T[] | null> {
+  if (items.length === 0) {
+    infoMSG(`No ${resourceName} found in backup.`);
+    return [];
+  }
+
+  infoMSG(`Found ${highlightMSG(items.length.toString())} ${resourceName} in backup.`);
+
+  const choices = items.map((item) => ({
+    title: `${item.name} (${item.id})`,
+    value: item.id,
+  }));
+
+  const { selected } = await prompts({
+    type: "autocompleteMultiselect",
+    name: "selected",
+    message: `Select ${resourceName} to restore (type to search):`,
+    choices,
+    instructions: false,
+    hint: "- Space to select, Enter to confirm",
+  });
+
+  if (!selected || selected.length === 0) {
+    return null;
+  }
+
+  const selectedIds = new Set(selected as string[]);
+  return items.filter((item) => selectedIds.has(item.id));
+}
+
 export {
   fetchBackups,
   formatDate,
@@ -183,4 +223,5 @@ export {
   readBackupFile,
   readBackupSingleFile,
   selectBackup,
+  selectItemsFromBackup,
 };

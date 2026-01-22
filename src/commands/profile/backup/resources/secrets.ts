@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface BackupSecret {
@@ -61,18 +61,28 @@ async function processRestoreTask(
 }
 
 /** Restores secrets from backup. */
-async function restoreSecrets(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreSecrets(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading secrets data from backup...");
-  const backupSecrets = readBackupFile<BackupSecret>(extractDir, "secrets.json");
+  let backupSecrets = readBackupFile<BackupSecret>(extractDir, "secrets.json");
 
   if (backupSecrets.length === 0) {
     infoMSG("No secrets found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupSecrets.length.toString())} secrets in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupSecrets.map((s) => ({ ...s, id: s.id, name: s.key }));
+    const selected = await selectItemsFromBackup(itemsWithName, "secrets");
+    if (!selected || selected.length === 0) {
+      infoMSG("No secrets selected. Skipping.");
+      return result;
+    }
+    backupSecrets = selected as BackupSecret[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupSecrets.length.toString())} secrets...`);
 
   infoMSG("Fetching existing secrets from profile...");
   const existingKeys = await fetchExistingSecretIds(resources);

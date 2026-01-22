@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -51,18 +51,28 @@ async function processRestoreTask(
 }
 
 /** Restores analysis from backup. */
-async function restoreAnalysis(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreAnalysis(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading analysis data from backup...");
-  const backupAnalyses = readBackupFile<AnalysisInfo>(extractDir, "analysis.json");
+  let backupAnalyses = readBackupFile<AnalysisInfo>(extractDir, "analysis.json");
 
   if (backupAnalyses.length === 0) {
     infoMSG("No analysis found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupAnalyses.length.toString())} analysis in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupAnalyses.map((a) => ({ ...a, id: a.id, name: a.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "analysis");
+    if (!selected || selected.length === 0) {
+      infoMSG("No analysis selected. Skipping.");
+      return result;
+    }
+    backupAnalyses = selected as AnalysisInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupAnalyses.length.toString())} analysis...`);
 
   infoMSG("Fetching existing analysis from profile...");
   const existingIds = await fetchExistingAnalysisIds(resources);

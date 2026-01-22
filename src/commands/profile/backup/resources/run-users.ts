@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface BackupRunUser extends UserInfo {
@@ -82,18 +82,28 @@ async function processRestoreTask(
 }
 
 /** Restores run users from backup. */
-async function restoreRunUsers(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreRunUsers(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading run users data from backup...");
-  const backupUsers = readBackupFile<BackupRunUser>(extractDir, "run_users.json");
+  let backupUsers = readBackupFile<BackupRunUser>(extractDir, "run_users.json");
 
   if (backupUsers.length === 0) {
     infoMSG("No run users found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupUsers.length.toString())} run users in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupUsers.map((u) => ({ ...u, id: u.id, name: u.email }));
+    const selected = await selectItemsFromBackup(itemsWithName, "run users");
+    if (!selected || selected.length === 0) {
+      infoMSG("No run users selected. Skipping.");
+      return result;
+    }
+    backupUsers = selected as BackupRunUser[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupUsers.length.toString())} run users...`);
 
   infoMSG("Fetching existing run users from profile...");
   const existingEmails = await fetchExistingUsersByEmail(resources);
