@@ -129,7 +129,7 @@ async function restoreDashboards(resources: Resources, extractDir: string, granu
       infoMSG("No dashboards selected. Skipping.");
       return result;
     }
-    backupDashboards = selected as DashboardInfo[];
+    backupDashboards = selected as BackupDashboard[];
   }
 
   infoMSG(`Restoring ${highlightMSG(backupDashboards.length.toString())} dashboards...`);
