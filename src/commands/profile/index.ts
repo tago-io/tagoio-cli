@@ -79,7 +79,7 @@ Example:
 
     ${kleur.bold("Important Notes")}:
     - Backup creation is ${highlightMSG("asynchronous")} and may take several minutes to complete.
-    - You can only create ${highlightMSG("one backup per day")} per account.
+    - You can only create ${highlightMSG("one or two backup per day")} per account.
     - This feature is ${highlightMSG("not available")} on the Free plan.
 
 Example:
