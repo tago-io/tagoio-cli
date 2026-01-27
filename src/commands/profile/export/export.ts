@@ -28,7 +28,6 @@ interface IExportOptions {
   entity: EntityType[];
   setup: string;
   pick?: boolean;
-  data?: string[] | true;
 }
 
 async function resolveTokens(userConfig: IExport, options: IExportOptions) {
@@ -129,7 +128,7 @@ async function collectParameters(options: IExportOptions) {
 
     // Entities that will be copied from the application.
     entities: options.entity,
-    data: options.data === true ? [] : options.data,
+    data: [],
 
     // Account that entities will be copied from.
     export: {

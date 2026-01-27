@@ -73,18 +73,15 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
       const export_device = new Device({ token: token as string, region: config.import.region });
+      const import_device = new Device({ token: new_token, region: config.export.region });
 
-      if (config.data) {
-        const import_device = new Device({ token: new_token, region: config.export.region });
-
-        for await (const items of export_device.getDataStreaming({ variables: config.data })) {
-          await import_device.sendData(items).catch(errorHandler);
-        }
+      for await (const items of export_device.getDataStreaming({ variables: config.data })) {
+        await import_device.sendData(items).catch(errorHandler);
       }
 
       // Add Configurations Parameters
       const export_param_list = await export_device.getParameters("all");
-      const param_list_map = export_param_list.map(({ id, ...param }: { id: string; [key: string]: unknown }) => param);
+      const param_list_map = export_param_list.map(({ id, ...param }) => param);
       await import_account.devices.paramSet(target_id, param_list_map).catch(errorHandler);
     } else {
       await import_account.devices.edit(target_id, {
