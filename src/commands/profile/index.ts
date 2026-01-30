@@ -79,7 +79,7 @@ Example:
 
     ${kleur.bold("Important Notes")}:
     - Backup creation is ${highlightMSG("asynchronous")} and may take several minutes to complete.
-    - You can only create ${highlightMSG("one backup per day")} per account.
+    - You can only create ${highlightMSG("one or two backup per day")} per account.
     - This feature is ${highlightMSG("not available")} on the Free plan.
 
 Example:
@@ -116,6 +116,8 @@ Example:
   backupCommand
     .command("restore")
     .description("restore profile from a backup")
+    .option("-r, --resources", "select specific resources types to restore")
+    .option("-i, --items", "select specific items within resources to restore")
     .action(restoreBackup)
     .addHelpText(
       "after",
@@ -126,7 +128,12 @@ Example:
     1. Select a backup from the list of completed backups
     2. Enter your account password (and OTP if 2FA is enabled)
     3. Review the backup contents summary
-    4. Confirm and execute the restoration
+    4. ${highlightMSG("(Optional)")} Select specific resources to restore with --resources
+    5. Confirm and execute the restoration
+
+    ${kleur.bold("Options")}:
+    - ${highlightMSG("--resources")}: Select which resource types to restore.
+    - ${highlightMSG("--items")}: Select resource types AND specific items within each (searchable).
 
     ${kleur.bold("Important Notes")}:
     - Only backups with status ${highlightMSG("completed")} can be restored.
@@ -135,6 +142,8 @@ Example:
 
 Example:
     $ tagoio backup restore
+    $ tagoio backup restore --resources
+    $ tagoio backup restore --items
   `,
     );
 

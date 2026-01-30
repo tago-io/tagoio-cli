@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -64,18 +64,28 @@ async function processEditTask(
 }
 
 /** Restores devices from backup. */
-async function restoreDevices(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreDevices(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading devices data from backup...");
-  const backupDevices = readBackupFile<DeviceInfo>(extractDir, "devices.json");
+  let backupDevices = readBackupFile<DeviceInfo>(extractDir, "devices.json");
 
   if (backupDevices.length === 0) {
     infoMSG("No devices found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupDevices.length.toString())} devices in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupDevices.map((d) => ({ ...d, id: d.id, name: d.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "devices");
+    if (!selected || selected.length === 0) {
+      infoMSG("No devices selected. Skipping.");
+      return result;
+    }
+    backupDevices = selected as DeviceInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupDevices.length.toString())} devices...`);
 
   infoMSG("Fetching existing devices from profile...");
   const existingIds = await fetchExistingDeviceIds(resources);

@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -51,18 +51,28 @@ async function processRestoreTask(
 }
 
 /** Restores actions from backup. */
-async function restoreActions(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreActions(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading actions data from backup...");
-  const backupActions = readBackupFile<ActionInfo>(extractDir, "actions.json");
+  let backupActions = readBackupFile<ActionInfo>(extractDir, "actions.json");
 
   if (backupActions.length === 0) {
     infoMSG("No actions found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupActions.length.toString())} actions in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupActions.map((a) => ({ ...a, id: a.id, name: a.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "actions");
+    if (!selected || selected.length === 0) {
+      infoMSG("No actions selected. Skipping.");
+      return result;
+    }
+    backupActions = selected as ActionInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupActions.length.toString())} actions...`);
 
   infoMSG("Fetching existing actions from profile...");
   const existingIds = await fetchExistingActionIds(resources);

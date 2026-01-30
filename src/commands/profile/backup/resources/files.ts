@@ -6,7 +6,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage } from "../lib";
+import { getErrorMessage, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface FileTask {
@@ -70,20 +70,30 @@ async function processUploadTask(
 }
 
 /** Restores files from backup. */
-async function restoreFiles(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreFiles(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   const filesDir = join(extractDir, "files");
 
   infoMSG("Reading files from backup...");
-  const fileTasks = collectFiles(filesDir, filesDir);
+  let fileTasks = collectFiles(filesDir, filesDir);
 
   if (fileTasks.length === 0) {
     infoMSG("No files found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(fileTasks.length.toString())} files in backup.`);
+  if (granularItem) {
+    const itemsWithName = fileTasks.map((f) => ({ ...f, id: f.relativePath, name: f.relativePath }));
+    const selected = await selectItemsFromBackup(itemsWithName, "files");
+    if (!selected || selected.length === 0) {
+      infoMSG("No files selected. Skipping.");
+      return result;
+    }
+    fileTasks = selected as FileTask[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(fileTasks.length.toString())} files...`);
 
   console.info("");
   const spinner = ora("Uploading files...").start();

@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface BackupLanguage {
@@ -85,18 +85,28 @@ async function processRestoreTask(
 }
 
 /** Restores dictionaries from backup. */
-async function restoreDictionaries(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreDictionaries(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading dictionaries data from backup...");
-  const backupDictionaries = readBackupFile<BackupDictionary>(extractDir, "dictionaries.json");
+  let backupDictionaries = readBackupFile<BackupDictionary>(extractDir, "dictionaries.json");
 
   if (backupDictionaries.length === 0) {
     infoMSG("No dictionaries found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupDictionaries.length.toString())} dictionaries in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupDictionaries.map((d) => ({ ...d, id: d.id, name: d.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "dictionaries");
+    if (!selected || selected.length === 0) {
+      infoMSG("No dictionaries selected. Skipping.");
+      return result;
+    }
+    backupDictionaries = selected as BackupDictionary[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupDictionaries.length.toString())} dictionaries...`);
 
   infoMSG("Fetching existing dictionaries from profile...");
   const existingIds = await fetchExistingDictionaryIds(resources);

@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -51,18 +51,28 @@ async function processRestoreTask(
 }
 
 /** Restores networks from backup. */
-async function restoreNetworks(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreNetworks(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading networks data from backup...");
-  const backupNetworks = readBackupFile<NetworkInfo>(extractDir, "networks.json");
+  let backupNetworks = readBackupFile<NetworkInfo>(extractDir, "networks.json");
 
   if (backupNetworks.length === 0) {
     infoMSG("No networks found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupNetworks.length.toString())} networks in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupNetworks.map((n) => ({ ...n, id: n.id, name: n.name as string }));
+    const selected = await selectItemsFromBackup(itemsWithName, "networks");
+    if (!selected || selected.length === 0) {
+      infoMSG("No networks selected. Skipping.");
+      return result;
+    }
+    backupNetworks = selected as NetworkInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupNetworks.length.toString())} networks...`);
 
   infoMSG("Fetching existing networks from profile...");
   const existingIds = await fetchExistingNetworkIds(resources);

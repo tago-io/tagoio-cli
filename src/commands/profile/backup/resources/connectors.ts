@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -51,18 +51,28 @@ async function processRestoreTask(
 }
 
 /** Restores connectors from backup. */
-async function restoreConnectors(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreConnectors(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading connectors data from backup...");
-  const backupConnectors = readBackupFile<ConnectorInfo>(extractDir, "connectors.json");
+  let backupConnectors = readBackupFile<ConnectorInfo>(extractDir, "connectors.json");
 
   if (backupConnectors.length === 0) {
     infoMSG("No connectors found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupConnectors.length.toString())} connectors in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupConnectors.map((c) => ({ ...c, id: c.id, name: c.name as string }));
+    const selected = await selectItemsFromBackup(itemsWithName, "connectors");
+    if (!selected || selected.length === 0) {
+      infoMSG("No connectors selected. Skipping.");
+      return result;
+    }
+    backupConnectors = selected as ConnectorInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupConnectors.length.toString())} connectors...`);
 
   infoMSG("Fetching existing connectors from profile...");
   const existingIds = await fetchExistingConnectorIds(resources);

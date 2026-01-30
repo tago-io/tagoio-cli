@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile } from "../lib";
+import { readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface RestoreTask {
@@ -51,18 +51,28 @@ async function processRestoreTask(
 }
 
 /** Restores access management policies from backup. */
-async function restoreAccessManagement(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreAccessManagement(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading access management data from backup...");
-  const backupPolicies = readBackupFile<AccessInfo>(extractDir, "access_management.json");
+  let backupPolicies = readBackupFile<AccessInfo>(extractDir, "access_management.json");
 
   if (backupPolicies.length === 0) {
     infoMSG("No access management policies found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupPolicies.length.toString())} access policies in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupPolicies.map((p) => ({ ...p, id: p.id, name: p.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "access policies");
+    if (!selected || selected.length === 0) {
+      infoMSG("No access policies selected. Skipping.");
+      return result;
+    }
+    backupPolicies = selected as AccessInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupPolicies.length.toString())} access policies...`);
 
   infoMSG("Fetching existing access policies from profile...");
   const existingIds = await fetchExistingPolicyIds(resources);

@@ -3,7 +3,7 @@ import { queue } from "async";
 import ora from "ora";
 
 import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile } from "../lib";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
 import { RestoreResult } from "../types";
 
 interface BackupWidget extends WidgetInfo {
@@ -111,18 +111,28 @@ async function processRestoreTask(
 }
 
 /** Restores dashboards from backup. */
-async function restoreDashboards(resources: Resources, extractDir: string): Promise<RestoreResult> {
+async function restoreDashboards(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
   const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
 
   infoMSG("Reading dashboards data from backup...");
-  const backupDashboards = readBackupFile<BackupDashboard>(extractDir, "dashboards.json");
+  let backupDashboards = readBackupFile<BackupDashboard>(extractDir, "dashboards.json");
 
   if (backupDashboards.length === 0) {
     infoMSG("No dashboards found in backup.");
     return result;
   }
 
-  infoMSG(`Found ${highlightMSG(backupDashboards.length.toString())} dashboards in backup.`);
+  if (granularItem) {
+    const itemsWithName = backupDashboards.map((d) => ({ ...d, id: d.id, name: d.label }));
+    const selected = await selectItemsFromBackup(itemsWithName, "dashboards");
+    if (!selected || selected.length === 0) {
+      infoMSG("No dashboards selected. Skipping.");
+      return result;
+    }
+    backupDashboards = selected as BackupDashboard[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupDashboards.length.toString())} dashboards...`);
 
   infoMSG("Fetching existing dashboards from profile...");
   const existingIds = await fetchExistingDashboardIds(resources);
