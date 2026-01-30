@@ -50,8 +50,7 @@ yarn.lock
 # ignore local files
 *.LOCAL.*
 *.local.*
-.tago-lock.test.lock
-.tago-lock.prod.lock
+.tago-lock*
 tagoconfig*
 src/analysis
 .tago-lock.ty.lock
