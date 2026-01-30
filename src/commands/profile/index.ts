@@ -116,7 +116,8 @@ Example:
   backupCommand
     .command("restore")
     .description("restore profile from a backup")
-    .option("--granular [mode]", "select specific resources to restore (use 'item' for item-level selection)")
+    .option("-r, --resources", "select specific resources types to restore")
+    .option("-i, --items", "select specific items within resources to restore")
     .action(restoreBackup)
     .addHelpText(
       "after",
@@ -127,12 +128,12 @@ Example:
     1. Select a backup from the list of completed backups
     2. Enter your account password (and OTP if 2FA is enabled)
     3. Review the backup contents summary
-    4. ${highlightMSG("(Optional)")} Select specific resources to restore with --granular
+    4. ${highlightMSG("(Optional)")} Select specific resources to restore with --resources
     5. Confirm and execute the restoration
 
     ${kleur.bold("Options")}:
-    - ${highlightMSG("--granular")}: Select which resource types to restore.
-    - ${highlightMSG("--granular item")}: Select resource types AND specific items within each (searchable).
+    - ${highlightMSG("--resources")}: Select which resource types to restore.
+    - ${highlightMSG("--items")}: Select resource types AND specific items within each (searchable).
 
     ${kleur.bold("Important Notes")}:
     - Only backups with status ${highlightMSG("completed")} can be restored.
@@ -141,8 +142,8 @@ Example:
 
 Example:
     $ tagoio backup restore
-    $ tagoio backup restore --granular
-    $ tagoio backup restore --granular item
+    $ tagoio backup restore --resources
+    $ tagoio backup restore --items
   `,
     );
 

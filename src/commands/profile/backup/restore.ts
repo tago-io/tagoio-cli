@@ -39,7 +39,8 @@ import { restoreSecrets } from "./resources/secrets";
 import { RestoreResult } from "./types";
 
 interface RestoreOptions {
-  granular?: boolean | string;
+  resources?: boolean;
+  items?: boolean;
 }
 
 interface BackupSummary {
@@ -263,9 +264,9 @@ async function restoreBackup(options: RestoreOptions = {}) {
     }
 
     let restoreSequence = RESTORE_SEQUENCE;
-    const isGranularItem = options.granular === "item";
+    const isGranularItem = !!options.items;
 
-    if (options.granular) {
+    if (options.resources || options.items) {
       console.info("");
       const selectedResources = await selectResourcesToRestore();
       if (!selectedResources || selectedResources.length === 0) {
