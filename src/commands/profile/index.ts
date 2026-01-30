@@ -31,6 +31,7 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
     .option("-e, --entity <entity>", "entities that will be exported (repeatable)", handleEntities, [])
     .addOption(new Option("--setup [environment]", "setup a profile to be exported").conflicts(["to", "from", "from-token", "to-token"]))
     .option("--pick", "prompt you to pick which entities to be exported")
+    .option("--data [variables...]", "copy device data with specified variable names (omit names to copy all)")
     .action(startExport)
     .addHelpText(
       "after",
@@ -44,7 +45,8 @@ function profileCommands(program: Command, _defaultEnvironment: string) {
 
     ${kleur.bold("Entities Export")}:
     - ${highlightMSG("dashboards")}: Export the dashboard label, blueprint devices, tabs, tags and widgets of the dashboard.
-    - ${highlightMSG("devices")}: Export the devices and copy relevant data from it, after erasing the data. Must specify the data with the --data option.
+      ${kleur.bold("Note")}: To export the dashboards while preserving the relationship between Devices/Analysis, ensure they have the export_id tag or any other tag you choose.
+    - ${highlightMSG("devices")}: Export the devices configuration. Use --data to also copy device data: --data copies all variables, --data var1 var2 copies only specified variables.
                If you are using device-tokens in Environment Variables or tags, you want to include the device in the export command.
     - ${highlightMSG("analysis")}: Export the analysis name, code, tags, mode and timeout settings.
     - ${highlightMSG("access")}: Export the access rules.

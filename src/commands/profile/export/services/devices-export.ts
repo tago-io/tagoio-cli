@@ -4,6 +4,41 @@ import { errorHandler, infoMSG } from "../../../../lib/messages";
 import { replaceObj } from "../../../../lib/replace-obj";
 import { IExport, IExportHolder } from "../types";
 
+/**
+ * @description Replace the device token if the token being exported has the serial_number
+ */
+async function _generateDeviceToken(account: Account, import_account: Account, target_id: string, device_id: string) {
+  let device_tokens = await account.devices.tokenList(device_id, { fields: ["name", "permission", "expire_time", "serie_number"] });
+  device_tokens = device_tokens.filter((token) => token.serie_number);
+
+  if (device_tokens.length === 0) {
+    return;
+  }
+
+  const token_list = await import_account.devices.tokenList(target_id, { fields: ["serie_number", "token"] } ).then((tokens) => {
+    const tokens_with_serial_number = tokens.filter((t) => t.serie_number);
+    if (tokens_with_serial_number) {
+      return tokens_with_serial_number.map((t) => t.token);
+    }
+    return [];
+  });
+
+  for (const token of token_list) {
+    await import_account.devices.tokenDelete(token).catch(errorHandler);
+  }
+
+  for (const token of device_tokens) {
+    await import_account.devices
+      .tokenCreate(target_id, {
+        name: token.name as string,
+        permission: token.permission || "full",
+        expire_time: "never",
+        serie_number: token.serie_number || undefined,
+      })
+      .catch(errorHandler);
+  }
+}
+
 async function deviceExport(account: Account, import_account: Account, export_holder: IExportHolder, config: IExport) {
   infoMSG("Exporting devices: started (Max 10000 devices)");
 
@@ -37,19 +72,20 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     if (!target_id) {
       ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
 
-      if (config.data && config.data.length > 0) {
-        // TODO: Support different regions
-        const device = new Device({ token: new_token, region: config.import.region });
-        const old_device = new Device({ token: token as string, region: config.export.region });
+      const export_device = new Device({ token: token as string, region: config.import.region });
 
-        const data = await old_device.getData({
-          variables: config.data,
-          qty: 9999,
-        });
-        if (data.length > 0) {
-          device.sendData(data).catch(errorHandler);
+      if (config.data) {
+        const import_device = new Device({ token: new_token, region: config.export.region });
+
+        for await (const items of export_device.getDataStreaming({ variables: config.data })) {
+          await import_device.sendData(items).catch(errorHandler);
         }
       }
+
+      // Add Configurations Parameters
+      const export_param_list = await export_device.getParameters("all");
+      const param_list_map = export_param_list.map(({ id, ...param }: { id: string; [key: string]: unknown }) => param);
+      await import_account.devices.paramSet(target_id, param_list_map).catch(errorHandler);
     } else {
       await import_account.devices.edit(target_id, {
         parse_function: new_device.parse_function,
@@ -59,6 +95,9 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       });
       new_token = (await Utils.getTokenByName(import_account, target_id)) as string;
     }
+
+    // Replace the device token if the token being exported has the serial_number
+    await _generateDeviceToken(account, import_account, target_id, device_id);
 
     export_holder.devices[device_id] = target_id;
     export_holder.tokens[token as string] = new_token;
