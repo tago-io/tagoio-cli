@@ -1,0 +1,146 @@
+import { DeviceInfo, Resources } from "@tago-io/sdk";
+import { queue } from "async";
+import ora from "ora";
+
+import { highlightMSG, infoMSG } from "../../../../lib/messages";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
+import { RestoreResult } from "../types";
+
+interface RestoreTask {
+  device: DeviceInfo;
+  exists: boolean;
+}
+
+const CREATE_CONCURRENCY = 8;
+const EDIT_CONCURRENCY = 3;
+const DELAY_BETWEEN_REQUESTS_MS = 100;
+
+/** Fetches all existing device IDs from the profile. */
+async function fetchExistingDeviceIds(resources: Resources): Promise<Set<string>> {
+  const devices = await resources.devices.list({ amount: 10000, fields: ["id"] });
+  return new Set(devices.map((d) => d.id));
+}
+
+/** Processes a single device creation task. */
+async function processCreateTask(
+  resources: Resources,
+  task: RestoreTask,
+  result: RestoreResult,
+  spinner: ora.Ora
+): Promise<void> {
+  const { device } = task;
+
+  try {
+    const { ...deviceData } = device;
+    await resources.devices.create(deviceData);
+    result.created++;
+    spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
+    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
+  } catch (error) {
+    result.failed++;
+    console.error(`\nFailed to create device "${device.name}": ${getErrorMessage(error)}`);
+  }
+}
+
+/** Processes a single device edit task. */
+async function processEditTask(
+  resources: Resources,
+  task: RestoreTask,
+  result: RestoreResult,
+  spinner: ora.Ora
+): Promise<void> {
+  const { device } = task;
+
+  try {
+    const { id, network: _network, connector: _connector, updated_at: _updated_at, ...deviceData } = device;
+    await resources.devices.edit(id, deviceData);
+    result.updated++;
+    spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
+    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
+  } catch (error) {
+    result.failed++;
+    console.error(`\nFailed to update device "${device.name}": ${getErrorMessage(error)}`);
+  }
+}
+
+/** Restores devices from backup. */
+async function restoreDevices(resources: Resources, extractDir: string, granularItem?: boolean): Promise<RestoreResult> {
+  const result: RestoreResult = { created: 0, updated: 0, failed: 0 };
+
+  infoMSG("Reading devices data from backup...");
+  let backupDevices = readBackupFile<DeviceInfo>(extractDir, "devices.json");
+
+  if (backupDevices.length === 0) {
+    infoMSG("No devices found in backup.");
+    return result;
+  }
+
+  if (granularItem) {
+    const itemsWithName = backupDevices.map((d) => ({ ...d, id: d.id, name: d.name }));
+    const selected = await selectItemsFromBackup(itemsWithName, "devices");
+    if (!selected || selected.length === 0) {
+      infoMSG("No devices selected. Skipping.");
+      return result;
+    }
+    backupDevices = selected as DeviceInfo[];
+  }
+
+  infoMSG(`Restoring ${highlightMSG(backupDevices.length.toString())} devices...`);
+
+  infoMSG("Fetching existing devices from profile...");
+  const existingIds = await fetchExistingDeviceIds(resources);
+  infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing devices in profile.`);
+
+  const devicesToCreate: RestoreTask[] = [];
+  const devicesToEdit: RestoreTask[] = [];
+
+  for (const device of backupDevices) {
+    const exists = existingIds.has(device.id);
+    if (exists) {
+      devicesToEdit.push({ device, exists });
+    } else {
+      devicesToCreate.push({ device, exists });
+    }
+  }
+
+  console.info("");
+  const spinner = ora("Restoring devices...").start();
+
+  const createQueue = queue<RestoreTask>(async (task) => {
+    await processCreateTask(resources, task, result, spinner);
+  }, CREATE_CONCURRENCY);
+
+  const editQueue = queue<RestoreTask>(async (task) => {
+    await processEditTask(resources, task, result, spinner);
+  }, EDIT_CONCURRENCY);
+
+  createQueue.error((error) => {
+    console.error(`\nCreate queue error: ${getErrorMessage(error)}`);
+  });
+
+  editQueue.error((error) => {
+    console.error(`\nEdit queue error: ${getErrorMessage(error)}`);
+  });
+
+  for (const task of devicesToCreate) {
+    void createQueue.push(task);
+  }
+
+  for (const task of devicesToEdit) {
+    void editQueue.push(task);
+  }
+
+  if (devicesToCreate.length > 0) {
+    await createQueue.drain();
+  }
+
+  if (devicesToEdit.length > 0) {
+    await editQueue.drain();
+  }
+
+  spinner.succeed(`Devices restored: ${result.created} created, ${result.updated} updated, ${result.failed} failed`);
+
+  return result;
+}
+
+export { restoreDevices };
