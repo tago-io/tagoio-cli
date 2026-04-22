@@ -14,6 +14,8 @@ const statMock = vi.fn();
 const unlinkMock = vi.fn();
 const execSyncMock = vi.fn();
 const detectRuntimeMock = vi.fn();
+const chooseAnalysisListFromConfigMock = vi.fn();
+const confirmAnalysisFromConfigMock = vi.fn();
 
 let accountInstance: ReturnType<typeof makeAccount>;
 
@@ -53,6 +55,14 @@ vi.mock("../../lib/messages.js", () => ({
   highlightMSG: (s: string) => s,
 }));
 
+vi.mock("../../prompt/choose-analysis-list-config.js", () => ({
+  chooseAnalysisListFromConfig: (...args: unknown[]) => chooseAnalysisListFromConfigMock(...args),
+}));
+
+vi.mock("../../prompt/confirm-analysis-list.js", () => ({
+  confirmAnalysisFromConfig: (...args: unknown[]) => confirmAnalysisFromConfigMock(...args),
+}));
+
 describe("deployAnalysis", () => {
   const analysisList = [
     { name: "scriptA", fileName: "a.ts", id: "an-1" },
@@ -72,13 +82,17 @@ describe("deployAnalysis", () => {
   beforeEach(() => {
     accountInstance = makeAccount();
     getEnvironmentConfigMock.mockReset();
-    errorHandlerMock.mockClear();
+    errorHandlerMock.mockReset().mockImplementation((str: unknown) => {
+      throw new Error(String(str));
+    });
     successMSGMock.mockClear();
     readFileMock.mockReset();
     statMock.mockReset().mockResolvedValue(null);
     unlinkMock.mockReset();
     execSyncMock.mockReset();
     detectRuntimeMock.mockReset().mockReturnValue("--node");
+    chooseAnalysisListFromConfigMock.mockReset();
+    confirmAnalysisFromConfigMock.mockReset();
     exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new Error(`__exit:${code ?? 0}`);
     }) as never);
@@ -341,5 +355,73 @@ describe("deployAnalysis", () => {
     const cmd = execSyncMock.mock.calls[0][0] as string;
     expect(cmd).toContain("./src/analysis/a.ts");
     expect(cmd).toContain("./build/a.tago.js");
+  });
+
+  test("returns silently when getEnvironmentConfig yields undefined", async () => {
+    getEnvironmentConfigMock.mockReturnValue(undefined);
+
+    const { deployAnalysis } = await import("./deploy.js");
+    const result = await deployAnalysis("scriptA", defaultOptions());
+    expect(result).toBeUndefined();
+    expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+  });
+
+  test("opens the interactive picker when no script name and --all are provided", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    chooseAnalysisListFromConfigMock.mockResolvedValue(analysisList);
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("", defaultOptions()),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(chooseAnalysisListFromConfigMock).toHaveBeenCalled();
+  });
+
+  test("prompts for confirmation when silent is false and a name is provided", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    confirmAnalysisFromConfigMock.mockResolvedValue(analysisList);
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("scriptA", { ...defaultOptions(), silent: false }),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(confirmAnalysisFromConfigMock).toHaveBeenCalled();
+  });
+
+  test("cancels with a clear error when the interactive picker returns an empty list", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    chooseAnalysisListFromConfigMock.mockResolvedValue([]);
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("", defaultOptions()),
+    ).rejects.toThrow(/Cancelled/);
+
+    expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+  });
+
+  test("sets run_on to 'tago' after a successful upload", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("scriptA", defaultOptions()),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(accountInstance.analysis.edit).toHaveBeenCalledWith("an-1", { run_on: "tago" });
   });
 });
