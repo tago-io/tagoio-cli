@@ -198,6 +198,27 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
   ```
 
 
+## Using in CI/CD Pipelines
+
+Deploy every analysis from `tagoconfig.json` directly from a GitHub Actions workflow — no need to maintain a custom deploy script per project:
+
+```yaml
+- name: Install TagoIO CLI and builder
+  run: npm install -g @tago-io/cli @tago-io/builder
+
+- name: Deploy analyses to TagoIO
+  run: tagoio deploy --all -e production -t ${{ secrets.TAGOIO_TOKEN }} --silent
+```
+
+The flag combination:
+- `--all` — deploys every analysis registered in `tagoconfig.json` without any interactive prompt
+- `-e, --environment` — picks the environment block from `tagoconfig.json`
+- `-t, --token` — a TagoIO token (profile token, or an external-analysis token with the proper Access Management permissions). It bypasses the local `.tago-lock` file, which doesn't exist in CI runners
+- `--silent` — skips confirmation prompts
+
+Together, the command runs fully non-interactively — suitable for any CI/CD system. No call to `tagoio init` or `tagoio login` is required before deploy, but your repository **must** include a pre-configured `tagoconfig.json` mapping each analysis file to its analysis ID.
+
+
 ## License
 
 TagoIO SDK for JavaScript in the browser and Node.js is released under the [Apache-2.0 License](https://github.com/tagoio-cli/blob/master/LICENSE.md).
