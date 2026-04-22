@@ -71,7 +71,6 @@ async function convertDevice(deviceID: string, settings: BucketSettings, config:
 async function startBucketChange(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
   await convertDevice(deviceID, settings, config).catch((error) => {
     errorHandler(error);
-    throw false;
   });
 
   const extras = [
@@ -87,14 +86,12 @@ async function chooseBucketsFromList(account: Account) {
   const bucketList = await account.devices.list({ fields: ["id", "name", "bucket", "type"] }).catch(errorHandler);
   if (!bucketList || bucketList.length === 0) {
     errorHandler("No buckets found");
-    throw false;
   }
 
   const promptList = bucketList.map((bucket) => ({ title: `${bucket.name} - ${coloredBucketType(bucket.type)}`, value: bucket.id }));
   const chosenBucketList = await chooseFromList(promptList, "Choose a bucket to change type");
   if (!chosenBucketList) {
     errorHandler("No bucket selected");
-    throw false;
   }
   return chosenBucketList;
 }
