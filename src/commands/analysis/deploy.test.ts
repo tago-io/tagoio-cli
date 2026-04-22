@@ -1,4 +1,3 @@
-import prompts from "prompts";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
@@ -6,7 +5,7 @@ import { makeAccount } from "../../test-utils/mock-sdk.js";
 import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn<(str: unknown) => void>((str) => {
   throw new Error(String(str));
 });
 const successMSGMock = vi.fn();
@@ -59,6 +58,15 @@ describe("deployAnalysis", () => {
     { name: "scriptA", fileName: "a.ts", id: "an-1" },
   ];
 
+  /** Default CLI options shape — individual tests override fields as needed. */
+  const defaultOptions = () => ({
+    environment: "prod",
+    silent: true,
+    deno: false,
+    node: false,
+    all: false,
+  });
+
   let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
@@ -81,13 +89,13 @@ describe("deployAnalysis", () => {
     exitSpy.mockRestore();
   });
 
-  test("calls errorHandler when the environment is missing", async () => {
+  test("errors when no profile token is available (no lock file and no --token)", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("a.ts", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/Environment not found/);
+      deployAnalysis("a.ts", defaultOptions()),
+    ).rejects.toThrow(/No profile token found/);
   });
 
   test("deploys a single matched script and emits a success message", async () => {
@@ -99,7 +107,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalled();
@@ -116,7 +124,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: true }),
+      deployAnalysis("scriptA", { ...defaultOptions(), deno: true, node: true }),
     ).rejects.toThrow(/Cannot specify both/);
   });
 
@@ -125,25 +133,72 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("nope", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("nope", defaultOptions()),
     ).rejects.toThrow(/No analysis found/);
   });
 
-  test("uses chooseAnalysisListFromConfig prompt when 'all' is passed", async () => {
-    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+  test("rejects the legacy 'all' positional with a pointer to --all", async () => {
+    // No env config needed — the check runs before getEnvironmentConfig.
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("all", defaultOptions()),
+    ).rejects.toThrow('Did you mean "tagoio deploy --all"? The "all" positional argument is no longer supported.');
+    expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+  });
+
+  test("--all deploys every analysis from the config without prompting", async () => {
+    const list = [
+      { name: "scriptA", fileName: "a.ts", id: "an-1" },
+      { name: "scriptB", fileName: "b.ts", id: "an-2" },
+    ];
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: list }));
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
     accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
     accountInstance.analysis.edit.mockResolvedValue(undefined);
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
-    prompts.inject([[analysisList[0]]]);
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("", { ...defaultOptions(), all: true }),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(2);
+  });
+
+  test("-t/--token overrides the lock-file token for this run", async () => {
+    // Simulate a CI runner: env config exists but carries no token.
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList, profileToken: "" }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("all", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", { ...defaultOptions(), token: "ci-token" }),
     ).rejects.toThrow(/__exit:0/);
 
+    // Upload was reached → the token override made it past the auth gate.
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalled();
+  });
+
+  test("--all + -t/--token works end-to-end with no lock file (CI flow)", async () => {
+    const list = [
+      { name: "scriptA", fileName: "a.ts", id: "an-1" },
+      { name: "scriptB", fileName: "b.ts", id: "an-2" },
+    ];
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: list, profileToken: "" }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("", { ...defaultOptions(), all: true, token: "ci-token" }),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(2);
   });
 
   test("bundles with deno when --deno flag is set", async () => {
@@ -156,7 +211,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: false }),
+      deployAnalysis("scriptA", { ...defaultOptions(), deno: true }),
     ).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalledWith(
@@ -176,7 +231,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: true }),
+      deployAnalysis("scriptA", { ...defaultOptions(), node: true }),
     ).rejects.toThrow(/__exit:0/);
 
     expect(logSpy).toHaveBeenCalledWith("deploying with node");
@@ -194,7 +249,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     expect(unlinkMock).toHaveBeenCalled();
@@ -210,7 +265,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalledWith(
@@ -228,7 +283,7 @@ describe("deployAnalysis", () => {
     const { deployAnalysis } = await import("./deploy.js");
     // script read fails → buildScript returns early → loop finishes → process.exit()
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
@@ -244,7 +299,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     // Don't assert the exact thrown message; just that the command resolves or throws w/o upload.
-    await deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }).catch(() => undefined);
+    await deployAnalysis("scriptA", defaultOptions()).catch(() => undefined);
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
@@ -259,7 +314,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Script upload failed"));
@@ -278,7 +333,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+      deployAnalysis("scriptA", defaultOptions()),
     ).rejects.toThrow(/__exit:0/);
 
     // First execSync call should reference the default paths
