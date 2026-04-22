@@ -22,17 +22,6 @@ interface BuildScriptParams {
   path: string;
 }
 
-interface IDeployOptions {
-  environment: string;
-  silent: boolean;
-  deno: boolean;
-  node: boolean;
-  /** Deploy every analysis from tagoconfig.json without prompting (for CI/CD). */
-  all: boolean;
-  /** Profile token for this invocation, bypassing the lock file (for CI/CD). */
-  token?: string;
-}
-
 /**
  * Returns an object containing the paths for analysis, build and current folder.
  * @param config - An object containing the configuration for the environment.
@@ -118,6 +107,17 @@ async function buildScript(params: BuildScriptParams) {
   await account.analysis.edit(analysisID, {
     run_on: "tago",
   });
+}
+
+interface IDeployOptions {
+  environment: string;
+  silent: boolean;
+  deno: boolean;
+  node: boolean;
+  /** Deploy every analysis from tagoconfig.json without prompting (for CI/CD). */
+  all: boolean;
+  /** Profile token for this invocation, bypassing the lock file (for CI/CD). */
+  token?: string;
 }
 
 /**
