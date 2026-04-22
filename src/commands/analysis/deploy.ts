@@ -22,6 +22,17 @@ interface BuildScriptParams {
   path: string;
 }
 
+interface IDeployOptions {
+  environment: string;
+  silent: boolean;
+  deno: boolean;
+  node: boolean;
+  /** Deploy every analysis from tagoconfig.json without prompting (for CI/CD). */
+  all: boolean;
+  /** Profile token for this invocation, bypassing the lock file (for CI/CD). */
+  token?: string;
+}
+
 /**
  * Returns an object containing the paths for analysis, build and current folder.
  * @param config - An object containing the configuration for the environment.
@@ -113,34 +124,43 @@ async function buildScript(params: BuildScriptParams) {
  * Deploys an analysis script to the specified environment. Picks default environment if none is specified.
  * @param cmdScriptName - The name of the script to deploy.
  * @param options - The options for the deployment.
- * @param options.environment - The environment to deploy the script to.
- * @param options.silent - Whether to skip confirmation prompts.
  * @returns void
  */
-async function deployAnalysis(cmdScriptName: string, options: { environment: string; silent: boolean; deno: boolean; node: boolean }) {
+async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
+  if (cmdScriptName === "all") {
+    errorHandler('Did you mean "tagoio deploy --all"? The "all" positional argument is no longer supported.');
+  }
+
   const config = getEnvironmentConfig(options.environment);
-  if (!config || !config.profileToken) {
-    errorHandler("Environment not found");
+  if (!config) {
     return;
   }
 
-  // check if script has a file
+  if (options.token) {
+    config.profileToken = options.token;
+  }
+  if (!config.profileToken) {
+    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
+  }
+
+  // --all skips selection entirely; everything in analysisList with a fileName ships.
   let scriptList = config.analysisList.filter((x) => x.fileName);
-  if (!cmdScriptName || cmdScriptName === "all") {
-    scriptList = await chooseAnalysisListFromConfig(scriptList);
-  } else {
-    const analysisFound: IEnvironment["analysisList"][0] = searchName(
-      cmdScriptName,
-      scriptList.map((x) => ({ names: [x.name, x.fileName], value: x })),
-    );
+  if (!options.all) {
+    if (!cmdScriptName) {
+      scriptList = await chooseAnalysisListFromConfig(scriptList);
+    } else {
+      const analysisFound: IEnvironment["analysisList"][0] = searchName(
+        cmdScriptName,
+        scriptList.map((x) => ({ names: [x.name, x.fileName], value: x })),
+      );
 
-    if (!analysisFound) {
-      errorHandler(`No analysis found containing name: ${cmdScriptName}`);
-      return;
-    }
+      if (!analysisFound) {
+        errorHandler(`No analysis found containing name: ${cmdScriptName}`);
+      }
 
-    if (!options.silent) {
-      scriptList = await confirmAnalysisFromConfig([analysisFound]);
+      if (!options.silent) {
+        scriptList = await confirmAnalysisFromConfig([analysisFound]);
+      }
     }
   }
 
