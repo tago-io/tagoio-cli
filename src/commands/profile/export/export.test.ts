@@ -196,4 +196,204 @@ describe("startExport end-to-end", () => {
       })
     ).rejects.toThrow(/RUN/);
   });
+
+  test("errors out when source and target profile IDs match", async () => {
+    // Both profiles.info calls return the same ID — triggers the "same profile" guard
+    profilesInfoMock.mockResolvedValue({ info: { name: "Shared", id: "p-same" } });
+
+    prompts.inject([["devices"], "tag"]);
+
+    const { startExport } = await import("./export.js");
+    await expect(
+      startExport({
+        from: "prod",
+        to: "dev",
+        entity: [],
+        setup: "",
+      })
+    ).rejects.toThrow(/same profile/);
+  });
+
+  test("errors out when the user declines the confirmation prompt", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    const { confirmPrompt } = await import("../../../prompt/confirm.js");
+    (confirmPrompt as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+    prompts.inject([["devices"], "tag"]);
+
+    const { startExport } = await import("./export.js");
+    await expect(
+      startExport({
+        from: "prod",
+        to: "dev",
+        entity: [],
+        setup: "",
+      })
+    ).rejects.toThrow(/Cancelled/);
+  });
+
+  test("errors out when export profile info fetch fails", async () => {
+    profilesInfoMock.mockRejectedValueOnce(new Error("api down"));
+
+    prompts.inject([["devices"], "tag"]);
+
+    const { startExport } = await import("./export.js");
+    await expect(
+      startExport({
+        from: "prod",
+        to: "dev",
+        entity: [],
+        setup: "",
+      })
+    ).rejects.toThrow(/Export profile/);
+  });
+
+  test("running only 'analysis' collects devices IDs first", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["analysis"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    const { collectIDs } = await import("./services/collect-ids.js");
+    expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "devices", expect.anything());
+  });
+
+  test("running only 'dashboards' collects analysis and devices IDs first", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["dashboards"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    const { collectIDs } = await import("./services/collect-ids.js");
+    expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "analysis", expect.anything());
+    expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "devices", expect.anything());
+  });
+
+  test("running only 'access' collects devices and dashboards IDs first", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["access"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    const { collectIDs } = await import("./services/collect-ids.js");
+    expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "dashboards", expect.anything());
+  });
+
+  test("running only 'actions' collects devices IDs first", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["actions"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    const { actionsExport } = await import("./services/actions-export.js");
+    expect(actionsExport).toHaveBeenCalled();
+  });
+
+  test("running only 'run' collects dashboards IDs first", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["run"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    const { runButtonsExport } = await import("./services/run-buttons-export.js");
+    expect(runButtonsExport).toHaveBeenCalled();
+  });
+
+  test("resolves tokens via pickEnvironment when from/to are not provided", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1
+        ? { info: { name: "Export", id: "p-export" } }
+        : { info: { name: "Import", id: "p-import" } };
+    });
+
+    const { pickEnvironment } = await import("../../../prompt/pick-environment.js");
+    (pickEnvironment as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce("prod")
+      .mockResolvedValueOnce("dev");
+
+    prompts.inject([["devices"], "tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "",
+      to: "",
+      entity: [],
+      setup: "",
+    });
+    expect(pickEnvironment).toHaveBeenCalledTimes(2);
+  });
 });

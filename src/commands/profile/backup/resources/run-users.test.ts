@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const readBackupFileMock = vi.fn();
+const selectItemsFromBackupMock = vi.fn();
 
 vi.mock("../lib.js", () => ({
   readBackupFile: readBackupFileMock,
-  selectItemsFromBackup: vi.fn(),
+  selectItemsFromBackup: (...args: unknown[]) => selectItemsFromBackupMock(...args),
   getErrorMessage: (e: unknown) => String(e),
 }));
 
@@ -73,5 +74,36 @@ describe("restoreRunUsers", () => {
     await vi.runAllTimersAsync();
     const result = await promise;
     expect(result).toEqual({ created: 0, updated: 0, failed: 1 });
+  });
+
+  test("returns early when granular selection is empty", async () => {
+    readBackupFileMock.mockReturnValue([{ id: "u-1", name: "One", email: "a@x" }]);
+    selectItemsFromBackupMock.mockResolvedValue([]);
+
+    const { restoreRunUsers } = await import("./run-users.js");
+    const promise = restoreRunUsers({} as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(result).toEqual({ created: 0, updated: 0, failed: 0 });
+  });
+
+  test("restores only the items selected in granular mode", async () => {
+    readBackupFileMock.mockReturnValue([
+      { id: "u-1", name: "One", email: "a@x" },
+      { id: "u-2", name: "Two", email: "b@x" },
+    ]);
+    selectItemsFromBackupMock.mockResolvedValue([{ id: "u-1", name: "One", email: "a@x" }]);
+
+    const userCreateMock = vi.fn().mockResolvedValue(undefined);
+    const resources = {
+      run: { listUsers: vi.fn().mockResolvedValue([]), userCreate: userCreateMock, userEdit: vi.fn() },
+    };
+
+    const { restoreRunUsers } = await import("./run-users.js");
+    const promise = restoreRunUsers(resources as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(userCreateMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });

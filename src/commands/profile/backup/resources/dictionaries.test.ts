@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const readBackupFileMock = vi.fn();
+const selectItemsFromBackupMock = vi.fn();
 
 vi.mock("../lib.js", () => ({
   readBackupFile: readBackupFileMock,
-  selectItemsFromBackup: vi.fn(),
+  selectItemsFromBackup: (...args: unknown[]) => selectItemsFromBackupMock(...args),
   getErrorMessage: (e: unknown) => String(e),
 }));
 
@@ -90,5 +91,41 @@ describe("restoreDictionaries", () => {
     await vi.runAllTimersAsync();
     const result = await promise;
     expect(result).toEqual({ created: 0, updated: 0, failed: 1 });
+  });
+
+  test("returns early when granular selection is empty", async () => {
+    readBackupFileMock.mockReturnValue([{ id: "d-1", name: "One", slug: "x", fallback: "en" }]);
+    selectItemsFromBackupMock.mockResolvedValue([]);
+
+    const { restoreDictionaries } = await import("./dictionaries.js");
+    const promise = restoreDictionaries({} as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(result).toEqual({ created: 0, updated: 0, failed: 0 });
+  });
+
+  test("restores only the items selected in granular mode", async () => {
+    readBackupFileMock.mockReturnValue([
+      { id: "d-1", name: "One", slug: "x", fallback: "en" },
+      { id: "d-2", name: "Two", slug: "y", fallback: "en" },
+    ]);
+    selectItemsFromBackupMock.mockResolvedValue([{ id: "d-1", name: "One", slug: "x", fallback: "en" }]);
+
+    const createMock = vi.fn().mockResolvedValue({ dictionary: "d-created" });
+    const resources = {
+      dictionaries: {
+        list: vi.fn().mockResolvedValue([]),
+        create: createMock,
+        edit: vi.fn(),
+        languageEdit: vi.fn(),
+      },
+    };
+
+    const { restoreDictionaries } = await import("./dictionaries.js");
+    const promise = restoreDictionaries(resources as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });

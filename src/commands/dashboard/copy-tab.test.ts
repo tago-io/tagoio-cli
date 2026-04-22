@@ -131,4 +131,40 @@ describe("copyTabWidgets", () => {
 
     expect(accountInstance.dashboards.edit).toHaveBeenCalled();
   });
+
+  test("prompts for dashboard id when not provided", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    pickDashboardIDFromTagoIOMock.mockResolvedValue("picked-dash");
+    accountInstance.dashboards.info.mockResolvedValue(dashInfo);
+    confirmPromptMock.mockResolvedValue(false);
+
+    const { copyTabWidgets } = await import("./copy-tab.js");
+    await copyTabWidgets("", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 });
+
+    expect(pickDashboardIDFromTagoIOMock).toHaveBeenCalled();
+  });
+
+  test("errors when a tab pick is cancelled", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.dashboards.info.mockResolvedValue(dashInfo);
+
+    prompts.inject([undefined]);
+
+    const { copyTabWidgets } = await import("./copy-tab.js");
+    await expect(
+      copyTabWidgets("dash-id", { from: "", to: "tab-b", environment: "prod", amount: 1 } as never),
+    ).rejects.toThrow(/Tab not selected/);
+  });
+
+  test("handles dashboards with no arrangement without crashing", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.dashboards.info.mockResolvedValue({ tabs: dashInfo.tabs, arrangement: undefined });
+    confirmPromptMock.mockResolvedValue(true);
+    accountInstance.dashboards.edit.mockResolvedValue(undefined);
+
+    const { copyTabWidgets } = await import("./copy-tab.js");
+    await copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 });
+
+    expect(accountInstance.dashboards.edit).toHaveBeenCalled();
+  });
 });

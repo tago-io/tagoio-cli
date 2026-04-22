@@ -114,4 +114,53 @@ describe("createBackup", () => {
     await promise;
     expect(handleBackupErrorMock).toHaveBeenCalled();
   });
+
+  test("routes non-ok POST response through handleBackupError", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.profiles.info.mockResolvedValue({ info: { id: "p1", name: "Profile" } });
+    fetchMock.mockResolvedValue(makeFetchResponse({}, { ok: false, status: 500 }));
+
+    const { createBackup } = await import("./create.js");
+    const promise = createBackup();
+    await vi.runAllTimersAsync();
+    await promise;
+    expect(handleBackupErrorMock).toHaveBeenCalled();
+  });
+
+  test("uses the custom API base when profileRegion is an object", async () => {
+    getEnvironmentConfigMock.mockReturnValue({
+      ...makeEnvironmentConfig(),
+      profileRegion: { api: "https://custom.api", sse: "https://custom.sse" },
+    });
+    accountInstance.profiles.info.mockResolvedValue({ info: { id: "p1", name: "Profile" } });
+    fetchMock.mockImplementation((_url: string, init?: { method?: string }) => {
+      if (init?.method === "POST") return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      return Promise.resolve(makeFetchResponse({ result: [{ id: "b1", status: "completed" }] }));
+    });
+
+    const { createBackup } = await import("./create.js");
+    const promise = createBackup();
+    await vi.runAllTimersAsync();
+    await promise;
+    const firstCallUrl = fetchMock.mock.calls[0][0] as string;
+    expect(firstCallUrl).toContain("custom.api");
+  });
+
+  test("continues polling when fetchLatestBackup returns no result", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.profiles.info.mockResolvedValue({ info: { id: "p1", name: "Profile" } });
+    let pollCount = 0;
+    fetchMock.mockImplementation((_url: string, init?: { method?: string }) => {
+      if (init?.method === "POST") return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      pollCount += 1;
+      if (pollCount === 1) return Promise.resolve(makeFetchResponse({ result: [] }));
+      return Promise.resolve(makeFetchResponse({ result: [{ id: "b1", status: "completed" }] }));
+    });
+
+    const { createBackup } = await import("./create.js");
+    const promise = createBackup();
+    await vi.runAllTimersAsync();
+    await promise;
+    expect(pollCount).toBeGreaterThanOrEqual(2);
+  });
 });

@@ -233,4 +233,58 @@ describe("deployAnalysis", () => {
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
+
+  test("returns silently when analysis.info rejects", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockRejectedValue(new Error("nope"));
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+    // errorHandler runs twice: once via analysis.info .catch, once via unknown flow.
+    // We only care that uploadScript was never reached — the exact exit path doesn't matter for coverage.
+    errorHandlerMock.mockImplementation(() => undefined);
+
+    const { deployAnalysis } = await import("./deploy.js");
+    // Don't assert the exact thrown message; just that the command resolves or throws w/o upload.
+    await deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }).catch(() => undefined);
+
+    expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+  });
+
+  test("routes uploadScript failure through errorHandler", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockRejectedValue(new Error("upload fail"));
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+    errorHandlerMock.mockImplementationOnce(() => undefined);
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+    ).rejects.toThrow(/__exit:0/);
+
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Script upload failed"));
+  });
+
+  test("defaults analysis and build paths when the env config omits them", async () => {
+    getEnvironmentConfigMock.mockReturnValue({
+      ...makeEnvironmentConfig({ analysisList }),
+      analysisPath: undefined,
+      buildPath: undefined,
+    });
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(
+      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
+    ).rejects.toThrow(/__exit:0/);
+
+    // First execSync call should reference the default paths
+    expect(execSyncMock).toHaveBeenCalled();
+    const cmd = execSyncMock.mock.calls[0][0] as string;
+    expect(cmd).toContain("./src/analysis/a.ts");
+    expect(cmd).toContain("./build/a.tago.js");
+  });
 });

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const readBackupFileMock = vi.fn();
+const selectItemsFromBackupMock = vi.fn();
 
 vi.mock("../lib.js", () => ({
   readBackupFile: readBackupFileMock,
-  selectItemsFromBackup: vi.fn(),
+  selectItemsFromBackup: (...args: unknown[]) => selectItemsFromBackupMock(...args),
   getErrorMessage: (e: unknown) => String(e),
 }));
 
@@ -94,5 +95,41 @@ describe("restoreDashboards", () => {
     await vi.runAllTimersAsync();
     const result = await promise;
     expect(result).toEqual({ created: 0, updated: 0, failed: 1 });
+  });
+
+  test("returns early when granular selection is empty", async () => {
+    readBackupFileMock.mockReturnValue([{ id: "dash-1", label: "One", arrangement: [], widgets: [] }]);
+    selectItemsFromBackupMock.mockResolvedValue([]);
+
+    const { restoreDashboards } = await import("./dashboards.js");
+    const promise = restoreDashboards({} as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(result).toEqual({ created: 0, updated: 0, failed: 0 });
+  });
+
+  test("restores only the items selected in granular mode", async () => {
+    readBackupFileMock.mockReturnValue([
+      { id: "dash-1", label: "One", arrangement: [], widgets: [] },
+      { id: "dash-2", label: "Two", arrangement: [], widgets: [] },
+    ]);
+    selectItemsFromBackupMock.mockResolvedValue([{ id: "dash-1", label: "One", arrangement: [], widgets: [] }]);
+
+    const createMock = vi.fn().mockResolvedValue({ dashboard: "dash-created" });
+    const resources = {
+      dashboards: {
+        list: vi.fn().mockResolvedValue([]),
+        create: createMock,
+        edit: vi.fn(),
+        widgets: { create: vi.fn(), edit: vi.fn() },
+      },
+    };
+
+    const { restoreDashboards } = await import("./dashboards.js");
+    const promise = restoreDashboards(resources as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });

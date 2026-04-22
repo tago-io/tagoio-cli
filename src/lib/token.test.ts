@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const readFileSyncMock = vi.fn();
 const writeFileSyncMock = vi.fn();
 const addOnGitIgnoreMock = vi.fn();
+const getCurrentFolderMock = vi.fn();
 
 vi.mock("node:fs", () => ({
   readFileSync: readFileSyncMock,
@@ -14,7 +15,7 @@ vi.mock("node:crypto", () => ({
 }));
 
 vi.mock("./get-current-folder.js", () => ({
-  getCurrentFolder: () => "/repo",
+  getCurrentFolder: () => getCurrentFolderMock(),
 }));
 
 vi.mock("./add-to-gitignore.js", () => ({
@@ -26,6 +27,7 @@ describe("token", () => {
     readFileSyncMock.mockReset();
     writeFileSyncMock.mockReset();
     addOnGitIgnoreMock.mockReset();
+    getCurrentFolderMock.mockReset().mockReturnValue("/repo");
   });
 
   afterEach(() => {
@@ -71,6 +73,16 @@ describe("token", () => {
       expect(decoded).toBe("secret-token");
 
       expect(addOnGitIgnoreMock).toHaveBeenCalledWith("/repo", ".tago-lock.staging.lock");
+    });
+
+    test("returns silently without writing when getCurrentFolder yields an empty path", async () => {
+      getCurrentFolderMock.mockReturnValue("");
+
+      const { writeToken } = await import("./token.js");
+      writeToken("secret-token", "staging");
+
+      expect(writeFileSyncMock).not.toHaveBeenCalled();
+      expect(addOnGitIgnoreMock).not.toHaveBeenCalled();
     });
   });
 });

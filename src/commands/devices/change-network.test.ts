@@ -141,6 +141,33 @@ describe("changeNetworkOrConnector", () => {
     );
   });
 
+  test("errors when both network and connector prompts return empty", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "n", connector: "c" });
+    promptTextToEnterMock.mockResolvedValueOnce("").mockResolvedValueOnce("");
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    await expect(
+      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "", connectorID: "" }),
+    ).rejects.toThrow(/Network or Connector ID is required/);
+  });
+
+  test("uses device's current network/connector when only one of them is overridden", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([]);
+    accountInstance.devices.edit.mockResolvedValue(undefined);
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    // Only network provided → connector falls back to deviceInfo.connector
+    await changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-n", connectorID: "" });
+
+    expect(accountInstance.devices.edit).toHaveBeenCalledWith(
+      "dev-id",
+      expect.objectContaining({ network: "new-n", connector: "old-c" }),
+    );
+  });
+
   test("recreates tokens preserving serial numbers", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });

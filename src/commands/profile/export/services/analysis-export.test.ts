@@ -92,4 +92,58 @@ describe("analysisExport", () => {
     expect(importAccount.analysis.edit).toHaveBeenCalled();
     expect(result.analysis["a1"]).toBe("tgt-a");
   });
+
+  test("prompts the user to resolve duplicate env variable values", async () => {
+    account.analysis.list.mockResolvedValue([
+      { id: "a1", name: "A1", variables: [{ key: "API_URL", value: "src.example" }] },
+    ]);
+    importAccount.analysis.list.mockResolvedValue([
+      {
+        id: "tgt-a",
+        tags: [{ key: "export_id", value: "v1" }],
+        variables: [{ key: "API_URL", value: "tgt.example" }],
+      },
+    ]);
+    account.analysis.info.mockResolvedValue({
+      id: "a1",
+      name: "A1",
+      tags: [{ key: "export_id", value: "v1" }],
+      active: true,
+      variables: [{ key: "API_URL", value: "src.example" }],
+    });
+    importAccount.analysis.edit.mockResolvedValue(undefined);
+    account.analysis.downloadScript.mockResolvedValue({ url: "http://script.url" });
+    importAccount.analysis.uploadScript.mockResolvedValue(undefined);
+    const zlib = await import("node:zlib");
+    fetchMock.mockResolvedValue(makeFetchArrayBufferResponse(zlib.gzipSync(Buffer.from("code"))));
+
+    const prompts = (await import("prompts")).default;
+    prompts.inject(["tgt.example"]);
+
+    const { analysisExport } = await import("./analysis-export.js");
+    const holder = makeHolder();
+    await analysisExport(account as never, importAccount as never, holder);
+    // edit is called once for the initial upsert and once more to apply the resolved variable
+    expect(importAccount.analysis.edit).toHaveBeenCalledTimes(2);
+  });
+
+  test("handles analyses with missing variables array without throwing", async () => {
+    account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1" }]);
+    importAccount.analysis.list.mockResolvedValue([]);
+    account.analysis.info.mockResolvedValue({
+      id: "a1",
+      name: "A1",
+      tags: [{ key: "export_id", value: "v1" }],
+    });
+    importAccount.analysis.create.mockResolvedValue({ id: "new-a" });
+    account.analysis.downloadScript.mockResolvedValue({ url: "http://script.url" });
+    importAccount.analysis.uploadScript.mockResolvedValue(undefined);
+    const zlib = await import("node:zlib");
+    fetchMock.mockResolvedValue(makeFetchArrayBufferResponse(zlib.gzipSync(Buffer.from("code"))));
+
+    const { analysisExport } = await import("./analysis-export.js");
+    const holder = makeHolder();
+    const result = await analysisExport(account as never, importAccount as never, holder);
+    expect(result.analysis["a1"]).toBe("new-a");
+  });
 });

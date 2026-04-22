@@ -85,4 +85,94 @@ describe("widgets-export", () => {
     await removeAllWidgets(importAccount, { id: "d", arrangement: [] } as never);
     expect(deleteMock).not.toHaveBeenCalled();
   });
+
+  test("insertWidgets skips arrangement entries whose widget was not fetched", async () => {
+    const widgetInfoMock = vi.fn().mockResolvedValue(null);
+    const widgetCreateMock = vi.fn();
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = {
+      dashboards: { widgets: { info: widgetInfoMock } },
+    } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [{ widget_id: "ghost", tab: "tab-1" }],
+      tabs: [{ key: "tab-1", hidden: false }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, networks: {}, connectors: {}, dashboards: {} } as never;
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(widgetCreateMock).not.toHaveBeenCalled();
+    expect(dashboardEditMock).toHaveBeenCalledWith("dash-target", { arrangement: [] });
+  });
+
+  test("insertWidgets sorts hidden tabs to the end of the arrangement", async () => {
+    const widgetInfoMock = vi.fn().mockResolvedValue({ id: "w-1" });
+    const widgetCreateMock = vi.fn().mockResolvedValue({ widget: "w-new" });
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [
+        { widget_id: "w-1", tab: "tab-hidden" },
+        { widget_id: "w-2", tab: "tab-visible" },
+      ],
+      tabs: [
+        { key: "tab-hidden", hidden: true },
+        { key: "tab-visible", hidden: false },
+      ],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, networks: {}, connectors: {}, dashboards: {} } as never;
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(widgetInfoMock).toHaveBeenCalled();
+  });
+
+  test("insertWidgets preserves widgets without a data array", async () => {
+    const widgetInfoMock = vi.fn().mockResolvedValue({ id: "w-1" });
+    const widgetCreateMock = vi.fn().mockResolvedValue({ widget: "w-new" });
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [{ widget_id: "w-1", tab: "tab-1" }],
+      tabs: [{ key: "tab-1", hidden: false }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, networks: {}, connectors: {}, dashboards: {} } as never;
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(widgetCreateMock).toHaveBeenCalled();
+  });
 });

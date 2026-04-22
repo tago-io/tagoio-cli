@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const readBackupFileMock = vi.fn();
+const selectItemsFromBackupMock = vi.fn();
 
 vi.mock("../lib.js", () => ({
   readBackupFile: readBackupFileMock,
-  selectItemsFromBackup: vi.fn(),
+  selectItemsFromBackup: (...args: unknown[]) => selectItemsFromBackupMock(...args),
   getErrorMessage: (e: unknown) => String(e),
 }));
 
@@ -70,5 +71,32 @@ describe("restoreConnectors", () => {
     const { restoreConnectors } = await import("./connectors.js");
     const result = await restoreConnectors(resources as never, "/tmp/extract");
     expect(result).toEqual({ created: 0, updated: 0, failed: 1 });
+  });
+
+  test("returns early when granular selection is empty", async () => {
+    readBackupFileMock.mockReturnValue([{ id: "c-1", name: "One" }]);
+    selectItemsFromBackupMock.mockResolvedValue([]);
+
+    const { restoreConnectors } = await import("./connectors.js");
+    const result = await restoreConnectors({} as never, "/tmp/extract", true);
+    expect(result).toEqual({ created: 0, updated: 0, failed: 0 });
+  });
+
+  test("restores only the items selected in granular mode", async () => {
+    readBackupFileMock.mockReturnValue([
+      { id: "c-1", name: "One" },
+      { id: "c-2", name: "Two" },
+    ]);
+    selectItemsFromBackupMock.mockResolvedValue([{ id: "c-1", name: "One" }]);
+
+    const createMock = vi.fn().mockResolvedValue(undefined);
+    const resources = {
+      integration: { connectors: { list: vi.fn().mockResolvedValue([]), create: createMock, edit: vi.fn() } },
+    };
+
+    const { restoreConnectors } = await import("./connectors.js");
+    const result = await restoreConnectors(resources as never, "/tmp/extract", true);
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });

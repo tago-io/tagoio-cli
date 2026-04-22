@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const readBackupFileMock = vi.fn();
+const selectItemsFromBackupMock = vi.fn();
 
 vi.mock("../lib.js", () => ({
   readBackupFile: readBackupFileMock,
-  selectItemsFromBackup: vi.fn(),
+  selectItemsFromBackup: (...args: unknown[]) => selectItemsFromBackupMock(...args),
   getErrorMessage: (e: unknown) => String(e),
 }));
 
@@ -68,5 +69,34 @@ describe("restoreSecrets", () => {
     await vi.runAllTimersAsync();
     const result = await promise;
     expect(result).toEqual({ created: 0, updated: 0, failed: 1 });
+  });
+
+  test("returns early when granular selection is empty", async () => {
+    readBackupFileMock.mockReturnValue([{ id: "s-1", key: "K1", value: "v", tags: [] }]);
+    selectItemsFromBackupMock.mockResolvedValue([]);
+
+    const { restoreSecrets } = await import("./secrets.js");
+    const promise = restoreSecrets({} as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(result).toEqual({ created: 0, updated: 0, failed: 0 });
+  });
+
+  test("restores only the items selected in granular mode", async () => {
+    readBackupFileMock.mockReturnValue([
+      { id: "s-1", key: "K1", value: "v1", tags: [] },
+      { id: "s-2", key: "K2", value: "v2", tags: [] },
+    ]);
+    selectItemsFromBackupMock.mockResolvedValue([{ id: "s-1", key: "K1", value: "v1", tags: [] }]);
+
+    const createMock = vi.fn().mockResolvedValue(undefined);
+    const resources = { secrets: { list: vi.fn().mockResolvedValue([]), create: createMock } };
+
+    const { restoreSecrets } = await import("./secrets.js");
+    const promise = restoreSecrets(resources as never, "/tmp/extract", true);
+    await vi.runAllTimersAsync();
+    const result = await promise;
+    expect(createMock).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });

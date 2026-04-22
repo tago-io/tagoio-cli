@@ -180,4 +180,21 @@ describe("getTagoDeployURL", () => {
     expect(result?.urlAPI).toBe("https://api.custom.tago.io");
     expect(result?.urlSSE).toContain("sse.custom.tago.io");
   });
+
+  test("returns undefined when the API URL prompt is cancelled", async () => {
+    prompts.inject([true, ""]);
+
+    const { getTagoDeployURL } = await import("./login.js");
+    const result = await getTagoDeployURL();
+    expect(result).toBeUndefined();
+  });
+
+  test("derives the SSE URL from the API URL when SSE is not provided", async () => {
+    prompts.inject([true, "https://api.custom.tago.io", ""]);
+
+    const { getTagoDeployURL } = await import("./login.js");
+    const result = await getTagoDeployURL();
+    expect(result?.urlAPI).toBe("https://api.custom.tago.io");
+    expect(result?.urlSSE).toContain("sse.custom.tago.io");
+  });
 });

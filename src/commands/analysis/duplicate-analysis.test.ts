@@ -39,6 +39,11 @@ vi.mock("../../lib/messages.js", () => ({
   highlightMSG: (s: string) => s,
 }));
 
+const pickAnalysisFromTagoIOMock = vi.fn();
+vi.mock("../../prompt/pick-analysis-from-tagoio.js", () => ({
+  pickAnalysisFromTagoIO: (...args: unknown[]) => pickAnalysisFromTagoIOMock(...args),
+}));
+
 describe("duplicateAnalysis", () => {
   beforeEach(() => {
     accountInstance = makeAccount();
@@ -88,6 +93,24 @@ describe("duplicateAnalysis", () => {
     );
     expect(successMSGMock).toHaveBeenCalledWith(expect.stringContaining("source=an-1"));
     expect(successMSGMock).toHaveBeenCalledWith(expect.stringContaining("target=an-2"));
+  });
+
+  test("errors out when pickAnalysisFromTagoIO returns no analysis", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    pickAnalysisFromTagoIOMock.mockResolvedValue({ id: undefined });
+
+    const { duplicateAnalysis } = await import("./duplicate-analysis.js");
+    await expect(duplicateAnalysis(undefined as never, { environment: "prod" })).rejects.toThrow(/Cancelled/);
+  });
+
+  test("errors out when the script download fetch responds with non-ok", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.analysis.info.mockResolvedValue({ id: "an-1", name: "X", runtime: "node" });
+    accountInstance.analysis.downloadScript.mockResolvedValue({ url: "https://x/s.gz" });
+    fetchMock.mockResolvedValue({ ok: false, status: 500 } as never);
+
+    const { duplicateAnalysis } = await import("./duplicate-analysis.js");
+    await expect(duplicateAnalysis("an-1", { environment: "prod", name: "Copy" })).rejects.toThrow(/Failed to download/);
   });
 
   test("prompts for a new name when none is provided", async () => {

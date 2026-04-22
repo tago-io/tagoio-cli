@@ -227,6 +227,20 @@ describe("backup/lib", () => {
       const { promptCredentials } = await import("./lib.js");
       await expect(promptCredentials()).rejects.toThrow(/Password is required/);
     });
+
+    test("errors out when 2FA method selection is cancelled", async () => {
+      promptsMock.mockResolvedValueOnce({ password: "pw" });
+      pickFromListMock.mockResolvedValue(undefined);
+      const { promptCredentials } = await import("./lib.js");
+      await expect(promptCredentials()).rejects.toThrow(/2FA method selection is required/);
+    });
+
+    test("errors out when OTP pin is not provided for a 2FA method", async () => {
+      promptsMock.mockResolvedValueOnce({ password: "pw" }).mockResolvedValueOnce({ pin: undefined });
+      pickFromListMock.mockResolvedValue("sms");
+      const { promptCredentials } = await import("./lib.js");
+      await expect(promptCredentials()).rejects.toThrow(/OTP code is required/);
+    });
   });
 
   describe("selectItemsFromBackup", () => {

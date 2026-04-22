@@ -124,4 +124,38 @@ describe("deviceExport", () => {
     expect(importAccount.devices.edit).toHaveBeenCalled();
     expect(result.devices["d1"]).toBe("tgt-id");
   });
+
+  test("regenerates tokens when source tokens carry serial numbers", async () => {
+    account.devices.list.mockResolvedValue([{ id: "d1", name: "Dev 1" }]);
+    importAccount.devices.list.mockResolvedValue([]);
+    account.devices.info.mockResolvedValue({
+      id: "d1",
+      name: "Dev 1",
+      tags: [{ key: "export_id", value: "v1" }],
+      bucket: "bkt-1",
+    });
+    // Source has a token with serial number → regeneration kicks in
+    account.devices.tokenList.mockResolvedValue([
+      { name: "T1", permission: "full", serie_number: "SN-1" },
+    ]);
+    importAccount.devices.tokenList.mockResolvedValue([{ serie_number: "SN-OLD", token: "old-token" }]);
+    importAccount.devices.create.mockResolvedValue({ device_id: "new-id", token: "new-token" });
+    importAccount.devices.tokenDelete.mockResolvedValue(undefined);
+    importAccount.devices.tokenCreate.mockResolvedValue(undefined);
+    importAccount.devices.paramSet.mockResolvedValue(undefined);
+    getTokenByNameMock.mockResolvedValue("src-token");
+    deviceGetParametersMock.mockResolvedValue([]);
+
+    const { deviceExport } = await import("./devices-export.js");
+    const holder = makeHolder();
+    const promise = deviceExport(account as never, importAccount as never, holder, makeConfig());
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(importAccount.devices.tokenDelete).toHaveBeenCalledWith("old-token");
+    expect(importAccount.devices.tokenCreate).toHaveBeenCalledWith(
+      "new-id",
+      expect.objectContaining({ serie_number: "SN-1", name: "T1" }),
+    );
+  });
 });
