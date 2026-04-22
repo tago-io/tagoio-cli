@@ -1,9 +1,9 @@
 import { Account, OTPType } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { addHttpsToUrl } from "../lib/add-https-to-url";
-import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
-import { writeToken } from "../lib/token";
+import { addHttpsToUrl } from "../lib/add-https-to-url.js";
+import { errorHandler, highlightMSG, successMSG } from "../lib/messages.js";
+import { writeToken } from "../lib/token.js";
 
 /**
  * @description Set the TagoIO deploy URL.
@@ -81,7 +81,6 @@ async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { ema
   const loginResult = await Account.login({ email, password, otp_type: otp_autosend, pin_code: pinCode.value } as any).catch(errorHandler);
   if (!loginResult) {
     errorHandler("Login failed");
-    return process.exit(1);
   }
 
   return { ...loginResult, otp_type: otp_autosend, pin_code: pinCode.value };
@@ -100,7 +99,7 @@ async function loginWithEmailPassword(email: string, password: string) {
     return loginResult;
   } catch (error) {
     try {
-      const errorJSON = JSON.parse(error);
+      const errorJSON = JSON.parse(String(error));
       if (errorJSON?.otp_enabled) {
         return handleOTPLogin(errorJSON, { email, password });
       }

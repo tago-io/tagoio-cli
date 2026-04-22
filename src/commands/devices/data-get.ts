@@ -2,10 +2,10 @@ import { Account, Data, DataQuery, Device, Utils } from "@tago-io/sdk";
 import kleur from "kleur";
 
 // import { DataQuery } from "@tago-io/sdk";
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { postDeviceData } from "./data-post";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { postDeviceData } from "./data-post.js";
 
 /**
  * Get device information and instance based on the provided ID or token.

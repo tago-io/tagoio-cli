@@ -1,10 +1,9 @@
 import { Account } from "@tago-io/sdk";
-import axios from "axios";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-import { formatDate, formatFileSize, handleBackupError } from "./lib";
-import { BackupListResponse, ListOptions } from "./types";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { formatDate, formatFileSize, handleBackupError } from "./lib.js";
+import { BackupListResponse, ListOptions } from "./types.js";
 
 /** Builds query parameters for backup list API. */
 function buildQueryParams(options: ListOptions): string {
@@ -42,8 +41,12 @@ async function listBackups(options: ListOptions) {
   const url = `${baseURL}/profile/${profile.info.id}/backup?${buildQueryParams(options)}`;
 
   try {
-    const response = await axios.get<BackupListResponse>(url, { headers: { Authorization: config.profileToken } });
-    const backups = response.data.result;
+    const response = await fetch(url, { headers: { Authorization: config.profileToken } });
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+    const body = (await response.json()) as BackupListResponse;
+    const backups = body.result;
 
     if (!backups?.length) {
       infoMSG("No backups found for this profile.");

@@ -2,10 +2,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
-import { setEnvironmentVariables } from "./dotenv-config";
-import { getCurrentFolder } from "./get-current-folder";
-import { errorHandler, highlightMSG, infoMSG } from "./messages";
-import { readToken } from "./token";
+import { setEnvironmentVariables } from "./dotenv-config.js";
+import { getCurrentFolder } from "./get-current-folder.js";
+import { errorHandler, highlightMSG, infoMSG } from "./messages.js";
+import { readToken } from "./token.js";
 
 interface IEnvironment {
   analysisList: { name: string; fileName: string; id: string; path?: string }[];
@@ -28,7 +28,7 @@ interface IConfigFile {
 }
 
 function resolveCLIPath(suffix: string) {
-  let path = __dirname;
+  let path = import.meta.dirname;
   // Handle windows and linux paths
   const pathSymbol = path.includes("\\") ? "\\" : "/";
 

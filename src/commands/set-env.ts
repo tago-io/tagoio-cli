@@ -1,7 +1,7 @@
-import { getConfigFile } from "../lib/config-file";
-import { setEnvironmentVariables } from "../lib/dotenv-config";
-import { errorHandler, successMSG } from "../lib/messages";
-import { pickEnvironment } from "../prompt/pick-environment";
+import { getConfigFile } from "../lib/config-file.js";
+import { setEnvironmentVariables } from "../lib/dotenv-config.js";
+import { errorHandler, successMSG } from "../lib/messages.js";
+import { pickEnvironment } from "../prompt/pick-environment.js";
 
 async function setEnvironment(arg?: string) {
   const configFile = getConfigFile();

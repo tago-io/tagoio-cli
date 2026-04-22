@@ -4,11 +4,11 @@ import { createGunzip } from "node:zlib";
 
 import { AnalysisInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface RestoreTask {
   analysis: AnalysisInfo;
@@ -82,7 +82,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora,
+  spinner: Ora,
   extractDir: string
 ): Promise<void> {
   const { analysis, exists } = task;

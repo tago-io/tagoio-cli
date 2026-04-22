@@ -1,11 +1,11 @@
 import { Resources, UserInfo } from "@tago-io/sdk";
 import { queue } from "async";
 import { randomBytes } from "node:crypto";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface BackupRunUser extends UserInfo {
   password?: string | null;
@@ -38,7 +38,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   const { user, existsId } = task;
 

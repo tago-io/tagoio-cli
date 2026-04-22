@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import kleur from "kleur";
 
-import { connectAnalysisConsole } from "./analysis-console";
-import { analysisSetMode } from "./analysis-set-mode";
-import { deployAnalysis } from "./deploy";
-import { duplicateAnalysis } from "./duplicate-analysis";
-import { runAnalysis } from "./run-analysis";
-import { triggerAnalysis } from "./trigger-analysis";
+import { connectAnalysisConsole } from "./analysis-console.js";
+import { analysisSetMode } from "./analysis-set-mode.js";
+import { deployAnalysis } from "./deploy.js";
+import { duplicateAnalysis } from "./duplicate-analysis.js";
+import { runAnalysis } from "./run-analysis.js";
+import { triggerAnalysis } from "./trigger-analysis.js";
 
 function analysisCommands(program: Command) {
   program.command("Analysis Header");

@@ -1,11 +1,11 @@
 import { Account, AnalysisInfo } from "@tago-io/sdk";
-import axios from "axios";
+import kleur from "kleur";
 import prompts from "prompts";
-import zlib from "zlib";
+import zlib from "node:zlib";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG } from "../../lib/messages";
-import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, successMSG } from "../../lib/messages.js";
+import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.js";
 
 /**
  * Asks the user to choose the duplicated analysis name.
@@ -43,7 +43,7 @@ async function createNewAnalysis(account: Account, newAnalysisName: string, scri
     name: "script.js",
   });
 
-  successMSG(`Analysis successfully duplicated: ${newAnalysisName}`);
+  successMSG(`Analysis duplicated. source=${kleur.blue(analysis.id)} target=${kleur.blue(new_analysis_id)} name=${newAnalysisName}`);
 }
 
 /**
@@ -56,14 +56,15 @@ async function createNewAnalysis(account: Account, newAnalysisName: string, scri
 async function downloadScriptBase64(account: Account, analysisId: string): Promise<string> {
   try {
     const script = await account.analysis.downloadScript(analysisId);
-    return axios
-      .get(script.url, {
-        responseType: "arraybuffer",
-      })
-      .then((response) => zlib.gunzipSync(response.data).toString("base64"));
+    const response = await fetch(script.url);
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return zlib.gunzipSync(buffer).toString("base64");
   } catch (error) {
-    errorHandler(`Failed to download script for analysis ID ${analysisId}: ${error.message}`);
-    return process.exit(0);
+    const message = error instanceof Error ? error.message : String(error);
+    errorHandler(`Failed to download script for analysis ID ${analysisId}: ${message}`);
   }
 }
 

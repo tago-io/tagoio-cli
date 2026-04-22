@@ -1,7 +1,7 @@
 import { Account, AnalysisInfo } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { errorHandler } from "../lib/messages";
+import { errorHandler } from "../lib/messages.js";
 
 /**
  * Prompts the user to select an analysis from their TagoIO account.
@@ -13,7 +13,6 @@ async function pickAnalysisFromTagoIO(account: Account, message: string = "Choos
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
   if (!analysisList) {
     errorHandler("Cancelled");
-    return process.exit(0);
   }
 
   const { script } = await prompts({
@@ -25,7 +24,6 @@ async function pickAnalysisFromTagoIO(account: Account, message: string = "Choos
 
   if (!script) {
     errorHandler("Cancelled");
-    return process.exit(0);
   }
 
   return script as AnalysisInfo;

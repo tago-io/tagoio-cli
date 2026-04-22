@@ -1,9 +1,9 @@
 import { Resources, RunInfo } from "@tago-io/sdk";
 import ora from "ora";
 
-import { highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupSingleFile } from "../lib";
-import { RestoreResult } from "../types";
+import { highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, readBackupSingleFile } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface BackupRun extends RunInfo {
   created_at?: string;

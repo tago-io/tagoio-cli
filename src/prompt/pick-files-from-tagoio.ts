@@ -1,9 +1,9 @@
 import { Account } from "@tago-io/sdk";
 import kleur from "kleur";
-import { join } from "path";
+import { join } from "node:path";
 import prompts from "prompts";
 
-import { errorHandler } from "../lib/messages";
+import { errorHandler } from "../lib/messages.js";
 
 /**
  * Prompts the user to select a file from their TagoIO account.

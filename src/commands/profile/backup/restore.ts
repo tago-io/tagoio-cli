@@ -1,19 +1,19 @@
 import { createReadStream, createWriteStream, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 import { Resources } from "@tago-io/sdk";
-import axios from "axios";
 import kleur from "kleur";
 import ora from "ora";
 import unzipper from "unzipper";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { displayWarning } from "../../../lib/display-warning";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-import { chooseFromList } from "../../../prompt/choose-from-list";
-import { confirmPrompt } from "../../../prompt/confirm";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { displayWarning } from "../../../lib/display-warning.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { chooseFromList } from "../../../prompt/choose-from-list.js";
+import { confirmPrompt } from "../../../prompt/confirm.js";
 import {
   fetchBackups,
   formatDate,
@@ -22,21 +22,21 @@ import {
   handleBackupError,
   promptCredentials,
   selectBackup,
-} from "./lib";
-import { restoreAccessManagement } from "./resources/access-management";
-import { restoreActions } from "./resources/actions";
-import { restoreAnalysis } from "./resources/analysis";
-import { restoreConnectors } from "./resources/connectors";
-import { restoreDashboards } from "./resources/dashboards";
-import { restoreDevices } from "./resources/devices";
-import { restoreDictionaries } from "./resources/dictionaries";
-import { restoreFiles } from "./resources/files";
-import { restoreNetworks } from "./resources/networks";
-import { restoreProfile } from "./resources/profile";
-import { restoreRun } from "./resources/run";
-import { restoreRunUsers } from "./resources/run-users";
-import { restoreSecrets } from "./resources/secrets";
-import { RestoreResult } from "./types";
+} from "./lib.js";
+import { restoreAccessManagement } from "./resources/access-management.js";
+import { restoreActions } from "./resources/actions.js";
+import { restoreAnalysis } from "./resources/analysis.js";
+import { restoreConnectors } from "./resources/connectors.js";
+import { restoreDashboards } from "./resources/dashboards.js";
+import { restoreDevices } from "./resources/devices.js";
+import { restoreDictionaries } from "./resources/dictionaries.js";
+import { restoreFiles } from "./resources/files.js";
+import { restoreNetworks } from "./resources/networks.js";
+import { restoreProfile } from "./resources/profile.js";
+import { restoreRun } from "./resources/run.js";
+import { restoreRunUsers } from "./resources/run-users.js";
+import { restoreSecrets } from "./resources/secrets.js";
+import { RestoreResult } from "./types.js";
 
 interface RestoreOptions {
   resources?: boolean;
@@ -163,8 +163,12 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   mkdirSync(extractDir, { recursive: true });
 
   const spinner = ora("Downloading backup file...").start();
-  const response = await axios.get(downloadUrl, { responseType: "stream" });
-  await pipeline(response.data, createWriteStream(zipPath));
+  const response = await fetch(downloadUrl);
+  if (!response.ok || !response.body) {
+    spinner.fail(`Download failed: ${response.status}`);
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(zipPath));
   spinner.succeed("Backup downloaded successfully.");
 
   spinner.start("Extracting backup contents...");

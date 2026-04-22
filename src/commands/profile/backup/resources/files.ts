@@ -3,11 +3,11 @@ import { join, relative } from "node:path";
 
 import { Resources } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface FileTask {
   filePath: string;
@@ -45,7 +45,7 @@ async function processUploadTask(
   resources: Resources,
   task: FileTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   try {
     const fileContent = readFileSync(task.filePath);

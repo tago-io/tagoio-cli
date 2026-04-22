@@ -1,18 +1,17 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import axios from "axios";
 import prompts from "prompts";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../lib/messages";
-import { pickFromList } from "../../../prompt/pick-from-list";
+import { errorHandler, highlightMSG, infoMSG } from "../../../lib/messages.js";
+import { pickFromList } from "../../../prompt/pick-from-list.js";
 
 /** Interface for backup items with id and name for selection. */
 interface BackupSelectableItem {
   id: string;
   name: string;
 }
-import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types";
+import { BackupDownloadRequest, BackupDownloadResponse, BackupItem, BackupListResponse, OtpType } from "./types.js";
 
 /** Extracts error message from various error types including SDK error objects. */
 function getErrorMessage(error: unknown): string {
@@ -74,28 +73,25 @@ function formatDate(dateString: string): string {
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
 }
 
-/** Handles API errors displaying status code and message to the user. */
+/** Handles API errors displaying the message to the user. */
 function handleBackupError(error: unknown, fallbackMessage: string): void {
-  const axiosError = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
-
-  if (axiosError.response?.data?.message) {
-    errorHandler(`[${axiosError.response.status}] ${axiosError.response.data.message}`);
+  const message = getErrorMessage(error);
+  if (message) {
+    errorHandler(`${fallbackMessage}: ${message}`);
     return;
   }
-
-  if (axiosError.message) {
-    errorHandler(`${fallbackMessage}: ${axiosError.message}`);
-    return;
-  }
-
   errorHandler(fallbackMessage);
 }
 
 /** Fetches available backups for a profile. */
 async function fetchBackups(profileID: string, baseURL: string, token: string): Promise<BackupItem[]> {
   const url = `${baseURL}/profile/${profileID}/backup?orderBy=created_at,desc`;
-  const response = await axios.get<BackupListResponse>(url, { headers: { Authorization: token } });
-  return response.data.result || [];
+  const response = await fetch(url, { headers: { Authorization: token } });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  const body = (await response.json()) as BackupListResponse;
+  return body.result || [];
 }
 
 /** Requests download URL for a backup with authentication. */
@@ -107,8 +103,19 @@ async function getDownloadUrl(
   credentials: BackupDownloadRequest
 ): Promise<{ url: string; fileSizeMb: string; expireAt: string }> {
   const url = `${baseURL}/profile/${profileID}/backup/${backupID}/download`;
-  const response = await axios.post<BackupDownloadResponse>(url, credentials, { headers: { Authorization: token } });
-  const { result } = response.data;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(credentials),
+  });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  const body = (await response.json()) as BackupDownloadResponse;
+  const { result } = body;
 
   return {
     url: result.url,

@@ -3,13 +3,13 @@ import { promises as fs } from "node:fs";
 
 import { Account, RunTypeOptions } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file";
-import { detectRuntime } from "../../lib/current-runtime";
-import { getCurrentFolder } from "../../lib/get-current-folder";
-import { errorHandler, successMSG } from "../../lib/messages";
-import { searchName } from "../../lib/search-name";
-import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config";
-import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list";
+import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file.js";
+import { detectRuntime } from "../../lib/current-runtime.js";
+import { getCurrentFolder } from "../../lib/get-current-folder.js";
+import { errorHandler, successMSG } from "../../lib/messages.js";
+import { searchName } from "../../lib/search-name.js";
+import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config.js";
+import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list.js";
 
 type EnvConfig = Omit<IConfigFile, "default">;
 
@@ -87,12 +87,12 @@ async function buildScript(params: BuildScriptParams) {
 
   const script = await getScript(buildedFile, scriptName);
   if (!script) {
-    return process.exit();
+    return;
   }
 
   const analysis = await account.analysis.info(analysisID).catch((error) => errorHandler(`\n> Analysis ${scriptName} error: ${error}`));
   if (!analysis) {
-    return process.exit();
+    return;
   }
 
   await account.analysis
@@ -101,8 +101,8 @@ async function buildScript(params: BuildScriptParams) {
       name: `${scriptName}.tago.js`,
       language: analysis.runtime || ((runtime === "--deno" ? "deno-rt2025" : "node-rt2025") as RunTypeOptions),
     })
-    .catch((error) => errorHandler(`\n> Script ${scriptName} error: ${error}`))
-    .then(() => successMSG(`Script ${scriptName} successfully uploaded to TagoIO!`));
+    .catch((error) => errorHandler(`Script upload failed. script=${scriptName} error=${error}`))
+    .then(() => successMSG(`Script uploaded. script=${scriptName} analysis=${analysisID}`));
 
   await account.analysis.edit(analysisID, {
     run_on: "tago",
@@ -154,8 +154,7 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
     let { runtime: runtimeParam } = await account.analysis.info(id);
     let runtime;
     if (options.deno && options.node) {
-      console.error("Error: Cannot specify both --deno and --node flags");
-      process.exit(1);
+      errorHandler("Cannot specify both --deno and --node flags");
     } else if (options.deno) {
       console.log("deploying with deno");
       runtime = "--deno";

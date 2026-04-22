@@ -3,10 +3,10 @@ import { Account, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
-import { chooseEntities, enterExportTag } from "./export";
-import { ENTITY_ORDER, EntityType } from "./types";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../../lib/messages.js";
+import { chooseEntities, enterExportTag } from "./export.js";
+import { ENTITY_ORDER, EntityType } from "./types.js";
 
 interface ITagValues {
   [key: string]: string[];

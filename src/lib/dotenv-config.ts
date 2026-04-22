@@ -1,9 +1,9 @@
 import { stringify } from "envfile";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
-import { addOnGitIgnore } from "./add-to-gitignore";
-import { getCurrentFolder } from "./get-current-folder";
+import { addOnGitIgnore } from "./add-to-gitignore.js";
+import { getCurrentFolder } from "./get-current-folder.js";
 
 interface IEnvFile {
   TAGOIO_DEFAULT?: string;

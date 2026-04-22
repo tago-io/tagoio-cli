@@ -1,9 +1,9 @@
 import { Account, Device, DeviceInfo } from "@tago-io/sdk";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { mapDate, mapTags } from "./device-list";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { mapDate, mapTags } from "./device-list.js";
 
 async function deviceInfo(idOrToken: string, options: { environment: string; raw: boolean; json: boolean; tokens: boolean }) {
   const config = getEnvironmentConfig(options.environment);
@@ -25,8 +25,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
       .catch(() => null);
 
     if (!deviceInfo) {
-      console.error(`Device with ID/token: ${idOrToken} couldn't be found.`);
-      return process.exit();
+      errorHandler(`Device with ID/token: ${idOrToken} couldn't be found.`);
     }
 
     idOrToken = deviceInfo.id;

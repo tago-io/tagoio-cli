@@ -1,8 +1,8 @@
 import { Account, DeviceQuery, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG } from "../../lib/messages";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, successMSG } from "../../lib/messages.js";
 
 /**
  * Maps an array of tags to an array of objects with key-value pairs.

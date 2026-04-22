@@ -1,14 +1,14 @@
 import { Command } from "commander";
 
-import { cmdRepeatableValue } from "../../lib/commander-repeatable";
-import { changeBucketType } from "./change-bucket-type";
-import { changeNetworkOrConnector } from "./change-network";
-import { copyDeviceData } from "./copy-data";
-import { getDeviceData } from "./data-get";
-import { bkpDeviceData } from "./device-bkp";
-import { deviceInfo } from "./device-info";
-import { deviceList } from "./device-list";
-import { inspectorConnection } from "./device-live-inspector";
+import { cmdRepeatableValue } from "../../lib/commander-repeatable.js";
+import { changeBucketType } from "./change-bucket-type.js";
+import { changeNetworkOrConnector } from "./change-network.js";
+import { copyDeviceData } from "./copy-data.js";
+import { getDeviceData } from "./data-get.js";
+import { bkpDeviceData } from "./device-bkp.js";
+import { deviceInfo } from "./device-info.js";
+import { deviceList } from "./device-list.js";
+import { inspectorConnection } from "./device-live-inspector.js";
 
 function handleNumber(value: any, _previous: any) {
   if (Number.isNaN(Number(value))) {

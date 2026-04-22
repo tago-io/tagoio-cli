@@ -1,12 +1,12 @@
 import { Account, DashboardInfo } from "@tago-io/sdk";
 import { queue } from "async";
 
-import { errorHandler } from "../../../../lib/messages";
-import { chooseFromList } from "../../../../prompt/choose-from-list";
-import { IExportOptions } from "../export";
-import { IExportHolder } from "../types";
-import { storeExportBackup } from "./export-backup/export-backup";
-import { insertWidgets, removeAllWidgets } from "./widgets-export";
+import { errorHandler, infoMSG } from "../../../../lib/messages.js";
+import { chooseFromList } from "../../../../prompt/choose-from-list.js";
+import { IExportOptions } from "../export.js";
+import { IExportHolder } from "../types.js";
+import { storeExportBackup } from "./export-backup/export-backup.js";
+import { insertWidgets, removeAllWidgets } from "./widgets-export.js";
 
 interface IQueue {
   label: string;
@@ -17,7 +17,7 @@ interface IQueue {
   exportAccount: Account;
 }
 async function updateDashboard({ label, dash_id, import_list, export_holder, exportAccount, importAccount }: IQueue) {
-  console.info(`Exporting dashboard ${label}...`);
+  infoMSG(`Exporting dashboard ${label}...`);
   const exportDash = await exportAccount.dashboards.info(dash_id).catch((error) => {
     throw `Error on dashboard ${label} in export account: ${error}`;
   });
@@ -81,7 +81,7 @@ async function resolveDashboardTarget(
 }
 
 async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder, options: IExportOptions) {
-  console.info("Exporting dashboard: started");
+  infoMSG("Exporting dashboard: started");
 
   let exportList = await exportAccount.dashboards.list({
     page: 1,
@@ -115,7 +115,7 @@ async function dashboardExport(exportAccount: Account, importAccount: Account, e
 
   await dashboardQueue.drain();
 
-  console.info("Exporting dashboard: finished");
+  infoMSG("Exporting dashboard: finished");
   return export_holder;
 }
 

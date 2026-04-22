@@ -1,8 +1,8 @@
 import { Account, DictionaryInfo } from "@tago-io/sdk";
 import { queue } from "async";
 
-import { errorHandler } from "../../../../lib/messages";
-import { IExportHolder } from "../types";
+import { errorHandler, infoMSG } from "../../../../lib/messages.js";
+import { IExportHolder } from "../types.js";
 
 interface IQueue {
   item: DictionaryInfo;
@@ -11,7 +11,7 @@ interface IQueue {
   exportAccount: Account;
 }
 async function updateDictionary({ item, import_list, exportAccount, import_account }: IQueue) {
-  console.info(`Exporting dictionary ${item.name}`);
+  infoMSG(`Exporting dictionary ${item.name}`);
   let { id: target_id } = import_list.find((dict) => dict.slug === item.slug) || { id: null };
 
   if (!target_id) {
@@ -29,7 +29,7 @@ async function updateDictionary({ item, import_list, exportAccount, import_accou
 }
 
 async function dictionaryExport(exportAccount: Account, import_account: Account, export_holder: IExportHolder) {
-  console.info("Exporting dictionaries: started");
+  infoMSG("Exporting dictionaries: started");
 
   const list = await exportAccount.dictionaries.list({ amount: 10000, fields: ["id", "slug", "languages", "name", "fallback"] });
   const import_list = await import_account.dictionaries.list({ amount: 10000, fields: ["id", "slug", "languages", "name", "fallback"] });
@@ -43,7 +43,7 @@ async function dictionaryExport(exportAccount: Account, import_account: Account,
 
   await dictionaryQueue.drain();
 
-  console.info("Exporting dictionaries: finished");
+  infoMSG("Exporting dictionaries: finished");
   return export_holder;
 }
 

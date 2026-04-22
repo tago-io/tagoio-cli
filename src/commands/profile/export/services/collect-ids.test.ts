@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { IExportHolder } from "../types";
-import { getExportHolder } from "./collect-ids";
+import { IExportHolder } from "../types.js";
+import { getExportHolder } from "./collect-ids.js";
 
 describe("Collect ID", () => {
   test("Get Export Holder - Devices", () => {

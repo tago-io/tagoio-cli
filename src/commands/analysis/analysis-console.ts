@@ -1,9 +1,9 @@
 import { Account, AnalysisInfo } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
-import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
-import { searchName } from "../../lib/search-name";
-import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
+import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
+import { searchName } from "../../lib/search-name.js";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
 /**
  * Creates a new SSE connection to the TagoIO Realtime API.

@@ -2,22 +2,22 @@ import { Account } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { addOnGitIgnore } from "../../../lib/add-to-gitignore";
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { getCurrentFolder } from "../../../lib/get-current-folder";
-import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
-import { confirmPrompt } from "../../../prompt/confirm";
-import { pickEnvironment } from "../../../prompt/pick-environment";
-import { setupExport } from "./export-setup";
-import { accessExport } from "./services/access-export";
-import { actionsExport } from "./services/actions-export";
-import { analysisExport } from "./services/analysis-export";
-import { collectIDs } from "./services/collect-ids";
-import { dashboardExport } from "./services/dashboards-export";
-import { deviceExport } from "./services/devices-export";
-import { dictionaryExport } from "./services/dictionary-export";
-import { runButtonsExport } from "./services/run-buttons-export";
-import { EntityType, IExport, IExportHolder } from "./types";
+import { addOnGitIgnore } from "../../../lib/add-to-gitignore.js";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { getCurrentFolder } from "../../../lib/get-current-folder.js";
+import { errorHandler, infoMSG, successMSG } from "../../../lib/messages.js";
+import { confirmPrompt } from "../../../prompt/confirm.js";
+import { pickEnvironment } from "../../../prompt/pick-environment.js";
+import { setupExport } from "./export-setup.js";
+import { accessExport } from "./services/access-export.js";
+import { actionsExport } from "./services/actions-export.js";
+import { analysisExport } from "./services/analysis-export.js";
+import { collectIDs } from "./services/collect-ids.js";
+import { dashboardExport } from "./services/dashboards-export.js";
+import { deviceExport } from "./services/devices-export.js";
+import { dictionaryExport } from "./services/dictionary-export.js";
+import { runButtonsExport } from "./services/run-buttons-export.js";
+import { EntityType, IExport, IExportHolder } from "./types.js";
 
 const ENTITY_ORDER: EntityType[] = ["devices", "analysis", "dashboards", "access", "run", "actions", "dictionaries"];
 interface IExportOptions {
@@ -44,7 +44,6 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
     const config = getEnvironmentConfig(options.from);
     if (!config || !config.profileToken) {
       errorHandler(`Token for environment ${options.from} not found. Did you try "tagoio login ${options.from}" ?`);
-      process.exit(0);
     }
 
     userConfig.export.token = config.profileToken;
@@ -56,7 +55,6 @@ async function resolveTokens(userConfig: IExport, options: IExportOptions) {
     const config = getEnvironmentConfig(options.to);
     if (!config || !config.profileToken) {
       errorHandler(`Token for environment ${options.to} not found. Did you try "tagoio login ${options.to}" ?`);
-      process.exit(0);
     }
 
     userConfig.import.token = config.profileToken;
@@ -112,13 +110,11 @@ async function confirmEnvironments(userConfig: IExport) {
 
   if (exportID === importID) {
     errorHandler("Don't export application to the same profile!");
-    process.exit(0);
   }
 
   const confirmed = await confirmPrompt(`You will be exporting profile ${kleur.cyan(exportName)} to ${kleur.green(importName)}. Do you confirm ?`);
   if (!confirmed) {
     errorHandler("Cancelled");
-    process.exit(0);
   }
 }
 
@@ -147,7 +143,6 @@ async function collectParameters(options: IExportOptions) {
   await resolveTokens(userConfig, options);
   if (userConfig.import.token === userConfig.export.token) {
     errorHandler("Don't export application to the same profile!");
-    process.exit(0);
   }
 
   userConfig.entities = await chooseEntities(options.entity);

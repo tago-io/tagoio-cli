@@ -1,13 +1,13 @@
 import { createWriteStream, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 import { Resources } from "@tago-io/sdk";
-import axios from "axios";
 import ora from "ora";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
 import {
   fetchBackups,
   formatDate,
@@ -16,7 +16,7 @@ import {
   handleBackupError,
   promptCredentials,
   selectBackup,
-} from "./lib";
+} from "./lib.js";
 
 const DOWNLOAD_FOLDER = "profile-backup-download";
 
@@ -28,8 +28,12 @@ async function downloadBackupToFolder(downloadUrl: string, outputDir: string, ba
   const filePath = join(outputDir, fileName);
 
   const spinner = ora("Downloading backup file...").start();
-  const response = await axios.get(downloadUrl, { responseType: "stream" });
-  await pipeline(response.data, createWriteStream(filePath));
+  const response = await fetch(downloadUrl);
+  if (!response.ok || !response.body) {
+    spinner.fail(`Download failed: ${response.status}`);
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(filePath));
   spinner.succeed(`Backup downloaded to: ${filePath}`);
 
   return filePath;

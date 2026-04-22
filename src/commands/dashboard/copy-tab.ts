@@ -2,10 +2,10 @@ import { Account, DashboardInfo } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { confirmPrompt } from "../../prompt/confirm";
-import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { confirmPrompt } from "../../prompt/confirm.js";
+import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio.js";
 
 interface IOptions {
   to: string;
@@ -89,7 +89,6 @@ async function pickTabFromDashboard(list: { title: string; value: string }[], me
 
   if (!id) {
     errorHandler("Tab not selected");
-    return process.exit();
   }
 
   return id as string;
@@ -136,7 +135,7 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   const toTabName = (dashInfo.tabs as DashboardTabs[]).find((x) => x.key === to)?.value as string;
   const fromTabName = (dashInfo.tabs as DashboardTabs[]).find((x) => x.key === from)?.value as string;
 
-  infoMSG(`> Copying tab ${kleur.cyan(fromTabName)} to ${kleur.cyan(toTabName)}...`);
+  infoMSG(`Copying tab. source=${kleur.cyan(fromTabName)} target=${kleur.cyan(toTabName)}`);
   const yesNo = await confirmPrompt();
   if (!yesNo) {
     return;
@@ -147,7 +146,7 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
 
   await account.dashboards.edit(dashID, { arrangement });
 
-  successMSG(`> Tab ${fromTabName} [${kleur.cyan(from)}] copied to ${toTabName} [${kleur.cyan(to)}]`);
+  successMSG(`Dashboard tab copied. dashboard=${kleur.blue(dashID)} source=${fromTabName}[${kleur.cyan(from)}] target=${toTabName}[${kleur.cyan(to)}]`);
 }
 
 export { copyTabWidgets };

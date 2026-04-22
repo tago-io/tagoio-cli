@@ -1,10 +1,10 @@
 import { Account, DashboardInfo, WidgetInfo } from "@tago-io/sdk";
 import { queue } from "async";
 
-import { errorHandler } from "../../../../lib/messages";
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
-import { storeExportBackup } from "./export-backup/export-backup";
+import { errorHandler } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
+import { storeExportBackup } from "./export-backup/export-backup.js";
 
 type DashboardTabs = { hidden: boolean; key: string };
 

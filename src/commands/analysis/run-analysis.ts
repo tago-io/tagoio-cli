@@ -3,12 +3,12 @@ import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
-import { detectRuntime } from "../../lib/current-runtime";
-import { getCurrentFolder } from "../../lib/get-current-folder";
-import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
-import { searchName } from "../../lib/search-name";
-import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
+import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
+import { detectRuntime } from "../../lib/current-runtime.js";
+import { getCurrentFolder } from "../../lib/get-current-folder.js";
+import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
+import { searchName } from "../../lib/search-name.js";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
 /**
  * Builds the command to run the analysis.
@@ -84,7 +84,6 @@ async function runAnalysis(
 
   if (!scriptToRun || !scriptToRun.id) {
     errorHandler(`Analysis couldn't be found: ${scriptName}`);
-    return process.exit();
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -122,8 +121,7 @@ async function runAnalysis(
 
   let runtime;
   if (options.deno && options.node) {
-    console.error("Error: Cannot specify both --deno and --node flags");
-    process.exit(1);
+    errorHandler("Cannot specify both --deno and --node flags");
   } else if (options.deno) {
     runtime = "--deno";
   } else if (options.node) {

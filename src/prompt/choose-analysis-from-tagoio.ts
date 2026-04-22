@@ -1,7 +1,7 @@
 import { Account, AnalysisInfo } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { errorHandler } from "../lib/messages";
+import { errorHandler } from "../lib/messages.js";
 
 async function chooseAnalysisFromTagoIO(account: Account, message: string = "Choose the analysis") {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);

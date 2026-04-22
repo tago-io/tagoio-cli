@@ -1,9 +1,9 @@
 import { Account, RunInfo } from "@tago-io/sdk";
 
-import { infoMSG } from "../../../../lib/messages";
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
-import { storeExportBackup } from "./export-backup/export-backup";
+import { infoMSG } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
+import { storeExportBackup } from "./export-backup/export-backup.js";
 
 interface ISidebarButton {
   color: string;
@@ -77,7 +77,7 @@ async function runButtonsExport(account: Account, import_account: Account, expor
     throw error;
   });
 
-  console.info("Run Buttons: finished");
+  infoMSG("Run Buttons: finished");
   return export_holder;
 }
 

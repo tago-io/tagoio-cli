@@ -1,12 +1,11 @@
 import { Account } from "@tago-io/sdk";
-import axios from "axios";
 import kleur from "kleur";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { chooseFromList } from "../../prompt/choose-from-list";
-import { promptNumber } from "../../prompt/number-prompt";
-import { pickFromList } from "../../prompt/pick-from-list";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { chooseFromList } from "../../prompt/choose-from-list.js";
+import { promptNumber } from "../../prompt/number-prompt.js";
+import { pickFromList } from "../../prompt/pick-from-list.js";
 
 interface BucketSettings {
   type: "mutable" | "immutable";
@@ -45,13 +44,24 @@ async function convertDevice(deviceID: string, settings: BucketSettings, config:
   const headers = { Authorization: `${config.profileToken}` };
 
   try {
-    const response = await axios.post(url, settings, { headers });
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as { message?: string } | null;
+      await reactiveDevice();
+      throw errorBody?.message;
+    }
+
+    const data = await response.json();
     await reactiveDevice();
-    return response.data;
+    return data;
   } catch (error) {
     await reactiveDevice();
-    // console.log(error.response.data);
-    throw error.response.data?.message;
+    throw error;
   }
 }
 
@@ -64,7 +74,13 @@ async function startBucketChange(config: environmentConfigResponse, deviceID: st
     throw false;
   });
 
-  successMSG(`> ${deviceID} - ${settings.type} bucket`);
+  const extras = [
+    settings.chunk_period ? `chunk_period=${settings.chunk_period}` : "",
+    settings.chunk_retention ? `chunk_retention=${settings.chunk_retention}` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  successMSG(`Device bucket type changed. device=${kleur.blue(deviceID)} type=${coloredBucketType(settings.type)}${extras ? ` ${extras}` : ""}`);
 }
 
 async function chooseBucketsFromList(account: Account) {
@@ -93,7 +109,7 @@ async function changeBucketType(id: string, options: { environment: string }) {
   const bucketList = id ? [id] : await chooseBucketsFromList(account);
   if (id) {
     const bucketInfo = await account.buckets.info(id);
-    infoMSG(`> ${bucketInfo.name} - ${coloredBucketType(bucketInfo.type)} bucket\n`);
+    infoMSG(`Device: ${bucketInfo.name} - ${coloredBucketType(bucketInfo.type)} bucket`);
   }
 
   const bucketType = await pickFromList([{ title: "mutable" }, { title: "immutable" }], { message: "Choose the new bucket type" });

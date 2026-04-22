@@ -1,8 +1,8 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
 
-import { errorHandler, infoMSG } from "../../../../lib/messages";
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExport, IExportHolder } from "../types";
+import { errorHandler, infoMSG } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExport, IExportHolder } from "../types.js";
 
 /**
  * @description Replace the device token if the token being exported has the serial_number
@@ -55,7 +55,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
 
   for (const { id: device_id, name } of list) {
     await new Promise((resolve) => setTimeout(resolve, 150)); // sleep
-    console.info(`Exporting devices ${name}`);
+    infoMSG(`Exporting devices ${name}`);
     const device = await account.devices.info(device_id);
 
     const export_id = device.tags.find((tag) => tag.key === export_holder.config.export_tag)?.value;
@@ -84,7 +84,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
 
       // Add Configurations Parameters
       const export_param_list = await export_device.getParameters("all");
-      const param_list_map = export_param_list.map(({ id, ...param }: { id: string; [key: string]: unknown }) => param);
+      const param_list_map = export_param_list.map(({ id: _id, ...param }: { id: string; [key: string]: unknown }) => param);
       await import_account.devices.paramSet(target_id, param_list_map).catch(errorHandler);
     } else {
       await import_account.devices.edit(target_id, {
@@ -103,7 +103,7 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     export_holder.tokens[token as string] = new_token;
   }
 
-  console.info("Exporting devices: finished");
+  infoMSG("Exporting devices: finished");
   return export_holder;
 }
 

@@ -1,18 +1,17 @@
 import { Command, Option } from "commander";
 import kleur from "kleur";
 
-import { errorHandler, highlightMSG } from "../../lib/messages";
-import { createBackup } from "./backup/create";
-import { downloadBackup } from "./backup/download";
-import { listBackups } from "./backup/list";
-import { restoreBackup } from "./backup/restore";
-import { startExport } from "./export/export";
-import { ENTITY_ORDER } from "./export/types";
+import { errorHandler, highlightMSG } from "../../lib/messages.js";
+import { createBackup } from "./backup/create.js";
+import { downloadBackup } from "./backup/download.js";
+import { listBackups } from "./backup/list.js";
+import { restoreBackup } from "./backup/restore.js";
+import { startExport } from "./export/export.js";
+import { ENTITY_ORDER } from "./export/types.js";
 
 function handleEntities(value: any, previous: any) {
   if (!ENTITY_ORDER.includes(value)) {
     errorHandler(`Invalid entity: ${value}`);
-    process.exit(0);
   }
   return previous.concat([value]);
 }

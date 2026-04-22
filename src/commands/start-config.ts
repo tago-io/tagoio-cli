@@ -4,11 +4,11 @@ import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@t
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
-import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG } from "../lib/messages";
-import { readToken, writeToken } from "../lib/token";
-import { promptTextToEnter } from "../prompt/text-prompt";
-import { getTagoDeployURL, tagoLogin } from "./login";
+import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG } from "../lib/messages.js";
+import { readToken, writeToken } from "../lib/token.js";
+import { promptTextToEnter } from "../prompt/text-prompt.js";
+import { getTagoDeployURL, tagoLogin } from "./login.js";
 
 interface ConfigOptions {
   token: string | void;

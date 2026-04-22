@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
-    "module": "CommonJS",
+    "target": "ES2022",
+    "module": "NodeNext",
     "lib": ["ES2022", "DOM"],
     "allowJs": true,
     "outDir": "./build",
     "noImplicitAny": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "rootDir": "./src",
@@ -18,6 +18,7 @@
     "inlineSourceMap": true
   },
   "include": ["src/**/*"],
+  "exclude": ["src/**/*.test.ts", "src/test-utils/**"],
   "rules": {
     "no-unused-declaration": true
   },

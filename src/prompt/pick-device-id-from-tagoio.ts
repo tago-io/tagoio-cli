@@ -1,7 +1,7 @@
 import { Account } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { errorHandler } from "../lib/messages";
+import { errorHandler } from "../lib/messages.js";
 
 async function pickDeviceIDFromTagoIO(account: Account, message: string = "Which device you want to choose?") {
   const deviceList = await account.devices.list({ amount: 100, fields: ["id", "name"] });
@@ -15,7 +15,6 @@ async function pickDeviceIDFromTagoIO(account: Account, message: string = "Which
 
   if (!id) {
     errorHandler("Device not selected");
-    return process.exit();
   }
 
   return id as string;

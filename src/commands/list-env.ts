@@ -1,8 +1,8 @@
 import { Account } from "@tago-io/sdk";
 
-import { getConfigFile, getProfileRegion, writeToConfigFile } from "../lib/config-file";
-import { errorHandler, infoMSG } from "../lib/messages";
-import { readToken } from "../lib/token";
+import { getConfigFile, getProfileRegion, writeToConfigFile } from "../lib/config-file.js";
+import { errorHandler, infoMSG } from "../lib/messages.js";
+import { readToken } from "../lib/token.js";
 
 /**
  * Updates the environment information in the config file with the latest data from TagoIO API.

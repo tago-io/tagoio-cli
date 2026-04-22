@@ -1,8 +1,8 @@
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { IEnvironment } from "../lib/config-file";
-import { errorHandler } from "../lib/messages";
+import { IEnvironment } from "../lib/config-file.js";
+import { errorHandler } from "../lib/messages.js";
 
 const colorAnalysisName = (x: IEnvironment["analysisList"][0]) => (x.fileName ? `${x.fileName} [${kleur.cyan(x.name)}]` : x.name);
 
@@ -22,7 +22,6 @@ async function pickAnalysisFromConfig(analysisList: IEnvironment["analysisList"]
 
   if (!script) {
     errorHandler("Analysis not selected");
-    return process.exit();
   }
 
   return script as IEnvironment["analysisList"][0];

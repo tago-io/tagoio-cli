@@ -1,7 +1,7 @@
-import { randomBytes } from "crypto";
-import { readFileSync, writeFileSync } from "fs";
-import { addOnGitIgnore } from "./add-to-gitignore";
-import { getCurrentFolder } from "./get-current-folder";
+import { randomBytes } from "node:crypto";
+import { readFileSync, writeFileSync } from "node:fs";
+import { addOnGitIgnore } from "./add-to-gitignore.js";
+import { getCurrentFolder } from "./get-current-folder.js";
 
 function readToken(environment: string) {
   const folder = getCurrentFolder();

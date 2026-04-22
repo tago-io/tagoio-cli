@@ -1,12 +1,8 @@
 import kleur from "kleur";
 
-function questionMSG(str: any) {
-  return `[${kleur.magenta("PROMPT")}] ${str}`;
-}
-
-function errorHandler(str: any) {
+function errorHandler(str: any): never {
   console.error(`[${kleur.red("ERROR")}] ${kleur.bold(str)}`);
-  throw process.exit(0);
+  process.exit(1);
 }
 
 function highlightMSG(str: any) {
@@ -14,11 +10,11 @@ function highlightMSG(str: any) {
 }
 
 function successMSG(str: any) {
-  return console.info(`[${kleur.green("INFO")}] ${str}`);
+  return console.info(`[${kleur.green("OK")}] ${str}`);
 }
 
 function infoMSG(str: any) {
   return console.info(`[${kleur.blue("INFO")}] ${str}`);
 }
 
-export { errorHandler, questionMSG, highlightMSG, successMSG, infoMSG };
+export { errorHandler, highlightMSG, successMSG, infoMSG };

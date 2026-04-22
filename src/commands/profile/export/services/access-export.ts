@@ -1,10 +1,11 @@
 import { Account } from "@tago-io/sdk";
 
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
+import { infoMSG } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
 
 async function accessExport(account: Account, import_account: Account, export_holder: IExportHolder) {
-  console.info("Exporting access rules: started");
+  infoMSG("Exporting access rules: started");
 
   const list = await account.accessManagement.list({
     amount: 10000,
@@ -21,7 +22,7 @@ async function accessExport(account: Account, import_account: Account, export_ho
   });
 
   for (const { id: access_id, tags: access_tags, name } of list) {
-    console.info(`Exporting access rule ${name}`);
+    infoMSG(`Exporting access rule ${name}`);
     const access = await account.accessManagement.info(access_id);
     const export_id = access_tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
@@ -37,7 +38,7 @@ async function accessExport(account: Account, import_account: Account, export_ho
     }
   }
 
-  console.info("Exporting access rules: finished");
+  infoMSG("Exporting access rules: finished");
   return export_holder;
 }
 

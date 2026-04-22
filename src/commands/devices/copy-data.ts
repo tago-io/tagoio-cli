@@ -1,9 +1,9 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages";
-import { confirmPrompt } from "../../prompt/confirm";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
+import { confirmPrompt } from "../../prompt/confirm.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 
 interface IOptions {
   to: string;

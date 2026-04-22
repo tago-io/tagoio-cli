@@ -1,10 +1,10 @@
-import { Account, AnalysisInfo } from "@tago-io/sdk";
+import { Account, AnalysisListItem } from "@tago-io/sdk";
 import kleur from "kleur";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { chooseFromList } from "../../prompt/choose-from-list";
-import { pickFromList } from "../../prompt/pick-from-list";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { chooseFromList } from "../../prompt/choose-from-list.js";
+import { pickFromList } from "../../prompt/pick-from-list.js";
 
 /**
  * Retrieves a list of analysis from TagoIO that match the specified filter criteria.
@@ -14,7 +14,8 @@ import { pickFromList } from "../../prompt/pick-from-list";
  * @returns {Promise<AnalysisInfo[]>} - A promise that resolves to an array of AnalysisInfo objects.
  */
 async function getAnalysisListFromTagoIO(account: Account, analysisFilterName: string | undefined, filterMode: string) {
-  const filterByRunON = (r: AnalysisInfo[]) => (filterMode ? r.filter((x) => x.run_on === filterMode) : r);
+  type ListFields = AnalysisListItem<"id" | "name" | "run_on">;
+  const filterByRunON = (r: ListFields[]) => (filterMode ? r.filter((x) => x.run_on === filterMode) : r);
 
   return await account.analysis
     .list({
@@ -32,8 +33,11 @@ async function getAnalysisListFromTagoIO(account: Account, analysisFilterName: s
  * @param {AnalysisInfo[]} analysisList - The list of analysis to choose from.
  * @returns {Promise<AnalysisInfo[]>} - The selected analysis object.
  */
-async function chooseAnalysisToUpdateRunOnMode(analysisList: AnalysisInfo[]): Promise<AnalysisInfo[]> {
-  const colorAnalysisName = (x: AnalysisInfo) => `${x.name} [${x.run_on === "tago" ? kleur.cyan(x.run_on) : kleur.yellow(x.run_on || "")}]`;
+async function chooseAnalysisToUpdateRunOnMode(
+  analysisList: AnalysisListItem<"id" | "name" | "run_on">[],
+): Promise<AnalysisListItem<"id" | "name" | "run_on">[]> {
+  const colorAnalysisName = (x: AnalysisListItem<"id" | "name" | "run_on">) =>
+    `${x.name} [${x.run_on === "tago" ? kleur.cyan(x.run_on) : kleur.yellow(x.run_on || "")}]`;
 
   // Prompts the user to choose an analysis from a list.
   const selectedAnalysis = await chooseFromList(
@@ -44,7 +48,6 @@ async function chooseAnalysisToUpdateRunOnMode(analysisList: AnalysisInfo[]): Pr
   // Handles the case where the user cancels the selection.
   if (!selectedAnalysis || selectedAnalysis.length === 0) {
     errorHandler("Cancelled.");
-    return process.exit(0);
   }
 
   return selectedAnalysis;
@@ -74,7 +77,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
     errorHandler("No analysis found.");
     return;
   }
-  infoMSG(`${analysisList.length} analysis found.`);
+  infoMSG(`Analyses found: count=${analysisList.length}`);
 
   // Query user for the analysis to update
   const selectedAnalysis = await chooseAnalysisToUpdateRunOnMode(analysisList);
@@ -90,9 +93,10 @@ async function analysisSetMode(userInputName: string | void, options: { environm
   // Update analysis run_on mode
   for (const analysis of selectedAnalysis) {
     await account.analysis.edit(analysis.id, { run_on: mode as any });
+    successMSG(`Analysis run_on updated. id=${kleur.blue(analysis.id)} name=${analysis.name} run_on=${kleur.cyan(mode)}`);
   }
 
-  successMSG(`${selectedAnalysis.length} Analysis run_on successfully set to: ${mode}`);
+  successMSG(`Total analyses updated: count=${selectedAnalysis.length} run_on=${kleur.cyan(mode)}`);
 }
 
 export { analysisSetMode };

@@ -1,9 +1,9 @@
 import { WidgetInfo } from "@tago-io/sdk";
-import { writeFileSync } from "fs";
+import { writeFileSync } from "node:fs";
 
-import { ensureDirectoryExistence } from "../../../../../lib/dotenv-config";
-import { getCurrentFolder } from "../../../../../lib/get-current-folder";
-import { EntityType } from "../../types";
+import { ensureDirectoryExistence } from "../../../../../lib/dotenv-config.js";
+import { getCurrentFolder } from "../../../../../lib/get-current-folder.js";
+import { EntityType } from "../../types.js";
 
 const BKP_FILE_PATH = `${getCurrentFolder()}/exportBackup` as const;
 

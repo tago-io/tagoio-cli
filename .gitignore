@@ -56,3 +56,8 @@ src/analysis
 .tago-lock.ty.lock
 .tagoio
 .tago-lock.dev.lock
+*.lock
+exportBackup
+.tago-lock.dev-ue.lock
+.tago-lock.dev-ue-2.lock
+.tago-lock.dev-1.lock
