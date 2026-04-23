@@ -6,7 +6,7 @@ import { makeAccount } from "../../test-utils/mock-sdk.js";
 import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 const successMSGMock = vi.fn();
@@ -55,9 +55,7 @@ vi.mock("../../lib/messages.js", () => ({
 }));
 
 describe("deployAnalysis", () => {
-  const analysisList = [
-    { name: "scriptA", fileName: "a.ts", id: "an-1" },
-  ];
+  const analysisList = [{ name: "scriptA", fileName: "a.ts", id: "an-1" }];
 
   let exitSpy: ReturnType<typeof vi.spyOn>;
 
@@ -85,9 +83,7 @@ describe("deployAnalysis", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("a.ts", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(deployAnalysis("a.ts", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/Environment not found/);
   });
 
   test("deploys a single matched script and emits a success message", async () => {
@@ -98,15 +94,10 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalled();
-    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith(
-      "an-1",
-      expect.objectContaining({ content: "ZmFrZS1zY3JpcHQ=" }),
-    );
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-1", expect.objectContaining({ content: "ZmFrZS1zY3JpcHQ=" }));
     expect(successMSGMock).toHaveBeenCalledWith(expect.stringContaining("Script uploaded."));
   });
 
@@ -115,18 +106,14 @@ describe("deployAnalysis", () => {
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: true }),
-    ).rejects.toThrow(/Cannot specify both/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: true })).rejects.toThrow(/Cannot specify both/);
   });
 
   test("errors when no analysis name matches the search", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: [] }));
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("nope", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/No analysis found/);
+    await expect(deployAnalysis("nope", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/No analysis found/);
   });
 
   test("uses chooseAnalysisListFromConfig prompt when 'all' is passed", async () => {
@@ -139,9 +126,7 @@ describe("deployAnalysis", () => {
     prompts.inject([[analysisList[0]]]);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("all", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("all", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalled();
   });
@@ -155,14 +140,9 @@ describe("deployAnalysis", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: true, node: false })).rejects.toThrow(/__exit:0/);
 
-    expect(execSyncMock).toHaveBeenCalledWith(
-      expect.stringContaining("deno bundle"),
-      expect.any(Object),
-    );
+    expect(execSyncMock).toHaveBeenCalledWith(expect.stringContaining("deno bundle"), expect.any(Object));
     logSpy.mockRestore();
   });
 
@@ -175,9 +155,7 @@ describe("deployAnalysis", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: true }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: true })).rejects.toThrow(/__exit:0/);
 
     expect(logSpy).toHaveBeenCalledWith("deploying with node");
     logSpy.mockRestore();
@@ -193,9 +171,7 @@ describe("deployAnalysis", () => {
     unlinkMock.mockResolvedValue(undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     expect(unlinkMock).toHaveBeenCalled();
   });
@@ -209,14 +185,9 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
-    expect(execSyncMock).toHaveBeenCalledWith(
-      expect.stringContaining("nested/a.ts"),
-      expect.any(Object),
-    );
+    expect(execSyncMock).toHaveBeenCalledWith(expect.stringContaining("nested/a.ts"), expect.any(Object));
   });
 
   test("returns silently when reading the built file fails", async () => {
@@ -227,9 +198,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     // script read fails → buildScript returns early → loop finishes → process.exit()
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
@@ -258,9 +227,7 @@ describe("deployAnalysis", () => {
     errorHandlerMock.mockImplementationOnce(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Script upload failed"));
   });
@@ -277,9 +244,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { environment: "prod", silent: true, deno: false, node: false })).rejects.toThrow(/__exit:0/);
 
     // First execSync call should reference the default paths
     expect(execSyncMock).toHaveBeenCalled();

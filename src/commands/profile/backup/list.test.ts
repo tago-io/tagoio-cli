@@ -5,7 +5,7 @@ import { makeEnvironmentConfig } from "../../../test-utils/mock-config.js";
 import { makeAccount } from "../../../test-utils/mock-sdk.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 const infoMSGMock = vi.fn();
@@ -74,9 +74,7 @@ describe("listBackups", () => {
     accountInstance.profiles.info.mockResolvedValue({ info: { id: "profile-1", name: "Prof" } });
     fetchMock.mockResolvedValue(
       makeFetchResponse({
-        result: [
-          { id: "b-1", status: "completed", created_at: "2026-04-01T00:00:00Z", file_size: 1024 },
-        ],
+        result: [{ id: "b-1", status: "completed", created_at: "2026-04-01T00:00:00Z", file_size: 1024 }],
       }),
     );
 

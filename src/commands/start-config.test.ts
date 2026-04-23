@@ -93,7 +93,9 @@ describe("scanAnalysisFiles (indirect)", () => {
       const full = join(tmpRoot, item);
       if (statSync(full).isDirectory()) {
         for (const sub of readdirSync(full)) {
-          if (sub.endsWith(".js") || sub.endsWith(".ts")) collected.push(sub);
+          if (sub.endsWith(".js") || sub.endsWith(".ts")) {
+            collected.push(sub);
+          }
         }
       } else if (item.endsWith(".ts") || item.endsWith(".js")) {
         collected.push(item);

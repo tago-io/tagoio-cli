@@ -5,7 +5,7 @@ import { makeEnvironmentConfig } from "../../../test-utils/mock-config.js";
 import { makeAccount } from "../../../test-utils/mock-sdk.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 const handleBackupErrorMock = vi.fn();
@@ -91,9 +91,7 @@ describe("createBackup", () => {
       if (init?.method === "POST") {
         return Promise.resolve(makeFetchResponse({ id: "b1" }));
       }
-      return Promise.resolve(
-        makeFetchResponse({ result: [{ id: "b1", status: "failed", error_message: "disk full" }] }),
-      );
+      return Promise.resolve(makeFetchResponse({ result: [{ id: "b1", status: "failed", error_message: "disk full" }] }));
     });
 
     const { createBackup } = await import("./create.js");
@@ -134,7 +132,9 @@ describe("createBackup", () => {
     });
     accountInstance.profiles.info.mockResolvedValue({ info: { id: "p1", name: "Profile" } });
     fetchMock.mockImplementation((_url: string, init?: { method?: string }) => {
-      if (init?.method === "POST") return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      if (init?.method === "POST") {
+        return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      }
       return Promise.resolve(makeFetchResponse({ result: [{ id: "b1", status: "completed" }] }));
     });
 
@@ -151,9 +151,13 @@ describe("createBackup", () => {
     accountInstance.profiles.info.mockResolvedValue({ info: { id: "p1", name: "Profile" } });
     let pollCount = 0;
     fetchMock.mockImplementation((_url: string, init?: { method?: string }) => {
-      if (init?.method === "POST") return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      if (init?.method === "POST") {
+        return Promise.resolve(makeFetchResponse({ id: "b1" }));
+      }
       pollCount += 1;
-      if (pollCount === 1) return Promise.resolve(makeFetchResponse({ result: [] }));
+      if (pollCount === 1) {
+        return Promise.resolve(makeFetchResponse({ result: [] }));
+      }
       return Promise.resolve(makeFetchResponse({ result: [{ id: "b1", status: "completed" }] }));
     });
 

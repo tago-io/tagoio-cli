@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 
@@ -38,9 +38,7 @@ describe("deviceList", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { deviceList } = await import("./device-list.js");
-    await expect(
-      deviceList({ tagkey: [], tagvalue: [] } as never)
-    ).rejects.toThrow(/Environment not found/);
+    await expect(deviceList({ tagkey: [], tagvalue: [] } as never)).rejects.toThrow(/Environment not found/);
   });
 
   test("returns silently when device list fetch fails", async () => {
@@ -54,9 +52,7 @@ describe("deviceList", () => {
 
   test("prints table for devices when stringify/json are not set", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    devicesListMock.mockResolvedValue([
-      { id: "d1", name: "Dev 1", active: true, last_input: new Date("2026-01-01T00:00:00Z"), tags: [] },
-    ]);
+    devicesListMock.mockResolvedValue([{ id: "d1", name: "Dev 1", active: true, last_input: new Date("2026-01-01T00:00:00Z"), tags: [] }]);
     const tableSpy = vi.spyOn(console, "table").mockImplementation(() => undefined);
 
     const { deviceList } = await import("./device-list.js");
@@ -67,9 +63,7 @@ describe("deviceList", () => {
 
   test("uses JSON.stringify when options.stringify is true", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    devicesListMock.mockResolvedValue([
-      { id: "d1", name: "Dev 1", active: true, last_input: null, tags: [{ key: "env", value: "prod" }] },
-    ]);
+    devicesListMock.mockResolvedValue([{ id: "d1", name: "Dev 1", active: true, last_input: null, tags: [{ key: "env", value: "prod" }] }]);
     const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
 
     const { deviceList } = await import("./device-list.js");
@@ -80,9 +74,7 @@ describe("deviceList", () => {
 
   test("uses console.dir when options.json is true", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    devicesListMock.mockResolvedValue([
-      { id: "d1", name: "Dev", active: true, last_input: null, tags: [] },
-    ]);
+    devicesListMock.mockResolvedValue([{ id: "d1", name: "Dev", active: true, last_input: null, tags: [] }]);
     const dirSpy = vi.spyOn(console, "dir").mockImplementation(() => undefined);
 
     const { deviceList } = await import("./device-list.js");
