@@ -51,8 +51,8 @@ function setupSSE(sse: ReturnType<typeof apiSSE>, _script_id: string, analysis_i
   };
 
   sse.onerror = (error) => {
-    errorHandler("Connection error");
     console.error(error);
+    errorHandler("Connection error");
   };
 
   sse.onopen = () => {
@@ -72,20 +72,17 @@ async function connectAnalysisConsole(scriptName: string | void, options: { envi
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const scriptObj = await getScriptObj(scriptName, config.analysisList);
   if (!scriptObj) {
     errorHandler(`Analysis not found: ${scriptName}`);
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const analysis_info = await account.analysis.info(scriptObj.id).catch(() => null);
   if (!analysis_info) {
     errorHandler(`Analysis with ID: ${scriptObj.id} couldn't be found.`);
-    return;
   }
 
   const sse = apiSSE(config.profileToken, analysis_info.id, config?.tagoSSEURL);

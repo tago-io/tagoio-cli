@@ -9,7 +9,6 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

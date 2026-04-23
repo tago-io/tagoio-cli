@@ -14,15 +14,7 @@ import { displayWarning } from "../../../lib/display-warning.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
 import { chooseFromList } from "../../../prompt/choose-from-list.js";
 import { confirmPrompt } from "../../../prompt/confirm.js";
-import {
-  fetchBackups,
-  formatDate,
-  formatFileSize,
-  getDownloadUrl,
-  handleBackupError,
-  promptCredentials,
-  selectBackup,
-} from "./lib.js";
+import { fetchBackups, formatDate, formatFileSize, getDownloadUrl, handleBackupError, promptCredentials, selectBackup } from "./lib.js";
 import { restoreAccessManagement } from "./resources/access-management.js";
 import { restoreActions } from "./resources/actions.js";
 import { restoreAnalysis } from "./resources/analysis.js";
@@ -172,7 +164,9 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   spinner.succeed("Backup downloaded successfully.");
 
   spinner.start("Extracting backup contents...");
-  await createReadStream(zipPath).pipe(unzipper.Extract({ path: extractDir })).promise();
+  await createReadStream(zipPath)
+    .pipe(unzipper.Extract({ path: extractDir }))
+    .promise();
   spinner.succeed("Backup extracted successfully.");
 
   return extractDir;
@@ -199,7 +193,6 @@ async function restoreBackup(options: RestoreOptions = {}) {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
@@ -255,7 +248,6 @@ async function restoreBackup(options: RestoreOptions = {}) {
     const summary = analyzeBackupContents(extractDir);
     if (summary.length === 0) {
       errorHandler("No valid resources found in the backup.");
-      return;
     }
 
     const totalResources = displayBackupSummary(summary);

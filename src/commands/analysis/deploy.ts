@@ -44,7 +44,6 @@ function getPaths(config: EnvConfig) {
 async function getScript(buildedFile: string, scriptName: string) {
   return await fs.readFile(buildedFile, { encoding: "base64" }).catch((error) => {
     errorHandler(`Script ${scriptName} file location error: ${error}`);
-    return null;
   });
 }
 
@@ -121,7 +120,6 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   // check if script has a file
@@ -136,7 +134,6 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
 
     if (!analysisFound) {
       errorHandler(`No analysis found containing name: ${cmdScriptName}`);
-      return;
     }
 
     if (!options.silent) {
@@ -146,7 +143,6 @@ async function deployAnalysis(cmdScriptName: string, options: { environment: str
 
   if (scriptList.length === 0) {
     errorHandler(`Cancelled`);
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
