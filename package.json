@@ -27,8 +27,8 @@
     "test": "vitest run",
     "test:single": "vitest --",
     "test:coverage": "vitest run --coverage",
-    "linter": "oxlint",
-    "linter:fix": "oxlint --fix",
+    "linter": "oxlint --quiet",
+    "linter:fix": "oxlint --quiet --fix",
     "format": "oxfmt --check",
     "format:fix": "oxfmt"
   },
