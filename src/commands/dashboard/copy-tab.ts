@@ -104,7 +104,6 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -129,7 +128,6 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   const { to, from } = options;
   if (to === from) {
     errorHandler("You can't copy data from and to the same tab");
-    return;
   }
 
   const toTabName = (dashInfo.tabs as DashboardTabs[]).find((x) => x.key === to)?.value as string;

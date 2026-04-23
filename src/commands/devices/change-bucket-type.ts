@@ -100,7 +100,6 @@ async function changeBucketType(id: string, options: { environment: string }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const bucketList = id ? [id] : await chooseBucketsFromList(account);

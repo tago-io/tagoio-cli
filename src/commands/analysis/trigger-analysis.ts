@@ -20,7 +20,6 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
 
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -42,7 +41,6 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
 
   if (!script) {
     errorHandler("Analysis not found");
-    return;
   }
 
   infoMSG(`Analysis found: ${script.name} [${script.id}].`);

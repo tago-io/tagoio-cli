@@ -13,7 +13,6 @@ async function postDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

@@ -53,7 +53,6 @@ function getConfigFile() {
     }
   } catch (error) {
     errorHandler(error);
-    return;
   }
 
   try {
@@ -147,7 +146,6 @@ function setDefault(environment: string) {
 
   if (!configFile[environment]) {
     errorHandler(`Environment ${environment} is not in the tagoconfig.json`);
-    return;
   }
 
   configFile.default = environment;

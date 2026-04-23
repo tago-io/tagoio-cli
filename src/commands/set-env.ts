@@ -19,7 +19,6 @@ async function setEnvironment(arg?: string) {
 
   if (!configFile[arg]) {
     errorHandler(`Environment doesn't exist in the tagoconfig.json: ${arg}`);
-    return;
   }
 
   setEnvironmentVariables({ TAGOIO_DEFAULT: arg });

@@ -78,7 +78,6 @@ function handleBackupError(error: unknown, fallbackMessage: string): void {
   const message = getErrorMessage(error);
   if (message) {
     errorHandler(`${fallbackMessage}: ${message}`);
-    return;
   }
   errorHandler(fallbackMessage);
 }
@@ -100,7 +99,7 @@ async function getDownloadUrl(
   backupID: string,
   baseURL: string,
   token: string,
-  credentials: BackupDownloadRequest
+  credentials: BackupDownloadRequest,
 ): Promise<{ url: string; fileSizeMb: string; expireAt: string }> {
   const url = `${baseURL}/profile/${profileID}/backup/${backupID}/download`;
   const response = await fetch(url, {
@@ -129,7 +128,6 @@ async function promptCredentials(): Promise<BackupDownloadRequest | null> {
   const { password } = await prompts({ type: "password", name: "password", message: "Enter your resources password:" });
   if (!password) {
     errorHandler("Password is required to download the backup.");
-    return null;
   }
 
   const otpTypeChoices = [
@@ -142,7 +140,6 @@ async function promptCredentials(): Promise<BackupDownloadRequest | null> {
   const otpType = await pickFromList(otpTypeChoices, { message: "Select your 2FA method" });
   if (!otpType) {
     errorHandler("2FA method selection is required.");
-    return null;
   }
 
   let pinCode: string | undefined;
@@ -150,7 +147,6 @@ async function promptCredentials(): Promise<BackupDownloadRequest | null> {
     const { pin } = await prompts({ type: "text", name: "pin", message: "Enter your OTP code:" });
     if (!pin) {
       errorHandler("OTP code is required for the selected 2FA method.");
-      return null;
     }
     pinCode = pin;
   }
@@ -168,7 +164,6 @@ async function selectBackup(backups: BackupItem[], action: string): Promise<Back
 
   if (completedBackups.length === 0) {
     errorHandler(`No completed backups available. Only backups with status 'completed' can be ${action}.`);
-    return null;
   }
 
   const choices = completedBackups.map((b) => ({
@@ -179,17 +174,13 @@ async function selectBackup(backups: BackupItem[], action: string): Promise<Back
   const selectedId = await pickFromList(choices, { message: `Select a backup to ${action}` });
   if (!selectedId) {
     errorHandler("No backup selected");
-    return null;
   }
 
   return completedBackups.find((b) => b.id === selectedId) || null;
 }
 
 /** Prompts user to select specific items from a backup resource with searchable multi-select. */
-async function selectItemsFromBackup<T extends BackupSelectableItem>(
-  items: T[],
-  resourceName: string
-): Promise<T[] | null> {
+async function selectItemsFromBackup<T extends BackupSelectableItem>(items: T[], resourceName: string): Promise<T[] | null> {
   if (items.length === 0) {
     infoMSG(`No ${resourceName} found in backup.`);
     return [];

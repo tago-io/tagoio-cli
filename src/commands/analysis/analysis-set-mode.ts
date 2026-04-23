@@ -65,7 +65,6 @@ async function analysisSetMode(userInputName: string | void, options: { environm
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -75,7 +74,6 @@ async function analysisSetMode(userInputName: string | void, options: { environm
   const analysisList = await getAnalysisListFromTagoIO(account, analysisFilterName, options.filterMode);
   if (!analysisList || analysisList.length === 0) {
     errorHandler("No analysis found.");
-    return;
   }
   infoMSG(`Analyses found: count=${analysisList.length}`);
 

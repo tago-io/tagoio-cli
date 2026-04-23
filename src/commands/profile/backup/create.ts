@@ -51,7 +51,6 @@ async function createBackup() {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

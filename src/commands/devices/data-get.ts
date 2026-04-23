@@ -85,7 +85,6 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
@@ -112,7 +111,6 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     })
     .catch((error) => {
       errorHandler(error);
-      throw error;
     });
 
   if (options.stringify) {

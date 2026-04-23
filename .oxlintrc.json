@@ -6,8 +6,24 @@
     "es2024": true
   },
   "rules": {
-    "typescript/no-explicit-any": "off",
+    "typescript/no-explicit-any": "warn",
     "unicorn/prefer-node-protocol": "warn",
-    "eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "destructuredArrayIgnorePattern": "^_" }]
+    "eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "destructuredArrayIgnorePattern": "^_" }],
+
+    "no-empty": "error",
+    "no-fallthrough": "error",
+    "no-prototype-builtins": "error",
+    "no-redeclare": "error",
+    "getter-return": "error",
+    "curly": "error",
+
+    "typescript/no-namespace": "error",
+    "typescript/no-empty-object-type": "warn",
+    "typescript/no-unnecessary-type-constraint": "error",
+
+    "unicorn/no-array-for-each": "warn",
+    "unicorn/prefer-array-flat-map": "warn",
+
+    "import/no-default-export": "warn"
   }
 }

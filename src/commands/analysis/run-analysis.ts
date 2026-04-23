@@ -67,7 +67,6 @@ async function runAnalysis(
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const analysisList = config.analysisList.filter((x) => x.fileName);

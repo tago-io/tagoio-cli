@@ -16,7 +16,8 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "inlineSourceMap": true
+    "inlineSourceMap": true,
+    "allowUnreachableCode": false,
   },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts", "src/test-utils/**"],
