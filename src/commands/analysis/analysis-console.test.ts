@@ -6,7 +6,7 @@ import { makeAccount } from "../../test-utils/mock-sdk.js";
 import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 

@@ -81,7 +81,6 @@ async function duplicateAnalysis(analysisID: string | void, options: { environme
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken });
@@ -92,7 +91,6 @@ async function duplicateAnalysis(analysisID: string | void, options: { environme
 
   if (!analysisID) {
     errorHandler("Cancelled");
-    return;
   }
 
   const analysis = await account.analysis.info(analysisID).catch(() => null);

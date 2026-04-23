@@ -32,14 +32,12 @@ async function restoreBKP(account: Account, profileToken: string, device: Device
     const fileName = await pickFileFromTagoIO(account);
     if (!fileName) {
       errorHandler("No file selected");
-      return;
     }
     dataList = await getJSON(fileName, profileToken);
   } else {
     const filePath = await promptTextToEnter("File path", `./${id}.json`);
     if (!filePath) {
       errorHandler("No file selected");
-      return;
     }
     dataList = JSON.parse(readFileSync(filePath, "utf8"));
   }
@@ -107,7 +105,6 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

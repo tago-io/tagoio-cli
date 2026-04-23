@@ -64,9 +64,7 @@ vi.mock("../../prompt/confirm-analysis-list.js", () => ({
 }));
 
 describe("deployAnalysis", () => {
-  const analysisList = [
-    { name: "scriptA", fileName: "a.ts", id: "an-1" },
-  ];
+  const analysisList = [{ name: "scriptA", fileName: "a.ts", id: "an-1" }];
 
   /** Default CLI options shape — individual tests override fields as needed. */
   const defaultOptions = () => ({
@@ -107,9 +105,7 @@ describe("deployAnalysis", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("a.ts", defaultOptions()),
-    ).rejects.toThrow(/No profile token found/);
+    await expect(deployAnalysis("a.ts", defaultOptions())).rejects.toThrow(/No profile token found/);
   });
 
   test("deploys a single matched script and emits a success message", async () => {
@@ -120,15 +116,10 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalled();
-    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith(
-      "an-1",
-      expect.objectContaining({ content: "ZmFrZS1zY3JpcHQ=" }),
-    );
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-1", expect.objectContaining({ content: "ZmFrZS1zY3JpcHQ=" }));
     expect(successMSGMock).toHaveBeenCalledWith(expect.stringContaining("Script uploaded."));
   });
 
@@ -137,26 +128,22 @@ describe("deployAnalysis", () => {
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { ...defaultOptions(), deno: true, node: true }),
-    ).rejects.toThrow(/Cannot specify both/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true, node: true })).rejects.toThrow(/Cannot specify both/);
   });
 
   test("errors when no analysis name matches the search", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: [] }));
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("nope", defaultOptions()),
-    ).rejects.toThrow(/No analysis found/);
+    await expect(deployAnalysis("nope", defaultOptions())).rejects.toThrow(/No analysis found/);
   });
 
   test("rejects the legacy 'all' positional with a pointer to --all", async () => {
     // No env config needed — the check runs before getEnvironmentConfig.
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("all", defaultOptions()),
-    ).rejects.toThrow('Did you mean "tagoio deploy --all"? The "all" positional argument is no longer supported.');
+    await expect(deployAnalysis("all", defaultOptions())).rejects.toThrow(
+      'Did you mean "tagoio deploy --all"? The "all" positional argument is no longer supported.',
+    );
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
 
@@ -172,9 +159,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("", { ...defaultOptions(), all: true }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("", { ...defaultOptions(), all: true })).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(2);
   });
@@ -188,9 +173,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { ...defaultOptions(), token: "ci-token" }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), token: "ci-token" })).rejects.toThrow(/__exit:0/);
 
     // Upload was reached → the token override made it past the auth gate.
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalled();
@@ -208,9 +191,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("", { ...defaultOptions(), all: true, token: "ci-token" }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("", { ...defaultOptions(), all: true, token: "ci-token" })).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(2);
   });
@@ -224,14 +205,9 @@ describe("deployAnalysis", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { ...defaultOptions(), deno: true }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true })).rejects.toThrow(/__exit:0/);
 
-    expect(execSyncMock).toHaveBeenCalledWith(
-      expect.stringContaining("deno bundle"),
-      expect.any(Object),
-    );
+    expect(execSyncMock).toHaveBeenCalledWith(expect.stringContaining("deno bundle"), expect.any(Object));
     logSpy.mockRestore();
   });
 
@@ -244,9 +220,7 @@ describe("deployAnalysis", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { ...defaultOptions(), node: true }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), node: true })).rejects.toThrow(/__exit:0/);
 
     expect(logSpy).toHaveBeenCalledWith("deploying with node");
     logSpy.mockRestore();
@@ -262,9 +236,7 @@ describe("deployAnalysis", () => {
     unlinkMock.mockResolvedValue(undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(unlinkMock).toHaveBeenCalled();
   });
@@ -278,14 +250,9 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
-    expect(execSyncMock).toHaveBeenCalledWith(
-      expect.stringContaining("nested/a.ts"),
-      expect.any(Object),
-    );
+    expect(execSyncMock).toHaveBeenCalledWith(expect.stringContaining("nested/a.ts"), expect.any(Object));
   });
 
   test("returns silently when reading the built file fails", async () => {
@@ -296,9 +263,7 @@ describe("deployAnalysis", () => {
 
     const { deployAnalysis } = await import("./deploy.js");
     // script read fails → buildScript returns early → loop finishes → process.exit()
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
@@ -327,9 +292,7 @@ describe("deployAnalysis", () => {
     errorHandlerMock.mockImplementationOnce(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Script upload failed"));
   });
@@ -346,9 +309,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     // First execSync call should reference the default paths
     expect(execSyncMock).toHaveBeenCalled();
@@ -357,12 +318,11 @@ describe("deployAnalysis", () => {
     expect(cmd).toContain("./build/a.tago.js");
   });
 
-  test("returns silently when getEnvironmentConfig yields undefined", async () => {
+  test("returns error when getEnvironmentConfig yields undefined", async () => {
     getEnvironmentConfigMock.mockReturnValue(undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
-    const result = await deployAnalysis("scriptA", defaultOptions());
-    expect(result).toBeUndefined();
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/Environment not found/);
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
 
@@ -375,9 +335,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(chooseAnalysisListFromConfigMock).toHaveBeenCalled();
   });
@@ -391,9 +349,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", { ...defaultOptions(), silent: false }),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), silent: false })).rejects.toThrow(/__exit:0/);
 
     expect(confirmAnalysisFromConfigMock).toHaveBeenCalled();
   });
@@ -403,9 +359,7 @@ describe("deployAnalysis", () => {
     chooseAnalysisListFromConfigMock.mockResolvedValue([]);
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("", defaultOptions()),
-    ).rejects.toThrow(/Cancelled/);
+    await expect(deployAnalysis("", defaultOptions())).rejects.toThrow(/Cancelled/);
 
     expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
@@ -418,9 +372,7 @@ describe("deployAnalysis", () => {
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(
-      deployAnalysis("scriptA", defaultOptions()),
-    ).rejects.toThrow(/__exit:0/);
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/__exit:0/);
 
     expect(accountInstance.analysis.edit).toHaveBeenCalledWith("an-1", { run_on: "tago" });
   });

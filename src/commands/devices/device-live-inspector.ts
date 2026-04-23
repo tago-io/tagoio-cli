@@ -61,8 +61,8 @@ function setupSSE(sse: ReturnType<typeof apiSSE>, deviceIdOrToken: string, devic
   };
 
   sse.onerror = (error) => {
-    errorHandler("Connection error");
     console.error(error);
+    errorHandler("Connection error");
   };
 
   sse.onopen = () => {
@@ -87,7 +87,6 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

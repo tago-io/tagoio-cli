@@ -6,7 +6,7 @@ import { makeAccount } from "../../test-utils/mock-sdk.js";
 import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 const getDeviceMock = vi.fn();
@@ -77,9 +77,7 @@ describe("bkpDeviceData", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { bkpDeviceData } = await import("./device-bkp.js");
-    await expect(
-      bkpDeviceData("dev-id", { environment: "prod", restore: false, local: false }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(bkpDeviceData("dev-id", { environment: "prod", restore: false, local: false })).rejects.toThrow(/Environment not found/);
   });
 
   test("stops silently when the device info cannot be resolved", async () => {
@@ -147,9 +145,7 @@ describe("bkpDeviceData", () => {
     pickFileFromTagoIOMock.mockResolvedValue("");
 
     const { bkpDeviceData } = await import("./device-bkp.js");
-    await expect(
-      bkpDeviceData("d1", { environment: "prod", restore: true, local: false }),
-    ).rejects.toThrow(/No file selected/);
+    await expect(bkpDeviceData("d1", { environment: "prod", restore: true, local: false })).rejects.toThrow(/No file selected/);
   });
 
   test("store path writes data locally when options.local is true", async () => {

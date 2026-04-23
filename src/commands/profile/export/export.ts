@@ -97,7 +97,6 @@ async function confirmEnvironments(userConfig: IExport) {
 
   const errorWhenReading = (error: any, type: string) => {
     errorHandler(`${type} profile: ${error}`);
-    throw error;
   };
 
   const {
@@ -182,7 +181,6 @@ async function startExport(options: IExportOptions) {
     const run = await import_account.run.info();
     if (!run || !run.name) {
       errorHandler("Exported account doesn't have RUN enabled. Not possible to import RUN Buttons.");
-      return;
     }
   }
 

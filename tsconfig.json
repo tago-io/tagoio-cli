@@ -16,10 +16,11 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "inlineSourceMap": true
+    "inlineSourceMap": true,
+    "allowUnreachableCode": false,
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "src/test-utils/**"],
+  "exclude": ["src/test-utils/**"],
   "rules": {
     "no-unused-declaration": true
   },

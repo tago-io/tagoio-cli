@@ -7,7 +7,7 @@ import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 type SSECallback = (event?: unknown) => void;
 const eventSourceInstances: Array<{ url: string; onmessage?: SSECallback; onerror?: SSECallback; onopen?: SSECallback }> = [];
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 
@@ -53,9 +53,7 @@ describe("inspectorConnection", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { inspectorConnection } = await import("./device-live-inspector.js");
-    await expect(
-      inspectorConnection("dev-id", { environment: "prod", postOnly: false, getOnly: false }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(inspectorConnection("dev-id", { environment: "prod", postOnly: false, getOnly: false })).rejects.toThrow(/Environment not found/);
   });
 
   test("opens an SSE connection for the resolved device", async () => {

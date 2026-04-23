@@ -24,7 +24,6 @@ async function pickFileFromTagoIO(account: Account, message: string = "Pick the 
     // If there are no files or folders, cancel the operation
     if (!fileList) {
       errorHandler("Cancelled");
-      return;
     }
 
     // Create a list of choices for the user to select from
@@ -53,7 +52,6 @@ async function pickFileFromTagoIO(account: Account, message: string = "Pick the 
     // If the user cancels, stop the operation
     if (!file) {
       errorHandler("Cancelled");
-      return;
     }
 
     // If the user selected a folder, update the current path and repeat the loop

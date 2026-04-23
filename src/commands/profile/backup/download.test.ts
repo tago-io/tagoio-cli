@@ -4,7 +4,7 @@ import { installFetchMock, makeFetchStreamResponse } from "../../../test-utils/m
 import { makeEnvironmentConfig } from "../../../test-utils/mock-config.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 

@@ -47,7 +47,6 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   let { networkID, connectorID } = options;
@@ -75,12 +74,10 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
 
   if (!networkID && !connectorID) {
     errorHandler("Network or Connector ID is required");
-    return;
   }
 
   if (networkID === deviceInfo.network && connectorID === deviceInfo.connector) {
     errorHandler("Network and Connector are already set to this device");
-    return;
   }
 
   const updateInfo = {

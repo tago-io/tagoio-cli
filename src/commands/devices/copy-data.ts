@@ -34,7 +34,6 @@ async function copyDeviceData(options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   if (!options.from || !options.to) {
@@ -59,7 +58,6 @@ async function copyDeviceData(options: IOptions) {
 
   if (!deviceTo || !deviceFrom) {
     errorHandler("Device not found");
-    return;
   }
 
   if (!deviceFrom) {
@@ -74,7 +72,6 @@ async function copyDeviceData(options: IOptions) {
   const deviceFromInfo = await deviceFrom.info().catch(errorHandler);
   if (!deviceToInfo || !deviceFromInfo) {
     errorHandler("Device not found");
-    return;
   }
 
   infoMSG(`> Copying data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);

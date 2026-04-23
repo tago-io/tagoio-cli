@@ -90,7 +90,6 @@ async function updateEntitySetting({ exportTag, entity, entityItemList, nameFiel
 
   if (!choices) {
     errorHandler("Stopped");
-    return;
   }
 
   if (choices.length === 0) {
@@ -119,7 +118,6 @@ async function setupExport(options: { setup: string }) {
   const config = getEnvironmentConfig(options.setup);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

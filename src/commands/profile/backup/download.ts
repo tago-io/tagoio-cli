@@ -8,15 +8,7 @@ import ora from "ora";
 
 import { getEnvironmentConfig } from "../../../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
-import {
-  fetchBackups,
-  formatDate,
-  formatFileSize,
-  getDownloadUrl,
-  handleBackupError,
-  promptCredentials,
-  selectBackup,
-} from "./lib.js";
+import { fetchBackups, formatDate, formatFileSize, getDownloadUrl, handleBackupError, promptCredentials, selectBackup } from "./lib.js";
 
 const DOWNLOAD_FOLDER = "profile-backup-download";
 
@@ -44,7 +36,6 @@ async function downloadBackup() {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });

@@ -44,7 +44,6 @@ function getPaths(config: EnvConfig) {
 async function getScript(buildedFile: string, scriptName: string) {
   return await fs.readFile(buildedFile, { encoding: "base64" }).catch((error) => {
     errorHandler(`Script ${scriptName} file location error: ${error}`);
-    return null;
   });
 }
 
@@ -133,7 +132,7 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
 
   const config = getEnvironmentConfig(options.environment);
   if (!config) {
-    return;
+    errorHandler("Environment not found");
   }
 
   if (options.token) {
@@ -166,7 +165,6 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
 
   if (scriptList.length === 0) {
     errorHandler(`Cancelled`);
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

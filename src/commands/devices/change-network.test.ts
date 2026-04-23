@@ -5,7 +5,7 @@ import { makeAccount } from "../../test-utils/mock-sdk.js";
 import { resetInjectedPrompts } from "../../test-utils/reset-prompts.js";
 
 const getEnvironmentConfigMock = vi.fn();
-const errorHandlerMock = vi.fn((str: unknown) => {
+const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
 const pickDeviceIDFromTagoIOMock = vi.fn();
@@ -42,12 +42,7 @@ vi.mock("../../prompt/text-prompt.js", () => ({
 const stripAnsi = (s: string) => s.replace(/\x1B\[[0-9;]*m/g, "");
 
 describe("_formatUpdateMessage", () => {
-  let _formatUpdateMessage: (
-    deviceID: string,
-    serialNumbers: (string | undefined)[],
-    network: string,
-    connector: string,
-  ) => string;
+  let _formatUpdateMessage: (deviceID: string, serialNumbers: (string | undefined)[], network: string, connector: string) => string;
 
   beforeEach(async () => {
     ({ _formatUpdateMessage } = await import("./change-network.js"));
@@ -94,9 +89,7 @@ describe("changeNetworkOrConnector", () => {
   test("errors out when the environment is missing", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
     const { changeNetworkOrConnector } = await import("./change-network.js");
-    await expect(
-      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "n", connectorID: "c" }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "n", connectorID: "c" })).rejects.toThrow(/Environment not found/);
   });
 
   test("returns silently when no device is picked", async () => {
@@ -120,9 +113,7 @@ describe("changeNetworkOrConnector", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "n", connector: "c" });
     const { changeNetworkOrConnector } = await import("./change-network.js");
-    await expect(
-      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "n", connectorID: "c" }),
-    ).rejects.toThrow(/already set/);
+    await expect(changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "n", connectorID: "c" })).rejects.toThrow(/already set/);
   });
 
   test("prompts for network and connector when not provided", async () => {
@@ -135,10 +126,7 @@ describe("changeNetworkOrConnector", () => {
     const { changeNetworkOrConnector } = await import("./change-network.js");
     await changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "", connectorID: "" });
     expect(promptTextToEnterMock).toHaveBeenCalledTimes(2);
-    expect(accountInstance.devices.edit).toHaveBeenCalledWith(
-      "dev-id",
-      expect.objectContaining({ network: "new-net", connector: "new-conn", active: true }),
-    );
+    expect(accountInstance.devices.edit).toHaveBeenCalledWith("dev-id", expect.objectContaining({ network: "new-net", connector: "new-conn", active: true }));
   });
 
   test("errors when both network and connector prompts return empty", async () => {
@@ -147,9 +135,9 @@ describe("changeNetworkOrConnector", () => {
     promptTextToEnterMock.mockResolvedValueOnce("").mockResolvedValueOnce("");
 
     const { changeNetworkOrConnector } = await import("./change-network.js");
-    await expect(
-      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "", connectorID: "" }),
-    ).rejects.toThrow(/Network or Connector ID is required/);
+    await expect(changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "", connectorID: "" })).rejects.toThrow(
+      /Network or Connector ID is required/,
+    );
   });
 
   test("uses device's current network/connector when only one of them is overridden", async () => {
@@ -162,10 +150,7 @@ describe("changeNetworkOrConnector", () => {
     // Only network provided → connector falls back to deviceInfo.connector
     await changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-n", connectorID: "" });
 
-    expect(accountInstance.devices.edit).toHaveBeenCalledWith(
-      "dev-id",
-      expect.objectContaining({ network: "new-n", connector: "old-c" }),
-    );
+    expect(accountInstance.devices.edit).toHaveBeenCalledWith("dev-id", expect.objectContaining({ network: "new-n", connector: "old-c" }));
   });
 
   test("recreates tokens preserving serial numbers", async () => {
