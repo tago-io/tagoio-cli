@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
+import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
 import { getCurrentFolder } from "../../lib/get-current-folder.js";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
@@ -39,10 +39,11 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, r
       }
 
       default: {
-        // Node 24+ strips and transforms TypeScript natively — no external
-        // loader needed. --experimental-transform-types also handles enums
-        // and namespaces.
-        cmd = `node --experimental-transform-types --watch `;
+        // tsx wraps node with a CJS/ESM-aware TypeScript loader. Needed
+        // because Node's native --experimental-transform-types forces ESM
+        // resolution, which breaks legacy analyses that import CJS
+        // subpaths without a `.js` extension (e.g. "@tago-io/sdk/lib/types").
+        cmd = `node ${resolveCLIPath("/node_modules/tsx/dist/cli.mjs")} watch `;
         if (options.debug) {
           cmd += "--inspect ";
         }
