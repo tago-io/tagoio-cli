@@ -128,6 +128,10 @@ describe("restoreDevices", () => {
     const createMock = vi.fn().mockResolvedValue({ device_id: "dev-new-generated" });
     const editMock = vi.fn().mockResolvedValue(undefined);
     const paramSetMock = vi.fn().mockResolvedValue(undefined);
+    // Edit path fetches the destination device's current params to reconcile
+    // by key. Fixture returns [] → every backup param is a fresh insert, no
+    // `id` in the payload.
+    const paramListMock = vi.fn().mockResolvedValue([]);
     const tokenCreateMock = vi.fn();
     // Edit path calls tokenList to look up existing serials; the fixture device
     // has no tokens with serie_number anyway, so returning [] keeps the path
@@ -139,6 +143,7 @@ describe("restoreDevices", () => {
         create: createMock,
         edit: editMock,
         paramSet: paramSetMock,
+        paramList: paramListMock,
         tokenCreate: tokenCreateMock,
         tokenList: tokenListMock,
       },
@@ -152,9 +157,16 @@ describe("restoreDevices", () => {
     // paramSet runs on both the newly-created device (using the generated id) and the edited one
     expect(paramSetMock).toHaveBeenCalledTimes(2);
 
+    // paramList is only consulted on the edit path — the create path has no
+    // existing params to reconcile.
+    expect(paramListMock).toHaveBeenCalledTimes(1);
+    expect(paramListMock).toHaveBeenCalledWith("dev-exists");
+
     // Each param payload is trimmed to the fields the API accepts — metadata
-    // like `id`, `ref_id`, and the ISO-string timestamps would otherwise be
-    // rejected with "Expected date, received string".
+    // like `ref_id` and the ISO-string timestamps would otherwise be
+    // rejected with "Expected date, received string". With an empty
+    // destination param list, no existing `id` can be reused, so both paths
+    // emit key/value/sent only.
     const expectedParamShape = [
       { key: "k1", value: "v1", sent: false },
       { key: "k2", value: "v2", sent: false },
@@ -204,6 +216,103 @@ describe("restoreDevices", () => {
     await promise;
 
     expect(paramSetMock).not.toHaveBeenCalled();
+  });
+
+  test("edit path skips backup params whose key already exists on the device", async () => {
+    // Backup has 3 params; the destination device already has 2 of them
+    // (by key). Expectation: only the brand-new key is sent to paramSet.
+    // Existing keys are left untouched — destination values win, matching
+    // the token restore behavior (no overwrite). Without this filter every
+    // re-run would duplicate the matching params.
+    readBackupFileMock.mockReturnValue([
+      {
+        id: "dev-exists",
+        name: "Dev",
+        network: "n",
+        connector: "c",
+        params: [
+          { key: "k_keep", value: "new_keep", sent: false },
+          { key: "k_update", value: "new_update", sent: true },
+          { key: "k_fresh", value: "fresh_val", sent: false },
+        ],
+      },
+    ]);
+
+    const listMock = vi.fn().mockResolvedValue([{ id: "dev-exists" }]);
+    const editMock = vi.fn().mockResolvedValue(undefined);
+    const paramSetMock = vi.fn().mockResolvedValue(undefined);
+    // Destination already has params for k_keep and k_update. k_fresh is
+    // not yet present and is the only one that will be inserted.
+    const paramListMock = vi.fn().mockResolvedValue([
+      { id: "dst-1", key: "k_keep", value: "old_keep", sent: false },
+      { id: "dst-2", key: "k_update", value: "old_update", sent: false },
+      { id: "dst-3", key: "unrelated", value: "keep_me", sent: false },
+    ]);
+
+    const resources = {
+      devices: {
+        list: listMock,
+        create: vi.fn(),
+        edit: editMock,
+        paramSet: paramSetMock,
+        paramList: paramListMock,
+        tokenList: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const { restoreDevices } = await import("./devices.js");
+    const promise = restoreDevices(resources as never, "/tmp/extract");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(paramListMock).toHaveBeenCalledWith("dev-exists");
+    expect(paramSetMock).toHaveBeenCalledTimes(1);
+    expect(paramSetMock).toHaveBeenCalledWith("dev-exists", [{ key: "k_fresh", value: "fresh_val", sent: false }]);
+    expect(result).toEqual({ created: 0, updated: 1, failed: 0 });
+  });
+
+  test("edit path skips paramSet entirely when every backup key is already on the device", async () => {
+    // All backup keys are already present on the destination → nothing to
+    // insert. paramSet should not be called at all, and the restore must
+    // still complete successfully.
+    readBackupFileMock.mockReturnValue([
+      {
+        id: "dev-exists",
+        name: "Dev",
+        network: "n",
+        connector: "c",
+        params: [
+          { key: "k1", value: "new1", sent: false },
+          { key: "k2", value: "new2", sent: false },
+        ],
+      },
+    ]);
+
+    const paramSetMock = vi.fn();
+    const paramListMock = vi.fn().mockResolvedValue([
+      { id: "dst-1", key: "k1", value: "old1", sent: false },
+      { id: "dst-2", key: "k2", value: "old2", sent: false },
+    ]);
+
+    const resources = {
+      devices: {
+        list: vi.fn().mockResolvedValue([{ id: "dev-exists" }]),
+        create: vi.fn(),
+        edit: vi.fn().mockResolvedValue(undefined),
+        paramSet: paramSetMock,
+        paramList: paramListMock,
+        tokenList: vi.fn().mockResolvedValue([]),
+      },
+    };
+
+    const { restoreDevices } = await import("./devices.js");
+    const promise = restoreDevices(resources as never, "/tmp/extract");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(paramListMock).toHaveBeenCalledWith("dev-exists");
+    expect(paramSetMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ created: 0, updated: 1, failed: 0 });
   });
 
   test("edit path skips tokens whose serie_number already exists on the device", async () => {

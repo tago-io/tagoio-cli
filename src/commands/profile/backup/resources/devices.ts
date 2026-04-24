@@ -42,13 +42,28 @@ function stripDeviceFields(device: DeviceInfo) {
 
 /**
  * Restores configuration parameters for a device using the dedicated `paramSet` endpoint.
+ *
+ * On the edit path (`deviceExists`), the device's current params are fetched
+ * and any backup param whose `key` is already present on the destination is
+ * skipped — `paramSet` inserts a new row, so without this filter every re-run
+ * would duplicate the matching params. Existing values are left untouched.
  */
-async function restoreDeviceParams(resources: Resources, deviceId: string, device: DeviceInfo & { params?: ConfigurationParams[] }): Promise<void> {
+async function restoreDeviceParams(resources: Resources, deviceId: string, device: DeviceInfo & { params?: ConfigurationParams[] }, deviceExists: boolean) {
   const params = device.params;
   if (!params || params.length === 0) {
     return;
   }
-  const payload = params.map(({ key, value, sent }) => ({ key, value, sent }));
+
+  let existingKeys = new Set<string>();
+  if (deviceExists) {
+    const currentParams = await resources.devices.paramList(deviceId);
+    existingKeys = new Set(currentParams.map((p) => p.key));
+  }
+
+  const payload = params.filter((p) => !existingKeys.has(p.key)).map(({ key, value, sent }) => ({ key, value, sent }));
+  if (payload.length === 0) {
+    return;
+  }
   await resources.devices.paramSet(deviceId, payload);
 }
 
@@ -107,7 +122,7 @@ async function processCreateTask(resources: Resources, task: RestoreTask, result
 
   try {
     const { device_id } = await resources.devices.create(stripDeviceFields(device));
-    await restoreDeviceParams(resources, device_id, device);
+    await restoreDeviceParams(resources, device_id, device, false);
     await restoreDeviceTokens(resources, device_id, device, false);
     result.created++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
@@ -125,7 +140,7 @@ async function processEditTask(resources: Resources, task: RestoreTask, result: 
   try {
     const { network: _network, connector: _connector, ...deviceData } = stripDeviceFields(device);
     await resources.devices.edit(device.id, deviceData);
-    await restoreDeviceParams(resources, device.id, device);
+    await restoreDeviceParams(resources, device.id, device, true);
     await restoreDeviceTokens(resources, device.id, device, true);
     result.updated++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
