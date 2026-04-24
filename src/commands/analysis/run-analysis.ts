@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
+import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
 import { getCurrentFolder } from "../../lib/get-current-folder.js";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
@@ -39,7 +39,10 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, r
       }
 
       default: {
-        cmd = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+        // Node 24+ strips and transforms TypeScript natively — no external
+        // loader needed. --experimental-transform-types also handles enums
+        // and namespaces.
+        cmd = `node --experimental-transform-types --watch `;
         if (options.debug) {
           cmd += "--inspect ";
         }

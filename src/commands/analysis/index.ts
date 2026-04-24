@@ -37,8 +37,8 @@ Example:
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
     $ tagoio deploy --all                                       # deploy every analysis from tagoconfig.json
-    $ tagoio deploy --all -e stage                              # deploy all to the stage environment
-    $ tagoio deploy --all -e prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed
+    $ tagoio deploy --all --env stage                              # deploy all to the stage environment
+    $ tagoio deploy --all --env prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed
     $ tagoio deploy --node
     $ tagoio deploy --deno`,
     );

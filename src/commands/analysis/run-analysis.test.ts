@@ -65,7 +65,7 @@ describe("buildCMD", () => {
     const result = _buildCMD(options, "--node");
     expect(result).toContain("node");
     expect(result).toContain("--watch");
-    expect(result).toContain("@swc-node/register/index");
+    expect(result).toContain("--experimental-transform-types");
     expect(result).not.toContain("--inspect");
     expect(result).not.toContain("--clear");
     expect(result).not.toContain("tsnd");
@@ -95,7 +95,7 @@ describe("buildCMD", () => {
     expect(result).toContain("node");
     expect(result).toContain("--watch");
     expect(result).toContain("--inspect");
-    expect(result).toContain("@swc-node/register/index");
+    expect(result).toContain("--experimental-transform-types");
     expect(result).not.toContain("--clear");
     expect(result).not.toContain("tsnd");
   });
@@ -105,7 +105,7 @@ describe("buildCMD", () => {
     const result = _buildCMD(options, "--node");
     expect(result).toContain("node");
     expect(result).toContain("--watch");
-    expect(result).toContain("@swc-node/register/index");
+    expect(result).toContain("--experimental-transform-types");
     expect(result).toContain("--clear");
     expect(result).not.toContain("--inspect");
     expect(result).not.toContain("tsnd");
