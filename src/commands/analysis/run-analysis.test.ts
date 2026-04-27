@@ -64,8 +64,8 @@ describe("buildCMD", () => {
     const options = { tsnd: false, debug: false, clear: false };
     const result = _buildCMD(options, "--node");
     expect(result).toContain("node");
-    expect(result).toContain("--watch");
-    expect(result).toContain("@swc-node/register/index");
+    expect(result).toContain("tsx/dist/cli.mjs");
+    expect(result).toContain("watch ");
     expect(result).not.toContain("--inspect");
     expect(result).not.toContain("--clear");
     expect(result).not.toContain("tsnd");
@@ -93,9 +93,9 @@ describe("buildCMD", () => {
     const options = { tsnd: false, debug: true, clear: false };
     const result = _buildCMD(options, "--node");
     expect(result).toContain("node");
-    expect(result).toContain("--watch");
+    expect(result).toContain("tsx/dist/cli.mjs");
+    expect(result).toContain("watch ");
     expect(result).toContain("--inspect");
-    expect(result).toContain("@swc-node/register/index");
     expect(result).not.toContain("--clear");
     expect(result).not.toContain("tsnd");
   });
@@ -104,8 +104,8 @@ describe("buildCMD", () => {
     const options = { tsnd: false, debug: false, clear: true };
     const result = _buildCMD(options, "--node");
     expect(result).toContain("node");
-    expect(result).toContain("--watch");
-    expect(result).toContain("@swc-node/register/index");
+    expect(result).toContain("tsx/dist/cli.mjs");
+    expect(result).toContain("watch ");
     expect(result).toContain("--clear");
     expect(result).not.toContain("--inspect");
     expect(result).not.toContain("tsnd");

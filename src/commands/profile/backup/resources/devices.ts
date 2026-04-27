@@ -1,4 +1,4 @@
-import { DeviceInfo, Resources } from "@tago-io/sdk";
+import { ConfigurationParams, DeviceInfo, Resources, TokenData } from "@tago-io/sdk";
 import { queue } from "async";
 import ora, { type Ora } from "ora";
 
@@ -21,18 +21,109 @@ async function fetchExistingDeviceIds(resources: Resources): Promise<Set<string>
   return new Set(devices.map((d) => d.id));
 }
 
+/**
+ * Strips fields that the TagoIO API rejects or manages on its own (IDs,timestamps, tokens,
+ * and config parameters — the last two are restored via separate endpoints).
+ * Returns the subset safe to send to `resources.devices.create` / `resources.devices.edit`.
+ */
+function stripDeviceFields(device: DeviceInfo) {
+  const {
+    id: _id,
+    created_at: _created_at,
+    updated_at: _updated_at,
+    last_input: _last_input,
+    profile: _profile,
+    params: _params,
+    tokens: _tokens,
+    ...deviceData
+  } = device as DeviceInfo & { params?: ConfigurationParams[]; tokens?: TokenData[] };
+  return deviceData;
+}
+
+/**
+ * Restores configuration parameters for a device using the dedicated `paramSet` endpoint.
+ *
+ * On the edit path (`deviceExists`), the device's current params are fetched
+ * and any backup param whose `key` is already present on the destination is
+ * skipped — `paramSet` inserts a new row, so without this filter every re-run
+ * would duplicate the matching params. Existing values are left untouched.
+ */
+async function restoreDeviceParams(resources: Resources, deviceId: string, device: DeviceInfo & { params?: ConfigurationParams[] }, deviceExists: boolean) {
+  const params = device.params;
+  if (!params || params.length === 0) {
+    return;
+  }
+
+  let existingKeys = new Set<string>();
+  if (deviceExists) {
+    const currentParams = await resources.devices.paramList(deviceId);
+    existingKeys = new Set(currentParams.map((p) => p.key));
+  }
+
+  const payload = params.filter((p) => !existingKeys.has(p.key)).map(({ key, value, sent }) => ({ key, value, sent }));
+  if (payload.length === 0) {
+    return;
+  }
+  await resources.devices.paramSet(deviceId, payload);
+}
+
+/**
+ * Recreates device tokens from the backup using `tokenCreate`. Only tokens
+ * that carry a `serie_number` are recreated — the serial number is what
+ * identifies the physical device and is the reason to preserve the token at
+ * all. Tokens without a serie_number are ephemeral credentials and are
+ * intentionally skipped.
+ *
+ * When `deviceExists` is true (edit path), the current tokens on the
+ * destination device are fetched first. Any backup token whose
+ * `serie_number` is already present on the device is skipped.
+ *
+ * The token's actual value cannot be restored: the backup stores it masked
+ * (e.g. `********-****-****-****-************a888`), so the new token has
+ * a different value. Integrations relying on the old token value must be
+ * updated.
+ */
+async function restoreDeviceTokens(resources: Resources, deviceId: string, device: DeviceInfo & { tokens?: TokenData[] }, deviceExists: boolean) {
+  const tokens = device.tokens;
+  if (!tokens || tokens.length === 0) {
+    return;
+  }
+
+  let existingSerials = new Set<string>();
+  if (deviceExists) {
+    const currentTokens = await resources.devices.tokenList(deviceId, { amount: 10000, fields: ["serie_number"] });
+    existingSerials = new Set(currentTokens.map((t) => t.serie_number).filter((s): s is string => Boolean(s)));
+  }
+
+  for (const token of tokens) {
+    if (!token.serie_number) {
+      continue;
+    }
+    if (existingSerials.has(token.serie_number)) {
+      continue;
+    }
+
+    try {
+      await resources.devices.tokenCreate(deviceId, {
+        name: token.name,
+        permission: token.permission,
+        serie_number: token.serie_number,
+        expire_time: token.expire_time || undefined,
+      });
+    } catch (error) {
+      console.error(`\nFailed to recreate token "${token.name}" for device "${device.name}": ${getErrorMessage(error)}`);
+    }
+  }
+}
+
 /** Processes a single device creation task. */
-async function processCreateTask(
-  resources: Resources,
-  task: RestoreTask,
-  result: RestoreResult,
-  spinner: Ora
-): Promise<void> {
+async function processCreateTask(resources: Resources, task: RestoreTask, result: RestoreResult, spinner: Ora): Promise<void> {
   const { device } = task;
 
   try {
-    const { ...deviceData } = device;
-    await resources.devices.create(deviceData);
+    const { device_id } = await resources.devices.create(stripDeviceFields(device));
+    await restoreDeviceParams(resources, device_id, device, false);
+    await restoreDeviceTokens(resources, device_id, device, false);
     result.created++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
     await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
@@ -43,17 +134,14 @@ async function processCreateTask(
 }
 
 /** Processes a single device edit task. */
-async function processEditTask(
-  resources: Resources,
-  task: RestoreTask,
-  result: RestoreResult,
-  spinner: Ora
-): Promise<void> {
+async function processEditTask(resources: Resources, task: RestoreTask, result: RestoreResult, spinner: Ora): Promise<void> {
   const { device } = task;
 
   try {
-    const { id, network: _network, connector: _connector, updated_at: _updated_at, ...deviceData } = device;
-    await resources.devices.edit(id, deviceData);
+    const { network: _network, connector: _connector, ...deviceData } = stripDeviceFields(device);
+    await resources.devices.edit(device.id, deviceData);
+    await restoreDeviceParams(resources, device.id, device, true);
+    await restoreDeviceTokens(resources, device.id, device, true);
     result.updated++;
     spinner.text = `Restoring devices... (${result.created} created, ${result.updated} updated)`;
     await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
