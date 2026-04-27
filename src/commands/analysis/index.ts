@@ -26,16 +26,19 @@ function analysisCommands(program: Command) {
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
+    .option("--all", "deploy every analysis from tagoconfig.json without prompting", false)
+    .option("-t, --token <profile-token>", "profile token for this run (bypasses lock file, for CI/CD)")
     .action(deployAnalysis)
     .addHelpText(
       "after",
       `
 Example:
-    $ tagoio deploy all
-    $ tagoio deploy all -e stage
     $ tagoio deploy dashboard-handler
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy --all                                       # deploy every analysis from tagoconfig.json
+    $ tagoio deploy --all --env stage                              # deploy all to the stage environment
+    $ tagoio deploy --all --env prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed
     $ tagoio deploy --node
     $ tagoio deploy --deno`,
     );

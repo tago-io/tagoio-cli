@@ -11,6 +11,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "rootDir": "./src",
+    "tsBuildInfoFile": "./build/.tsbuildinfo",
     "removeComments": true,
     "strictNullChecks": true,
     "esModuleInterop": true,
@@ -19,7 +20,7 @@
     "allowUnreachableCode": false,
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.ts", "src/test-utils/**"],
+  "exclude": ["src/test-utils/**"],
   "rules": {
     "no-unused-declaration": true
   },

@@ -39,7 +39,11 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, r
       }
 
       default: {
-        cmd = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+        // tsx wraps node with a CJS/ESM-aware TypeScript loader. Needed
+        // because Node's native --experimental-transform-types forces ESM
+        // resolution, which breaks legacy analyses that import CJS
+        // subpaths without a `.js` extension (e.g. "@tago-io/sdk/lib/types").
+        cmd = `node ${resolveCLIPath("/node_modules/tsx/dist/cli.mjs")} watch `;
         if (options.debug) {
           cmd += "--inspect ";
         }
