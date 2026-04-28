@@ -88,8 +88,9 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
   }
 
   // store dataList on local
-  writeFileSync(`./${id}.json`, JSON.stringify(dataList, null, 4));
-  successMSG(`> Backup stored on ${name}.json`);
+  const filePath = `./${id}.json`;
+  writeFileSync(filePath, `${JSON.stringify(dataList, null, 4)}\n`);
+  successMSG(`> Backup stored on ${filePath} (${name})`);
 }
 
 /**
