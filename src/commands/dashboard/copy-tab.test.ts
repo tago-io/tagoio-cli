@@ -156,15 +156,15 @@ describe("copyTabWidgets", () => {
     ).rejects.toThrow(/Tab not selected/);
   });
 
-  test("handles dashboards with no arrangement without crashing", async () => {
+  test("errors when zero widgets are copied (prevents silent-success false [OK])", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.dashboards.info.mockResolvedValue({ tabs: dashInfo.tabs, arrangement: undefined });
     confirmPromptMock.mockResolvedValue(true);
     accountInstance.dashboards.edit.mockResolvedValue(undefined);
 
     const { copyTabWidgets } = await import("./copy-tab.js");
-    await copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 });
-
-    expect(accountInstance.dashboards.edit).toHaveBeenCalled();
+    await expect(copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 })).rejects.toThrow(
+      /No widgets were copied/,
+    );
   });
 });

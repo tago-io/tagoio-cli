@@ -53,7 +53,7 @@ async function deleteWidgetsFromTab(account: Account, dashID: string, arrangemen
  */
 async function copyWidgetsFromTab(account: Account, dashID: string, arrangement: DashboardInfo["arrangement"], tabID: string, toTabID: string) {
   if (!arrangement) {
-    return;
+    return { arrangement, copied: 0 };
   }
 
   const fromTabWidgets = arrangement.filter((x) => x.tab === tabID);
@@ -70,7 +70,7 @@ async function copyWidgetsFromTab(account: Account, dashID: string, arrangement:
     });
   }
 
-  return arrangement;
+  return { arrangement, copied: fromTabWidgets.length };
 }
 
 /**
@@ -139,12 +139,21 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
     return;
   }
 
-  let arrangement = await deleteWidgetsFromTab(account, dashID, dashInfo.arrangement, to);
-  arrangement = await copyWidgetsFromTab(account, dashID, arrangement, from, to);
+  const arrangementAfterDelete = await deleteWidgetsFromTab(account, dashID, dashInfo.arrangement, to);
+  const { arrangement, copied } = await copyWidgetsFromTab(account, dashID, arrangementAfterDelete, from, to);
 
   await account.dashboards.edit(dashID, { arrangement });
 
-  successMSG(`Dashboard tab copied. dashboard=${kleur.blue(dashID)} source=${fromTabName}[${kleur.cyan(from)}] target=${toTabName}[${kleur.cyan(to)}]`);
+  if (copied === 0) {
+    errorHandler(
+      `No widgets were copied. The source tab "${fromTabName}" has no widgets associated with its tab key. ` +
+        `This usually means the dashboard uses a model where arrangement entries have tab=null. ` +
+        `Verify with: tagoio dashboard widgets, or open an issue with the dashboard ID ${dashID}.`,
+    );
+  }
+  successMSG(
+    `Dashboard tab copied. dashboard=${kleur.blue(dashID)} source=${fromTabName}[${kleur.cyan(from)}] target=${toTabName}[${kleur.cyan(to)}] widgets=${kleur.cyan(copied)}`,
+  );
 }
 
 export { copyTabWidgets };
