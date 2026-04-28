@@ -74,12 +74,12 @@ async function copyDeviceData(options: IOptions) {
     errorHandler("Device not found");
   }
 
-  infoMSG(`> Copying data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);
-  const yesNo = await confirmPrompt();
+  const yesNo = await confirmPrompt(`Copy data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}?`);
   if (!yesNo) {
     return;
   }
 
+  infoMSG(`> Copying data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);
   await startCopy(deviceFrom, deviceTo, options);
 }
 
