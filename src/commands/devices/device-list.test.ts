@@ -61,26 +61,32 @@ describe("deviceList", () => {
     tableSpy.mockRestore();
   });
 
-  test("uses JSON.stringify when options.stringify is true", async () => {
+  test("emits pretty-printed JSON to stdout when options.stringify is true", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     devicesListMock.mockResolvedValue([{ id: "d1", name: "Dev 1", active: true, last_input: null, tags: [{ key: "env", value: "prod" }] }]);
-    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     const { deviceList } = await import("./device-list.js");
     await deviceList({ tagkey: [], tagvalue: [], stringify: true } as never);
-    expect(infoSpy).toHaveBeenCalled();
-    infoSpy.mockRestore();
+    expect(stdoutSpy).toHaveBeenCalled();
+    const output = String(stdoutSpy.mock.calls[0][0]);
+    expect(() => JSON.parse(output)).not.toThrow();
+    expect(output).toContain("\n  "); // pretty-printed has indentation
+    stdoutSpy.mockRestore();
   });
 
-  test("uses console.dir when options.json is true", async () => {
+  test("emits compact JSON to stdout when options.json is true", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     devicesListMock.mockResolvedValue([{ id: "d1", name: "Dev", active: true, last_input: null, tags: [] }]);
-    const dirSpy = vi.spyOn(console, "dir").mockImplementation(() => undefined);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     const { deviceList } = await import("./device-list.js");
     await deviceList({ tagkey: [], tagvalue: [], json: true } as never);
-    expect(dirSpy).toHaveBeenCalled();
-    dirSpy.mockRestore();
+    expect(stdoutSpy).toHaveBeenCalled();
+    const output = String(stdoutSpy.mock.calls[0][0]);
+    expect(() => JSON.parse(output)).not.toThrow();
+    expect(output).not.toContain("\n  "); // compact, no indentation
+    stdoutSpy.mockRestore();
   });
 
   test("applies name filter and repeatable tag filters", async () => {

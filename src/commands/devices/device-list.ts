@@ -89,16 +89,17 @@ async function deviceList(options: IOptions) {
     return;
   }
 
+  const machineMode = Boolean(options.json || options.stringify);
   const resultList = deviceList.map((x) => ({
     ...x,
-    tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
+    tags: machineMode ? mapTags(x.tags, options) : x.tags.length,
     last_input: mapDate(x.last_input as Date, options),
   }));
 
   if (options.stringify) {
-    console.info(JSON.stringify(resultList, null, 2));
+    process.stdout.write(`${JSON.stringify(resultList, null, 2)}\n`);
   } else if (options.json) {
-    console.dir(resultList, { depth: null });
+    process.stdout.write(`${JSON.stringify(resultList)}\n`);
   } else {
     console.table(resultList);
   }
