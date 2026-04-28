@@ -92,7 +92,8 @@ async function runAnalysis(
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   let { token: analysisToken, run_on, name, runtime: runtimeParam } = await account.analysis.info(scriptToRun.id);
-  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
+  const tokenSuffix = analysisToken ? ` [${highlightMSG(analysisToken)}]` : "";
+  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name})${tokenSuffix}.`);
 
   const analysisEnv: { [key: string]: string } = {
     ...process.env,
