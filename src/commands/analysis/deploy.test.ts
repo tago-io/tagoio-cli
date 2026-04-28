@@ -213,6 +213,46 @@ describe("deployAnalysis", () => {
     expect(infoMSGMock).toHaveBeenCalledWith(expect.stringContaining("deno"));
   });
 
+  test("routes ENOENT from execSync through errorHandler with the install hint (analysis-builder missing)", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    detectRuntimeMock.mockReturnValue("node");
+    const enoent = Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" });
+    execSyncMock.mockImplementationOnce(() => {
+      throw enoent;
+    });
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/Build tool '@tago-io\/builder' not found/);
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("npm install -g @tago-io/builder"));
+  });
+
+  test("routes exit-127 (deno missing) through errorHandler with the deno install hint", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "deno" });
+    const status127 = Object.assign(new Error("Command failed: deno bundle ..."), { status: 127 });
+    execSyncMock.mockImplementationOnce(() => {
+      throw status127;
+    });
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true })).rejects.toThrow(/Build tool 'deno' not found/);
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("deno.land"));
+  });
+
+  test("routes a generic execSync failure through errorHandler as a build-failed message", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    detectRuntimeMock.mockReturnValue("node");
+    execSyncMock.mockImplementationOnce(() => {
+      throw new Error("Bundling failed: type error");
+    });
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(deployAnalysis("scriptA", defaultOptions())).rejects.toThrow(/Build failed for a\.ts/);
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Bundling failed"));
+  });
+
   test("emits an [INFO] line announcing the node runtime when --node flag is set", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });

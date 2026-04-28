@@ -3,8 +3,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { makeAccount } from "../../../../test-utils/mock-sdk.js";
 import type { IExport, IExportHolder } from "../types.js";
 
+const errorHandlerMock = vi.fn((str: unknown) => {
+  throw new Error(String(str));
+});
+
 vi.mock("../../../../lib/messages.js", () => ({
-  errorHandler: vi.fn(),
+  errorHandler: errorHandlerMock,
   infoMSG: vi.fn(),
 }));
 
@@ -40,6 +44,9 @@ describe("deviceExport", () => {
     importAccount = makeAccount();
     getTokenByNameMock.mockReset();
     deviceGetParametersMock.mockReset();
+    errorHandlerMock.mockClear().mockImplementation((str: unknown) => {
+      throw new Error(String(str));
+    });
   });
 
   const makeHolder = (): IExportHolder => ({
@@ -123,6 +130,55 @@ describe("deviceExport", () => {
 
     expect(importAccount.devices.edit).toHaveBeenCalled();
     expect(result.devices["d1"]).toBe("tgt-id");
+  });
+
+  test("routes devices.create rejection through errorHandler with the device name and SDK reason", async () => {
+    account.devices.list.mockResolvedValue([{ id: "d1", name: "Dev Boom" }]);
+    importAccount.devices.list.mockResolvedValue([]);
+    account.devices.info.mockResolvedValue({
+      id: "d1",
+      name: "Dev Boom",
+      tags: [{ key: "export_id", value: "v1" }],
+      bucket: "bkt-1",
+    });
+    account.devices.tokenList.mockResolvedValue([]);
+    importAccount.devices.create.mockRejectedValue(new Error("Invalid connector"));
+    getTokenByNameMock.mockResolvedValue("src-token");
+
+    const { deviceExport } = await import("./devices-export.js");
+    const holder = makeHolder();
+    const promise = deviceExport(account as never, importAccount as never, holder, makeConfig());
+    const expectation = expect(promise).rejects.toThrow(/Failed to create device "Dev Boom"/);
+    await vi.runAllTimersAsync();
+    await expectation;
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Invalid connector"));
+  });
+
+  test("routes devices.edit rejection through errorHandler with the device name and SDK reason", async () => {
+    account.devices.list.mockResolvedValue([{ id: "d1", name: "Dev Boom" }]);
+    importAccount.devices.list.mockResolvedValue([
+      { id: "tgt-id", tags: [{ key: "export_id", value: "v1" }] },
+    ]);
+    account.devices.info.mockResolvedValue({
+      id: "d1",
+      name: "Dev Boom",
+      tags: [{ key: "export_id", value: "v1" }],
+      bucket: "bkt-1",
+      parse_function: "code",
+      active: true,
+      visible: true,
+    });
+    account.devices.tokenList.mockResolvedValue([]);
+    importAccount.devices.edit.mockRejectedValue(new Error("Invalid network"));
+    getTokenByNameMock.mockResolvedValue("src-token");
+
+    const { deviceExport } = await import("./devices-export.js");
+    const holder = makeHolder();
+    const promise = deviceExport(account as never, importAccount as never, holder, makeConfig());
+    const expectation = expect(promise).rejects.toThrow(/Failed to update device "Dev Boom"/);
+    await vi.runAllTimersAsync();
+    await expectation;
+    expect(errorHandlerMock).toHaveBeenCalledWith(expect.stringContaining("Invalid network"));
   });
 
   test("regenerates tokens when source tokens carry serial numbers", async () => {
