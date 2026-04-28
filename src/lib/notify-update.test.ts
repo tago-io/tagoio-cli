@@ -46,19 +46,19 @@ describe("updaterUtils", () => {
   });
 
   describe("notify", () => {
-    test("returns a function that logs the available-update message with current → latest", () => {
-      const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    test("returns a function that writes the available-update message to stderr (clig.dev: status -> stderr)", () => {
+      const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
       const log = updaterUtils.notify("@tago-io/cli", "1.0.0", "2.0.0");
 
       log();
 
-      expect(consoleLogSpy).toHaveBeenCalledOnce();
-      const output = String(consoleLogSpy.mock.calls[0][0]);
+      expect(stderrSpy).toHaveBeenCalledOnce();
+      const output = String(stderrSpy.mock.calls[0][0]);
       expect(output).toContain("@tago-io/cli");
       expect(output).toContain("1.0.0");
       expect(output).toContain("2.0.0");
 
-      consoleLogSpy.mockRestore();
+      stderrSpy.mockRestore();
     });
   });
 });
@@ -90,13 +90,13 @@ describe("updater", () => {
 
   test("returns a notifier function when an update is available", async () => {
     getLatestVersionSpy.mockResolvedValue("2.0.0" as never);
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 
     const log = await updater({ name: "@tago-io/cli", version: "1.0.0" });
     log();
 
-    expect(consoleLogSpy).toHaveBeenCalledOnce();
-    const output = String(consoleLogSpy.mock.calls[0][0]);
+    expect(stderrSpy).toHaveBeenCalledOnce();
+    const output = String(stderrSpy.mock.calls[0][0]);
     expect(output).toContain("1.0.0");
     expect(output).toContain("2.0.0");
   });

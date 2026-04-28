@@ -25,7 +25,7 @@ const updaterUtils = {
   },
 
   notify: (name: string, version: string, latest: string) => {
-    return () => console.log(`\n\n📦 Update available for ${kleur.cyan(name)}: ${kleur.gray(version)} → ${kleur.green(latest)}`);
+    return () => process.stderr.write(`\n\n📦 Update available for ${kleur.cyan(name)}: ${kleur.gray(version)} → ${kleur.green(latest)}\n`);
   },
 };
 

@@ -109,7 +109,7 @@ async function restoreRunUsers(resources: Resources, extractDir: string, granula
   const existingEmails = await fetchExistingUsersByEmail(resources);
   infoMSG(`Found ${highlightMSG(existingEmails.size.toString())} existing run users in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring run users...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

@@ -138,7 +138,7 @@ async function restoreDashboards(resources: Resources, extractDir: string, granu
   const existingIds = await fetchExistingDashboardIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing dashboards in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring dashboards...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

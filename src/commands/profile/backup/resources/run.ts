@@ -23,7 +23,7 @@ async function restoreRun(resources: Resources, extractDir: string): Promise<Res
 
   infoMSG(`Found run ${highlightMSG(backupRun.name)} in backup.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring run settings...").start();
 
   try {

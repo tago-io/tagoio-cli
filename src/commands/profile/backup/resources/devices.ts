@@ -191,7 +191,7 @@ async function restoreDevices(resources: Resources, extractDir: string, granular
     }
   }
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring devices...").start();
 
   const createQueue = queue<RestoreTask>(async (task) => {

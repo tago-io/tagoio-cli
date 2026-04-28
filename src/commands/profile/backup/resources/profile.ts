@@ -70,7 +70,7 @@ async function restoreProfile(resources: Resources, extractDir: string): Promise
 
   infoMSG(`Found profile ${highlightMSG(backupProfile.name)} in backup.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring profile settings...").start();
 
   try {

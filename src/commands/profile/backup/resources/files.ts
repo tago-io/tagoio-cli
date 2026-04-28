@@ -95,7 +95,7 @@ async function restoreFiles(resources: Resources, extractDir: string, granularIt
 
   infoMSG(`Restoring ${highlightMSG(fileTasks.length.toString())} files...`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Uploading files...").start();
 
   const uploadQueue = queue<FileTask>(async (task) => {

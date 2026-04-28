@@ -78,7 +78,7 @@ async function restoreConnectors(resources: Resources, extractDir: string, granu
   const existingIds = await fetchExistingConnectorIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing connectors in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring connectors...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

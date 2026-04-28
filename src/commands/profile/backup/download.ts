@@ -47,7 +47,7 @@ async function downloadBackup() {
   const profileID = profile.info.id;
   const baseURL = typeof config.profileRegion === "object" ? config.profileRegion.api : "https://api.tago.io";
 
-  infoMSG("Fetching available backups...\n");
+  infoMSG("Fetching available backups...");
 
   try {
     const backups = await fetchBackups(profileID, baseURL, config.profileToken);
@@ -60,8 +60,8 @@ async function downloadBackup() {
     infoMSG(`Created at: ${formatDate(selectedBackup.created_at)}`);
     infoMSG(`Size: ${formatFileSize(selectedBackup.file_size)}`);
 
-    console.info("");
-    infoMSG("Authentication required to download the backup.\n");
+    process.stderr.write("\n");
+    infoMSG("Authentication required to download the backup.");
 
     const credentials = await promptCredentials();
     if (!credentials) {
@@ -69,19 +69,19 @@ async function downloadBackup() {
     }
 
     successMSG("Credentials received.");
-    console.info("");
+    process.stderr.write("\n");
 
     infoMSG("Requesting backup download URL...");
     const downloadResult = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
     infoMSG(`Backup size: ${highlightMSG(downloadResult.fileSizeMb + " MB")}`);
     infoMSG(`Download expires at: ${highlightMSG(formatDate(downloadResult.expireAt))}`);
     successMSG("Download URL obtained.");
-    console.info("");
+    process.stderr.write("\n");
 
     const outputDir = join(process.cwd(), DOWNLOAD_FOLDER);
     await downloadBackupToFolder(downloadResult.url, outputDir, selectedBackup.id);
 
-    console.info("");
+    process.stderr.write("\n");
     successMSG("Backup download completed!");
   } catch (error) {
     handleBackupError(error, "Failed to download backup");

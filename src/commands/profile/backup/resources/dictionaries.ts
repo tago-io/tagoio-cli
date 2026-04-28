@@ -112,7 +112,7 @@ async function restoreDictionaries(resources: Resources, extractDir: string, gra
   const existingIds = await fetchExistingDictionaryIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing dictionaries in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring dictionaries...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

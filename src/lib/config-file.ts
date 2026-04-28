@@ -92,7 +92,7 @@ function getEnvironmentConfig(environment?: string) {
     const profileToken = readToken(environment);
 
     const profileInfo = kleur.dim(`[${userEnvironment.profileName}] [${userEnvironment.email}]`);
-    infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}\n`);
+    infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}`);
 
     return { ...configFile[environment], ...defaultPaths, profileToken, profileRegion };
   }
@@ -110,7 +110,7 @@ function getEnvironmentConfig(environment?: string) {
   const profileToken = readToken(defaultEnvName);
 
   const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
-  infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}\n`);
+  infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}`);
 
   return { ...defaultEnvironment, ...defaultPaths, profileToken, profileRegion };
 }

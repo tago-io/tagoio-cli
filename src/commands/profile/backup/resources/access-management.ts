@@ -78,7 +78,7 @@ async function restoreAccessManagement(resources: Resources, extractDir: string,
   const existingIds = await fetchExistingPolicyIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing policies in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring access policies...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

@@ -88,7 +88,7 @@ async function restoreSecrets(resources: Resources, extractDir: string, granular
   const existingKeys = await fetchExistingSecretIds(resources);
   infoMSG(`Found ${highlightMSG(existingKeys.size.toString())} existing secrets in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring secrets...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

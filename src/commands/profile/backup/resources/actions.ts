@@ -78,7 +78,7 @@ async function restoreActions(resources: Resources, extractDir: string, granular
   const existingIds = await fetchExistingActionIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing actions in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring actions...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

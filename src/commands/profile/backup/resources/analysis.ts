@@ -139,7 +139,7 @@ async function restoreAnalysis(resources: Resources, extractDir: string, granula
   const existingIds = await fetchExistingAnalysisIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing analysis in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring analysis...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

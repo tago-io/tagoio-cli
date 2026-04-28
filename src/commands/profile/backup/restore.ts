@@ -134,7 +134,7 @@ function analyzeBackupContents(extractDir: string): BackupSummary[] {
 function displayBackupSummary(summary: BackupSummary[]): number {
   const totalResources = summary.reduce((acc, item) => acc + item.count, 0);
 
-  console.info("");
+  process.stderr.write("\n");
   console.info(kleur.bold("Backup Contents:"));
   console.info(kleur.gray("─".repeat(40)));
 
@@ -204,7 +204,7 @@ async function restoreBackup(options: RestoreOptions = {}) {
   const profileID = profile.info.id;
   const baseURL = typeof config.profileRegion === "object" ? config.profileRegion.api : "https://api.tago.io";
 
-  infoMSG("Fetching available backups...\n");
+  infoMSG("Fetching available backups...");
 
   try {
     const backups = await fetchBackups(profileID, baseURL, config.profileToken);
@@ -224,8 +224,8 @@ async function restoreBackup(options: RestoreOptions = {}) {
       return;
     }
 
-    console.info("");
-    infoMSG("Authentication required to download the backup.\n");
+    process.stderr.write("\n");
+    infoMSG("Authentication required to download the backup.");
 
     const credentials = await promptCredentials();
     if (!credentials) {
@@ -233,17 +233,17 @@ async function restoreBackup(options: RestoreOptions = {}) {
     }
 
     successMSG("Credentials received.");
-    console.info("");
+    process.stderr.write("\n");
 
     infoMSG("Requesting backup download URL...");
     const downloadResult = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
     infoMSG(`Backup size: ${highlightMSG(downloadResult.fileSizeMb + " MB")}`);
     infoMSG(`Download expires at: ${highlightMSG(formatDate(downloadResult.expireAt))}`);
     successMSG("Download URL obtained.");
-    console.info("");
+    process.stderr.write("\n");
 
     const extractDir = await downloadAndExtractBackup(downloadResult.url, selectedBackup.id);
-    console.info("");
+    process.stderr.write("\n");
 
     const summary = analyzeBackupContents(extractDir);
     if (summary.length === 0) {
@@ -263,7 +263,7 @@ async function restoreBackup(options: RestoreOptions = {}) {
     const isGranularItem = !!options.items;
 
     if (options.resources || options.items) {
-      console.info("");
+      process.stderr.write("\n");
       const selectedResources = await selectResourcesToRestore();
       if (!selectedResources || selectedResources.length === 0) {
         infoMSG("No resources selected. Restoration cancelled.");
@@ -278,15 +278,15 @@ async function restoreBackup(options: RestoreOptions = {}) {
       return;
     }
 
-    console.info("");
-    infoMSG("Starting resource restoration...\n");
+    process.stderr.write("\n");
+    infoMSG("Starting resource restoration...");
 
     const results: { config: RestoreConfig; result: RestoreResult }[] = [];
 
     for (const restoreConfig of restoreSequence) {
       const result = await restoreConfig.fn(resources, extractDir, isGranularItem);
       results.push({ config: restoreConfig, result });
-      console.info("");
+      process.stderr.write("\n");
     }
 
     successMSG("Restoration completed!");

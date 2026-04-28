@@ -25,7 +25,7 @@ async function insertWidgets(exportAccount: Account, importAccount: Account, das
     }
   }, 5);
 
-  newWidgetQueue.error((error) => console.log(error));
+  newWidgetQueue.error((error) => console.error(error));
   for (const widget_id of widget_ids || []) {
     newWidgetQueue.push(widget_id).catch(errorHandler);
   }

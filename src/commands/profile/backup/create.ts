@@ -78,9 +78,9 @@ async function createBackup() {
       throw new Error(`Request failed: ${postResponse.status}`);
     }
 
-    console.info("");
-    console.info(kleur.gray("Press Ctrl+C or Cmd+C to stop waiting. The backup will continue in the background."));
-    console.info("");
+    process.stderr.write("\n");
+    process.stderr.write(`${kleur.gray("Press Ctrl+C or Cmd+C to stop waiting. The backup will continue in the background.")}\n`);
+    process.stderr.write("\n");
 
     const spinner = ora("Creating backup...").start();
 
@@ -88,7 +88,7 @@ async function createBackup() {
 
     if (completedBackup) {
       spinner.succeed("Backup completed successfully!");
-      console.info("");
+      process.stderr.write("\n");
       successMSG(`Backup ID: ${highlightMSG(completedBackup.id)}`);
     }
   } catch (error) {
