@@ -70,7 +70,11 @@ async function deviceExport(account: Account, import_account: Account, export_ho
     const new_device = replaceObj(device, export_holder.devices);
     delete new_device.bucket;
     if (!target_id) {
-      ({ device_id: target_id, token: new_token } = await import_account.devices.create(new_device));
+      const created = await import_account.devices.create(new_device).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        errorHandler(`Failed to create device "${name}" on target profile: ${message}`);
+      });
+      ({ device_id: target_id, token: new_token } = created);
 
       const export_device = new Device({ token: token as string, region: config.import.region });
 
@@ -87,12 +91,17 @@ async function deviceExport(account: Account, import_account: Account, export_ho
       const param_list_map = export_param_list.map(({ id: _id, ...param }: { id: string; [key: string]: unknown }) => param);
       await import_account.devices.paramSet(target_id, param_list_map).catch(errorHandler);
     } else {
-      await import_account.devices.edit(target_id, {
-        parse_function: new_device.parse_function,
-        tags: new_device.tags,
-        active: new_device.active,
-        visible: new_device.visible,
-      });
+      await import_account.devices
+        .edit(target_id, {
+          parse_function: new_device.parse_function,
+          tags: new_device.tags,
+          active: new_device.active,
+          visible: new_device.visible,
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          errorHandler(`Failed to update device "${name}" on target profile: ${message}`);
+        });
       new_token = (await Utils.getTokenByName(import_account, target_id)) as string;
     }
 
