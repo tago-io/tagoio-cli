@@ -123,16 +123,19 @@ describe("getDeviceData", () => {
     expect(accountDevicesInfoMock).toHaveBeenCalledWith("short-id");
   });
 
-  test("uses stringify output when option is set", async () => {
+  test("emits pretty-printed JSON to stdout when --stringify is set", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
     deviceGetDataMock.mockResolvedValue([{ variable: "x", value: 1 }]);
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     const { getDeviceData } = await import("./data-get.js");
     await getDeviceData("a".repeat(36), { post: "", stringify: true } as never);
-    expect(logSpy).toHaveBeenCalled();
-    logSpy.mockRestore();
+    expect(stdoutSpy).toHaveBeenCalled();
+    const output = String(stdoutSpy.mock.calls[0][0]);
+    expect(() => JSON.parse(output)).not.toThrow();
+    expect(output).toContain("\n  "); // pretty-printed
+    stdoutSpy.mockRestore();
   });
 
   test("prompts for device id when not provided", async () => {

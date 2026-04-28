@@ -114,9 +114,9 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     });
 
   if (options.stringify) {
-    console.log(JSON.stringify(dataList));
+    process.stdout.write(`${JSON.stringify(dataList, null, 2)}\n`);
   } else if (options.json) {
-    console.dir(dataList, { depth: null });
+    process.stdout.write(`${JSON.stringify(dataList)}\n`);
   } else {
     console.table(dataList);
   }

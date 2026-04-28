@@ -50,23 +50,21 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   deviceInfo.params = mapTags(paramList, options);
 
   if (options.json) {
-    console.dir(
-      {
-        // @ts-expect-error fix key ordering
-        id: "",
-        // @ts-expect-error fix key ordering
-        name: "",
-        // @ts-expect-error fix key ordering
-        connector: "",
-        // @ts-expect-error fix key ordering
-        network: "",
-        ...deviceInfo,
-        created_at: mapDate(deviceInfo.created_at, options),
-        last_input: mapDate(deviceInfo.last_input, options),
-        updated_at: mapDate(deviceInfo.updated_at, options),
-      },
-      { depth: null },
-    );
+    const payload = {
+      // @ts-expect-error fix key ordering
+      id: "",
+      // @ts-expect-error fix key ordering
+      name: "",
+      // @ts-expect-error fix key ordering
+      connector: "",
+      // @ts-expect-error fix key ordering
+      network: "",
+      ...deviceInfo,
+      created_at: mapDate(deviceInfo.created_at, options),
+      last_input: mapDate(deviceInfo.last_input, options),
+      updated_at: mapDate(deviceInfo.updated_at, options),
+    };
+    process.stdout.write(`${JSON.stringify(payload)}\n`);
     return;
   }
 

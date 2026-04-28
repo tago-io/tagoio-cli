@@ -68,7 +68,7 @@ describe("deviceInfo", () => {
     tableSpy.mockRestore();
   });
 
-  test("prints JSON when options.json is true", async () => {
+  test("emits parseable JSON on stdout when options.json is true", async () => {
     accountInfoMock.mockResolvedValue({
       id: "dev-1",
       name: "Test",
@@ -77,12 +77,16 @@ describe("deviceInfo", () => {
       last_input: null,
       updated_at: null,
     });
-    const dirSpy = vi.spyOn(console, "dir").mockImplementation(() => undefined);
+    const stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     const { deviceInfo } = await import("./device-info.js");
     await deviceInfo("dev-1", { environment: "dev", raw: false, json: true, tokens: false });
-    expect(dirSpy).toHaveBeenCalled();
-    dirSpy.mockRestore();
+    expect(stdoutSpy).toHaveBeenCalled();
+    const output = String(stdoutSpy.mock.calls[0][0]);
+    const parsed = JSON.parse(output);
+    expect(parsed.id).toBe("dev-1");
+    expect(parsed.name).toBe("Test");
+    stdoutSpy.mockRestore();
   });
 
   test("fetches token list when options.tokens is true", async () => {
@@ -138,13 +142,13 @@ describe("deviceInfo", () => {
 });
 
 describe("deviceInfo — not-found branch", () => {
-  let consoleError: ReturnType<typeof vi.spyOn>;
+  let stderrWrite: ReturnType<typeof vi.spyOn>;
   let exit: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     accountInfoMock.mockReset();
     deviceInfoMock.mockReset();
-    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    stderrWrite = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     exit = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
       throw new Error(`__exit:${code}`);
     }) as never);
@@ -170,8 +174,10 @@ describe("deviceInfo — not-found branch", () => {
     ).rejects.toThrow("__exit:1");
 
     expect(exit).toHaveBeenCalledWith(1);
-    expect(consoleError).toHaveBeenCalled();
-    const output = stripAnsi(String(consoleError.mock.calls[0][0]));
+    expect(stderrWrite).toHaveBeenCalled();
+    const errorCall = stderrWrite.mock.calls.find((c: unknown[]) => stripAnsi(String(c[0])).includes("[ERROR]"));
+    expect(errorCall).toBeDefined();
+    const output = stripAnsi(String(errorCall![0]));
     expect(output).toContain("[ERROR]");
     expect(output).toContain("missing-id");
   });
