@@ -104,7 +104,10 @@ async function changeBucketType(id: string, options: { environment: string }) {
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   const bucketList = id ? [id] : await chooseBucketsFromList(account);
   if (id) {
-    const bucketInfo = await account.buckets.info(id);
+    const bucketInfo = await account.buckets.info(id).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      errorHandler(`Device with ID ${id} not found: ${message}`);
+    });
     infoMSG(`Device: ${bucketInfo.name} - ${coloredBucketType(bucketInfo.type)} bucket`);
   }
 
