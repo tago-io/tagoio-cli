@@ -81,16 +81,16 @@ describe("analysisSetMode", () => {
     ).rejects.toThrow(/Environment not found/);
   });
 
-  test("skips mode prompt and uses filterMode directly when provided", async () => {
+  test("skips mode prompt and uses options.mode directly when provided", async () => {
     const analyses = makeAnalyses();
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.analysis.list.mockResolvedValue([analyses[1]]);
     accountInstance.analysis.edit.mockResolvedValue(undefined);
-    // Only chooseFromList inject — no pickFromList since filterMode is set
+    // Only chooseFromList inject — no pickFromList since mode is set
     prompts.inject([[analyses[1]]]);
 
     const { analysisSetMode } = await import("./analysis-set-mode.js");
-    await analysisSetMode(undefined as never, { environment: "prod", mode: "", filterMode: "external" });
+    await analysisSetMode(undefined as never, { environment: "prod", mode: "external", filterMode: "" });
 
     expect(accountInstance.analysis.edit).toHaveBeenCalledWith("an-2", { run_on: "external" });
   });

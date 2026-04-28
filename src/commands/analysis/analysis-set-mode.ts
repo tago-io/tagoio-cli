@@ -80,7 +80,7 @@ async function analysisSetMode(userInputName: string | void, options: { environm
   // Query user for the analysis to update
   const selectedAnalysis = await chooseAnalysisToUpdateRunOnMode(analysisList);
 
-  let mode: string = options.filterMode;
+  let mode: string = options.mode;
   if (!mode) {
     mode = await pickFromList([{ title: "tago" }, { title: "external" }], {
       message: "Which run_on mode do you want to set for the selected analysis?",
