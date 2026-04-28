@@ -22,7 +22,7 @@ function _formatUpdateMessage(deviceID: string, serialNumbers: (string | undefin
 async function updateDevice(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
-  const tokens = await account.devices.tokenList(deviceID);
+  const tokens = await account.devices.tokenList(deviceID, { fields: ["name", "token", "permission", "serie_number"] });
   const tokenList = tokens.map((token) => token.token);
 
   if (tokenList) {
