@@ -6,7 +6,7 @@ import { Account, RunTypeOptions } from "@tago-io/sdk";
 import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
 import { getCurrentFolder } from "../../lib/get-current-folder.js";
-import { errorHandler, successMSG } from "../../lib/messages.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
 import { searchName } from "../../lib/search-name.js";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config.js";
 import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list.js";
@@ -77,11 +77,23 @@ async function buildScript(params: BuildScriptParams) {
   const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
-  if (runtime === "--deno") {
-    console.log("bundling with deno");
-    execSync(`deno bundle ${analysisFile} -o ${buildFile}`, { stdio: "inherit", cwd: folderPath });
-  } else {
-    execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+  try {
+    if (runtime === "--deno") {
+      infoMSG("Bundling with deno");
+      execSync(`deno bundle ${analysisFile} -o ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+    } else {
+      execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+    }
+  } catch (error) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    const status = (err as { status?: number }).status;
+    const code = (err as NodeJS.ErrnoException).code;
+    if (status === 127 || code === "ENOENT") {
+      const tool = runtime === "--deno" ? "deno" : "@tago-io/builder";
+      const hint = runtime === "--deno" ? "Install deno from https://deno.land" : "Install it with: npm install -g @tago-io/builder";
+      errorHandler(`Build tool '${tool}' not found. ${hint}`);
+    }
+    errorHandler(`Build failed for ${scriptName}: ${err.message}`);
   }
 
   const script = await getScript(buildedFile, scriptName);
@@ -174,10 +186,10 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
     if (options.deno && options.node) {
       errorHandler("Cannot specify both --deno and --node flags");
     } else if (options.deno) {
-      console.log("deploying with deno");
+      infoMSG("Deploying with deno runtime");
       runtime = "--deno";
     } else if (options.node) {
-      console.log("deploying with node");
+      infoMSG("Deploying with node runtime");
       runtime = "--node";
     } else {
       runtime = detectRuntime(runtimeParam || "");

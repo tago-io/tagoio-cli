@@ -9,6 +9,7 @@ const errorHandlerMock = vi.fn<(str: unknown) => void>((str) => {
   throw new Error(String(str));
 });
 const successMSGMock = vi.fn();
+const infoMSGMock = vi.fn();
 const readFileMock = vi.fn();
 const statMock = vi.fn();
 const unlinkMock = vi.fn();
@@ -52,6 +53,7 @@ vi.mock("../../lib/get-current-folder.js", () => ({
 vi.mock("../../lib/messages.js", () => ({
   errorHandler: errorHandlerMock,
   successMSG: successMSGMock,
+  infoMSG: infoMSGMock,
   highlightMSG: (s: string) => s,
 }));
 
@@ -84,6 +86,7 @@ describe("deployAnalysis", () => {
       throw new Error(String(str));
     });
     successMSGMock.mockClear();
+    infoMSGMock.mockClear();
     readFileMock.mockReset();
     statMock.mockReset().mockResolvedValue(null);
     unlinkMock.mockReset();
@@ -202,28 +205,25 @@ describe("deployAnalysis", () => {
     accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
     accountInstance.analysis.edit.mockResolvedValue(undefined);
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true })).rejects.toThrow(/__exit:0/);
 
     expect(execSyncMock).toHaveBeenCalledWith(expect.stringContaining("deno bundle"), expect.any(Object));
-    logSpy.mockRestore();
+    expect(infoMSGMock).toHaveBeenCalledWith(expect.stringContaining("deno"));
   });
 
-  test("logs 'deploying with node' when --node flag is set", async () => {
+  test("emits an [INFO] line announcing the node runtime when --node flag is set", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
     accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
     accountInstance.analysis.edit.mockResolvedValue(undefined);
     readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     const { deployAnalysis } = await import("./deploy.js");
     await expect(deployAnalysis("scriptA", { ...defaultOptions(), node: true })).rejects.toThrow(/__exit:0/);
 
-    expect(logSpy).toHaveBeenCalledWith("deploying with node");
-    logSpy.mockRestore();
+    expect(infoMSGMock).toHaveBeenCalledWith(expect.stringContaining("node"));
   });
 
   test("deletes the old built file when stat finds it", async () => {
