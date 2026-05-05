@@ -15,11 +15,10 @@ tagoio \\- command\\-line tool for TagoIO
 [\\fIarguments...\\fR]
 
 .SH DESCRIPTION
-The TagoIO Command Line Tool lets developers manage analyses,
-devices, dashboards, and profiles on TagoIO from the terminal.
-It follows clig.dev conventions: data on stdout, status messages
-(\\fB[INFO]\\fR, \\fB[OK]\\fR, \\fB[ERROR]\\fR) on stderr, and machine\\-readable
-JSON output via \\fB\\-\\-json\\fR.
+The TagoIO Command Line Tool is the official command\\-line
+interface to TagoIO. It manages analyses, devices, dashboards,
+and user profiles, and can export entire applications between
+profiles \\- suitable for both interactive use and CI/CD pipelines.
 
 .SH GLOBAL OPTIONS
 .TP
