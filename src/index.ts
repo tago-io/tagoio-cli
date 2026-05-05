@@ -26,18 +26,6 @@ const indexConfigFile = getConfigFile();
 const defaultEnvironment = process.env.TAGOIO_DEFAULT || "";
 
 /**
- * Calls functions to add all available commands to the CLI program.
- * @param program - The CLI program to add commands to.
- * @returns A Promise that resolves when all commands have been added.
- */
-async function getAllCommands(program: Command) {
-  analysisCommands(program);
-  deviceCommands(program);
-  dashboardCommands(program);
-  profileCommands(program, defaultEnvironment);
-}
-
-/**
  * Returns a string with ANSI escape codes to display text in red.
  *
  * @param str - The string to be colored in red.
@@ -49,21 +37,29 @@ function errorColor(str: string) {
 }
 
 /**
- * Initializes the TagoIO Command Line Tools program and sets up the available commands.
- * @returns {Promise<void>} A Promise that resolves when the program has finished parsing the command line arguments.
+ * @description Builds the commander program with every top-level command
+ * (init / login / set-env / list-env) and every namespace (analysis,
+ * devices, dashboard, profile) registered. Returns the configured program
+ * without calling `program.parse()`.
+ *
+ * This is the single source of truth for the CLI's command surface. Both the
+ * runtime entry point (`initiateCMD`) and the man-page generator
+ * (`src/lib/generate-man.ts`) call it — adding a new command in this file
+ * automatically appears in `tagoio --help` and in `man tagoio` on the next
+ * `npm run man`.
+ *
+ * @param defaultEnv - Default value for the optional `[environment]`
+ *   argument on `init` and `login`. Pass `""` for a user-agnostic build
+ *   (e.g. man-page generation); pass the runtime selection otherwise.
  */
-async function initiateCMD() {
-  const updateLog = await updater({ name: packageJSON.name, version: packageJSON.version });
+function buildProgram(defaultEnv: string): Command {
   const program = new Command();
-  program.exitOverride(async () => {
-    updateLog();
-  });
 
   program.version(packageJSON.version).description(`${kleur.bold(`TagoIO Command Line Tools - v${packageJSON.version}`)}
-  \tDefault Environment: ${highlightMSG(defaultEnvironment)}
-  \tProfile ID: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.id || "N/A")}
-  \tName: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.profileName || "N/A")}
-  \tEmail: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.email || "N/A")}`);
+  \tDefault Environment: ${highlightMSG(defaultEnv)}
+  \tProfile ID: ${highlightMSG(indexConfigFile?.[defaultEnv]?.id || "N/A")}
+  \tName: ${highlightMSG(indexConfigFile?.[defaultEnv]?.profileName || "N/A")}
+  \tEmail: ${highlightMSG(indexConfigFile?.[defaultEnv]?.email || "N/A")}`);
 
   program.configureOutput({
     writeErr: (str) => process.stderr.write(`[${errorColor("ERROR")}] ${str}`),
@@ -74,7 +70,7 @@ async function initiateCMD() {
   program
     .command("init")
     .description("create/update the config file for analysis in your current folder")
-    .argument("[environment]", "name of the environment.", defaultEnvironment)
+    .argument("[environment]", "name of the environment.", defaultEnv)
     .option("-t, --token <profile-token>", "profile token of the environment and skip login step")
     .action(startConfig)
     .addHelpText(
@@ -91,7 +87,7 @@ Example:
   program
     .command("login")
     .description("login to your account and store profile_token in the tago-lock.")
-    .argument("[environment]", "name of the environment", defaultEnvironment)
+    .argument("[environment]", "name of the environment", defaultEnv)
     .option("-u, --email <email>", "your TagoIO email")
     .option("-p, --password <password>", "your TagoIO password")
     .option("-t, --token <profile-token>", "set a profile-token for the environment and skip login step")
@@ -131,9 +127,31 @@ Example:
    $ tagoio list-env`,
     );
 
-  await getAllCommands(program);
+  analysisCommands(program);
+  deviceCommands(program);
+  dashboardCommands(program);
+  profileCommands(program, defaultEnv);
 
+  return program;
+}
+
+/**
+ * Initializes the TagoIO Command Line Tools program and parses argv.
+ */
+async function initiateCMD() {
+  const updateLog = await updater({ name: packageJSON.name, version: packageJSON.version });
+  const program = buildProgram(defaultEnvironment);
+  program.exitOverride(async () => {
+    updateLog();
+  });
   program.parse();
 }
 
-initiateCMD().catch(console.error);
+// Auto-run only when invoked as the CLI binary; importing this module from a
+// build-time tool (e.g. the man-page generator) must NOT trigger argv parsing.
+const isMainModule = import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  initiateCMD().catch(console.error);
+}
+
+export { buildProgram };
