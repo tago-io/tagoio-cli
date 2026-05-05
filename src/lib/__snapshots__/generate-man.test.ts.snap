@@ -463,21 +463,37 @@ Example:
 .SS backup
 profile backup management commands
 
+.SH EXIT STATUS
+.TP
+.B 0
+Command completed successfully.
+.TP
+.B 1
+Any failure. The error is printed on stderr with an \\fB[ERROR]\\fR prefix
+(or as a JSON object when \\fB\\-\\-json\\fR is set).
+
 .SH ENVIRONMENT
 .TP
 .B TAGOIO_DEFAULT
 Selects which environment from \\fItagoconfig.json\\fR the CLI uses
-when no \\fB\\-\\-env\\fR flag is given.
+when no \\fB\\-\\-env\\fR flag is given. Persisted by
+.BR tagoio\\ set\\-env .
 
 .SH FILES
 .TP
-.I tagoconfig.json
+.I ./tagoconfig.json
 Project\\-level configuration. Created and updated by
 .BR tagoio\\ init .
 .TP
-.I ~/.tago-lock
-Stores per\\-environment profile tokens written by
+.I ./.tago-lock.<env>.lock
+Per\\-environment profile token written by
 .BR tagoio\\ login .
+One file per environment, kept in the current project directory.
+.TP
+.I ./.tagoio/personal.env
+Persists the user's default environment selection
+(\\fBTAGOIO_DEFAULT\\fR). Updated by
+.BR tagoio\\ set\\-env .
 
 .SH SEE ALSO
 TagoIO documentation: \\fIhttps://help.tago.io\\fR
