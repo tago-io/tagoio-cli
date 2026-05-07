@@ -86,6 +86,22 @@ async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { ema
   return { ...loginResult, otp_type: otp_autosend, pin_code: pinCode.value };
 }
 
+function _parseOTPError(error: unknown): { otp_enabled?: boolean; otp_autosend: OTPType } | undefined {
+  if (error && typeof error === "object" && "otp_enabled" in error) {
+    return error as { otp_enabled?: boolean; otp_autosend: OTPType };
+  }
+
+  if (typeof error === "string") {
+    try {
+      return JSON.parse(error);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Logs in a user with email and password.
  * @param email The user's email.
@@ -98,8 +114,9 @@ async function loginWithEmailPassword(email: string, password: string) {
     const loginResult = await Account.login({ email, password });
     return loginResult;
   } catch (error: unknown) {
-    if (error && typeof error === "object" && "otp_enabled" in error) {
-      return handleOTPLogin(error as unknown as { otp_autosend: OTPType }, { email, password });
+    const otpPayload = _parseOTPError(error);
+    if (otpPayload?.otp_enabled) {
+      return handleOTPLogin(otpPayload, { email, password });
     }
 
     errorHandler(error);
