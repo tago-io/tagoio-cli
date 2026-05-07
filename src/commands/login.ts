@@ -97,14 +97,9 @@ async function loginWithEmailPassword(email: string, password: string) {
     // @ts-expect-error ts don't know what kind of otp_enabled we are using
     const loginResult = await Account.login({ email, password });
     return loginResult;
-  } catch (error) {
-    try {
-      const errorJSON = JSON.parse(String(error));
-      if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password });
-      }
-    } catch {
-      // Ignore JSON parsing errors
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "otp_enabled" in error) {
+      return handleOTPLogin(error as unknown as { otp_autosend: OTPType }, { email, password });
     }
 
     errorHandler(error);
