@@ -30,13 +30,16 @@ describe("resolve-scope", () => {
   const originalPlatform = Object.getOwnPropertyDescriptor(process, "platform");
   const originalEnv = { ...process.env };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     existsSyncMock.mockReset();
     lstatSyncMock.mockReset().mockReturnValue({ isSymbolicLink: () => false });
     errorHandlerMock.mockClear();
     delete process.env.XDG_CONFIG_HOME;
     delete process.env.APPDATA;
     Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    // Defensive: clear any module-level scope override left by a prior test.
+    const { setScopeOverride } = await import("./resolve-scope.js");
+    setScopeOverride(undefined);
   });
 
   afterEach(() => {

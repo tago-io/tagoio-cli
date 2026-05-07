@@ -35,6 +35,22 @@ vi.mock("../lib/messages.js", () => ({
   successMSG: successMSGMock,
 }));
 
+vi.mock("../lib/resolve-scope.js", () => ({
+  resolveScope: () => ({
+    scope: "local" as const,
+    root: "/repo",
+    configPath: "/repo/tagoconfig.json",
+    envFilePath: "/repo/.tagoio/personal.env",
+    configExists: true,
+  }),
+  setScopeOverride: vi.fn(),
+  globalConfigDir: () => "/home/user/.config/tagoio",
+}));
+
+vi.mock("../lib/scope-notice.js", () => ({
+  printScopeBanner: vi.fn(),
+}));
+
 vi.mock("../lib/add-https-to-url.js", () => ({
   addHttpsToUrl: (url: string) => url,
 }));
