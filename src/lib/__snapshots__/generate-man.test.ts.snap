@@ -15,11 +15,10 @@ tagoio \\- command\\-line tool for TagoIO
 [\\fIarguments...\\fR]
 
 .SH DESCRIPTION
-The TagoIO Command Line Tool lets developers manage analyses,
-devices, dashboards, and profiles on TagoIO from the terminal.
-It follows clig.dev conventions: data on stdout, status messages
-(\\fB[INFO]\\fR, \\fB[OK]\\fR, \\fB[ERROR]\\fR) on stderr, and machine\\-readable
-JSON output via \\fB\\-\\-json\\fR.
+The TagoIO Command Line Tool is the official command\\-line
+interface to TagoIO. It manages analyses, devices, dashboards,
+and user profiles, and can export entire applications between
+profiles \\- suitable for both interactive use and CI/CD pipelines.
 
 .SH GLOBAL OPTIONS
 .TP
@@ -489,36 +488,33 @@ profile backup management commands
 Command completed successfully.
 .TP
 .B 1
-Any failure. The error is printed on stderr with an \\fB[ERROR]\\fR prefix
-(or as a JSON object when \\fB\\-\\-json\\fR is set).
+Any failure. The error is printed on stderr with an [ERROR] prefix
+(or as a JSON object when \\-\\-json is set).
 
 .SH ENVIRONMENT
 .TP
 .B TAGOIO_DEFAULT
-Selects which environment from \\fItagoconfig.json\\fR the CLI uses
-when no \\fB\\-\\-env\\fR flag is given. Persisted by
-.BR tagoio\\ set\\-env .
+Selects which environment from tagoconfig.json the CLI uses
+when no \\-\\-env flag is given. Persisted by tagoio set\\-env.
 
 .SH FILES
 .TP
 .I ./tagoconfig.json
 Project\\-level configuration. Created and updated by
-.BR tagoio\\ init .
+tagoio init.
 .TP
 .I ./.tago-lock.<env>.lock
-Per\\-environment profile token written by
-.BR tagoio\\ login .
+Per\\-environment profile token written by tagoio login.
 One file per environment, kept in the current project directory.
 .TP
 .I ./.tagoio/personal.env
 Persists the user's default environment selection
-(\\fBTAGOIO_DEFAULT\\fR). Updated by
-.BR tagoio\\ set\\-env .
+(TAGOIO_DEFAULT). Updated by tagoio set\\-env.
 
 .SH SEE ALSO
 TagoIO documentation: \\fIhttps://help.tago.io\\fR
 
-Issue tracker: \\fIhttps://github.com/tago-io/tagoio-cli/issues\\fR
+Issue tracker: \\fIhttps://github.com/tago\\-io/tagoio\\-cli/issues\\fR
 
 .SH AUTHOR
 TagoIO LLC
