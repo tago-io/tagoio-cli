@@ -1,9 +1,9 @@
 import { Account, Device, DeviceInfo } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 
 /**
  * Creates a new SSE connection to the TagoIO Realtime API.
@@ -61,8 +61,8 @@ function setupSSE(sse: ReturnType<typeof apiSSE>, deviceIdOrToken: string, devic
   };
 
   sse.onerror = (error) => {
-    errorHandler("Connection error");
     console.error(error);
+    errorHandler("Connection error");
   };
 
   sse.onopen = () => {
@@ -87,7 +87,6 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -105,7 +104,6 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
 
     if (!deviceInfo) {
       errorHandler(`Device with ID/Token: ${deviceIdOrToken} couldn't be found.`);
-      return process.exit(0);
     }
 
     deviceIdOrToken = deviceInfo.id;

@@ -1,6 +1,6 @@
 import prompts from "prompts";
 
-import { IEnvironment } from "../lib/config-file";
+import { IEnvironment } from "../lib/config-file.js";
 
 /**
  * Prompts the user to choose one or more analysis from a list of available analysis.

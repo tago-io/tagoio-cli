@@ -1,4 +1,4 @@
-import { cwd } from "process";
+import { cwd } from "node:process";
 
 function getCurrentFolder() {
   return cwd();

@@ -1,8 +1,8 @@
 import { Account, DeviceQuery, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG } from "../../lib/messages";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, successMSG } from "../../lib/messages.js";
 
 /**
  * Maps an array of tags to an array of objects with key-value pairs.
@@ -75,7 +75,6 @@ async function deviceList(options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -90,16 +89,17 @@ async function deviceList(options: IOptions) {
     return;
   }
 
+  const machineMode = Boolean(options.json || options.stringify);
   const resultList = deviceList.map((x) => ({
     ...x,
-    tags: options.json || options.stringify ? mapTags(x.tags, options) : x.tags.length,
+    tags: machineMode ? mapTags(x.tags, options) : x.tags.length,
     last_input: mapDate(x.last_input as Date, options),
   }));
 
   if (options.stringify) {
-    console.info(JSON.stringify(resultList, null, 2));
+    process.stdout.write(`${JSON.stringify(resultList, null, 2)}\n`);
   } else if (options.json) {
-    console.dir(resultList, { depth: null });
+    process.stdout.write(`${JSON.stringify(resultList)}\n`);
   } else {
     console.table(resultList);
   }

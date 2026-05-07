@@ -1,10 +1,10 @@
 import { Account, DashboardInfo, WidgetInfo } from "@tago-io/sdk";
 import { queue } from "async";
 
-import { errorHandler } from "../../../../lib/messages";
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
-import { storeExportBackup } from "./export-backup/export-backup";
+import { errorHandler } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
+import { storeExportBackup } from "./export-backup/export-backup.js";
 
 type DashboardTabs = { hidden: boolean; key: string };
 
@@ -25,7 +25,7 @@ async function insertWidgets(exportAccount: Account, importAccount: Account, das
     }
   }, 5);
 
-  newWidgetQueue.error((error) => console.log(error));
+  newWidgetQueue.error((error) => console.error(error));
   for (const widget_id of widget_ids || []) {
     newWidgetQueue.push(widget_id).catch(errorHandler);
   }

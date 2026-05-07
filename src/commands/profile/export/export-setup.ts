@@ -3,10 +3,10 @@ import { Account, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../../lib/messages";
-import { chooseEntities, enterExportTag } from "./export";
-import { ENTITY_ORDER, EntityType } from "./types";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../../lib/messages.js";
+import { chooseEntities, enterExportTag } from "./export.js";
+import { ENTITY_ORDER, EntityType } from "./types.js";
 
 interface ITagValues {
   [key: string]: string[];
@@ -90,7 +90,6 @@ async function updateEntitySetting({ exportTag, entity, entityItemList, nameFiel
 
   if (!choices) {
     errorHandler("Stopped");
-    return;
   }
 
   if (choices.length === 0) {
@@ -119,7 +118,6 @@ async function setupExport(options: { setup: string }) {
   const config = getEnvironmentConfig(options.setup);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

@@ -1,24 +1,54 @@
 import kleur from "kleur";
 
-function questionMSG(str: any) {
-  return `[${kleur.magenta("PROMPT")}] ${str}`;
+/**
+ * @description Writes a single line to stderr. All non-data CLI output (status,
+ * progress, success confirmations, errors) goes here so that stdout stays clean
+ * for machine-readable output (JSON, tables, etc.). Follows clig.dev: only data
+ * on stdout; everything else on stderr.
+ */
+function writeStatus(line: string) {
+  process.stderr.write(`${line}\n`);
 }
 
-function errorHandler(str: any) {
-  console.error(`[${kleur.red("ERROR")}] ${kleur.bold(str)}`);
-  throw process.exit(0);
+/**
+ * @description Prints an `[ERROR]` message to stderr and terminates the process
+ * with exit code 1.
+ *
+ * @param str - Message to display to the user.
+ */
+function errorHandler(str: any): never {
+  writeStatus(`[${kleur.red("ERROR")}] ${kleur.bold(str)}`);
+  process.exit(1);
 }
 
+/**
+ * @description Highlights a string in cyan color.
+ *
+ * @param str - String to be highlighted.
+ * @returns The input string wrapped in cyan color formatting.
+ */
 function highlightMSG(str: any) {
   return kleur.cyan(str);
 }
 
+/**
+ * @description Prints an `[OK]` status line to stderr (not stdout — stdout is
+ * reserved for command data so pipes work cleanly).
+ *
+ * @param str - Message to display to the user.
+ */
 function successMSG(str: any) {
-  return console.info(`[${kleur.green("INFO")}] ${str}`);
+  writeStatus(`[${kleur.green("OK")}] ${str}`);
 }
 
+/**
+ * @description Prints an `[INFO]` status line to stderr (not stdout — stdout is
+ * reserved for command data so pipes work cleanly).
+ *
+ * @param str - Message to display to the user.
+ */
 function infoMSG(str: any) {
-  return console.info(`[${kleur.blue("INFO")}] ${str}`);
+  writeStatus(`[${kleur.blue("INFO")}] ${str}`);
 }
 
-export { errorHandler, questionMSG, highlightMSG, successMSG, infoMSG };
+export { errorHandler, highlightMSG, successMSG, infoMSG };

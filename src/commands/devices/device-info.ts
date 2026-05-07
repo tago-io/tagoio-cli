@@ -1,15 +1,14 @@
 import { Account, Device, DeviceInfo } from "@tago-io/sdk";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { mapDate, mapTags } from "./device-list";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { mapDate, mapTags } from "./device-list.js";
 
 async function deviceInfo(idOrToken: string, options: { environment: string; raw: boolean; json: boolean; tokens: boolean }) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -25,8 +24,7 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
       .catch(() => null);
 
     if (!deviceInfo) {
-      console.error(`Device with ID/token: ${idOrToken} couldn't be found.`);
-      return process.exit();
+      errorHandler(`Device with ID/token: ${idOrToken} couldn't be found.`);
     }
 
     idOrToken = deviceInfo.id;
@@ -52,23 +50,21 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   deviceInfo.params = mapTags(paramList, options);
 
   if (options.json) {
-    console.dir(
-      {
-        // @ts-expect-error fix key ordering
-        id: "",
-        // @ts-expect-error fix key ordering
-        name: "",
-        // @ts-expect-error fix key ordering
-        connector: "",
-        // @ts-expect-error fix key ordering
-        network: "",
-        ...deviceInfo,
-        created_at: mapDate(deviceInfo.created_at, options),
-        last_input: mapDate(deviceInfo.last_input, options),
-        updated_at: mapDate(deviceInfo.updated_at, options),
-      },
-      { depth: null },
-    );
+    const payload = {
+      // @ts-expect-error fix key ordering
+      id: "",
+      // @ts-expect-error fix key ordering
+      name: "",
+      // @ts-expect-error fix key ordering
+      connector: "",
+      // @ts-expect-error fix key ordering
+      network: "",
+      ...deviceInfo,
+      created_at: mapDate(deviceInfo.created_at, options),
+      last_input: mapDate(deviceInfo.last_input, options),
+      updated_at: mapDate(deviceInfo.updated_at, options),
+    };
+    process.stdout.write(`${JSON.stringify(payload)}\n`);
     return;
   }
 

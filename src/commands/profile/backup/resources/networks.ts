@@ -1,10 +1,10 @@
 import { NetworkInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface RestoreTask {
   network: NetworkInfo;
@@ -25,7 +25,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   const { network, exists } = task;
 
@@ -78,7 +78,7 @@ async function restoreNetworks(resources: Resources, extractDir: string, granula
   const existingIds = await fetchExistingNetworkIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing networks in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring networks...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

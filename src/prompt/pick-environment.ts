@@ -1,13 +1,12 @@
 import prompts from "prompts";
 
-import { getConfigFile } from "../lib/config-file";
-import { errorHandler } from "../lib/messages";
+import { getConfigFile } from "../lib/config-file.js";
+import { errorHandler } from "../lib/messages.js";
 
 async function pickEnvironment(message: string = "Choose your environment:") {
   const configFile = getConfigFile();
   if (!configFile) {
     errorHandler("Couldnt load config file");
-    process.exit(0);
   }
 
   const envList = Object.keys(configFile)
@@ -19,7 +18,6 @@ async function pickEnvironment(message: string = "Choose your environment:") {
 
   if (!environment) {
     errorHandler("Environment not selected");
-    process.exit(0);
   }
 
   return environment as string;

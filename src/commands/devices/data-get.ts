@@ -2,10 +2,10 @@ import { Account, Data, DataQuery, Device, Utils } from "@tago-io/sdk";
 import kleur from "kleur";
 
 // import { DataQuery } from "@tago-io/sdk";
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { postDeviceData } from "./data-post";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { postDeviceData } from "./data-post.js";
 
 /**
  * Get device information and instance based on the provided ID or token.
@@ -85,7 +85,6 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
@@ -112,13 +111,12 @@ async function getDeviceData(idOrToken: string, options: IOptions) {
     })
     .catch((error) => {
       errorHandler(error);
-      throw error;
     });
 
   if (options.stringify) {
-    console.log(JSON.stringify(dataList));
+    process.stdout.write(`${JSON.stringify(dataList, null, 2)}\n`);
   } else if (options.json) {
-    console.dir(dataList, { depth: null });
+    process.stdout.write(`${JSON.stringify(dataList)}\n`);
   } else {
     console.table(dataList);
   }

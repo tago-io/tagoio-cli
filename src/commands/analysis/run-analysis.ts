@@ -3,12 +3,12 @@ import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
-import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file";
-import { detectRuntime } from "../../lib/current-runtime";
-import { getCurrentFolder } from "../../lib/get-current-folder";
-import { errorHandler, highlightMSG, successMSG } from "../../lib/messages";
-import { searchName } from "../../lib/search-name";
-import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
+import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
+import { detectRuntime } from "../../lib/current-runtime.js";
+import { getCurrentFolder } from "../../lib/get-current-folder.js";
+import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
+import { searchName } from "../../lib/search-name.js";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
 /**
  * Builds the command to run the analysis.
@@ -39,7 +39,11 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, r
       }
 
       default: {
-        cmd = `node -r ${resolveCLIPath("/node_modules/@swc-node/register/index")} --watch `;
+        // tsx wraps node with a CJS/ESM-aware TypeScript loader. Needed
+        // because Node's native --experimental-transform-types forces ESM
+        // resolution, which breaks legacy analyses that import CJS
+        // subpaths without a `.js` extension (e.g. "@tago-io/sdk/lib/types").
+        cmd = `node ${resolveCLIPath("/node_modules/tsx/dist/cli.mjs")} watch `;
         if (options.debug) {
           cmd += "--inspect ";
         }
@@ -67,7 +71,6 @@ async function runAnalysis(
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const analysisList = config.analysisList.filter((x) => x.fileName);
@@ -84,13 +87,13 @@ async function runAnalysis(
 
   if (!scriptToRun || !scriptToRun.id) {
     errorHandler(`Analysis couldn't be found: ${scriptName}`);
-    return process.exit();
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
 
   let { token: analysisToken, run_on, name, runtime: runtimeParam } = await account.analysis.info(scriptToRun.id);
-  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name}}) [${highlightMSG(analysisToken)}].`);
+  const tokenSuffix = analysisToken ? ` [${highlightMSG(analysisToken)}]` : "";
+  successMSG(`> Analysis found: ${highlightMSG(scriptToRun.fileName)} (${name})${tokenSuffix}.`);
 
   const analysisEnv: { [key: string]: string } = {
     ...process.env,
@@ -122,8 +125,7 @@ async function runAnalysis(
 
   let runtime;
   if (options.deno && options.node) {
-    console.error("Error: Cannot specify both --deno and --node flags");
-    process.exit(1);
+    errorHandler("Cannot specify both --deno and --node flags");
   } else if (options.deno) {
     runtime = "--deno";
   } else if (options.node) {

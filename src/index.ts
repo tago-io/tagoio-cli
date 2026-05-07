@@ -1,27 +1,25 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import dotenv from "dotenv";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import kleur from "kleur";
 
-import { analysisCommands } from "./commands/analysis";
-import { dashboardCommands } from "./commands/dashboard";
-import { deviceCommands } from "./commands/devices";
-import { listEnvironment } from "./commands/list-env";
-import { tagoLogin } from "./commands/login";
-import { profileCommands } from "./commands/profile";
-import { setEnvironment } from "./commands/set-env";
-import { startConfig } from "./commands/start-config";
-import { getConfigFile, resolveCLIPath } from "./lib/config-file";
-import { configureHelp } from "./lib/configure-help";
-import { ENV_FILE_PATH } from "./lib/dotenv-config";
-import { highlightMSG } from "./lib/messages";
-import { updater } from "./lib/notify-update";
+import { analysisCommands } from "./commands/analysis/index.js";
+import { dashboardCommands } from "./commands/dashboard/index.js";
+import { deviceCommands } from "./commands/devices/index.js";
+import { listEnvironment } from "./commands/list-env.js";
+import { tagoLogin } from "./commands/login.js";
+import { profileCommands } from "./commands/profile/index.js";
+import { setEnvironment } from "./commands/set-env.js";
+import { startConfig } from "./commands/start-config.js";
+import { getConfigFile } from "./lib/config-file.js";
+import { configureHelp } from "./lib/configure-help.js";
+import { ENV_FILE_PATH } from "./lib/dotenv-config.js";
+import { highlightMSG } from "./lib/messages.js";
+import { updater } from "./lib/notify-update.js";
 
-/**
- * Loads the package.json file from the CLI directory.
- */
-const packageJSON = JSON.parse(readFileSync(resolveCLIPath("./package.json")).toString());
+const packageJSON = JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"));
 dotenv.config({ path: ENV_FILE_PATH, quiet: true });
 
 const indexConfigFile = getConfigFile();
@@ -68,7 +66,7 @@ async function initiateCMD() {
   \tEmail: ${highlightMSG(indexConfigFile?.[defaultEnvironment]?.email || "N/A")}`);
 
   program.configureOutput({
-    writeErr: (str) => process.stdout.write(`[${errorColor("ERROR")}] ${str}`),
+    writeErr: (str) => process.stderr.write(`[${errorColor("ERROR")}] ${str}`),
   });
 
   configureHelp(program);

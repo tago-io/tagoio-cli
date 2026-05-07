@@ -2,10 +2,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
-import { setEnvironmentVariables } from "./dotenv-config";
-import { getCurrentFolder } from "./get-current-folder";
-import { errorHandler, highlightMSG, infoMSG } from "./messages";
-import { readToken } from "./token";
+import { setEnvironmentVariables } from "./dotenv-config.js";
+import { getCurrentFolder } from "./get-current-folder.js";
+import { errorHandler, highlightMSG, infoMSG } from "./messages.js";
+import { readToken } from "./token.js";
 
 interface IEnvironment {
   analysisList: { name: string; fileName: string; id: string; path?: string }[];
@@ -28,7 +28,7 @@ interface IConfigFile {
 }
 
 function resolveCLIPath(suffix: string) {
-  let path = __dirname;
+  let path = import.meta.dirname;
   // Handle windows and linux paths
   const pathSymbol = path.includes("\\") ? "\\" : "/";
 
@@ -53,7 +53,6 @@ function getConfigFile() {
     }
   } catch (error) {
     errorHandler(error);
-    return;
   }
 
   try {
@@ -93,7 +92,7 @@ function getEnvironmentConfig(environment?: string) {
     const profileToken = readToken(environment);
 
     const profileInfo = kleur.dim(`[${userEnvironment.profileName}] [${userEnvironment.email}]`);
-    infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}\n`);
+    infoMSG(`Using environment: ${highlightMSG(environment)} ${profileInfo}`);
 
     return { ...configFile[environment], ...defaultPaths, profileToken, profileRegion };
   }
@@ -111,7 +110,7 @@ function getEnvironmentConfig(environment?: string) {
   const profileToken = readToken(defaultEnvName);
 
   const profileInfo = kleur.dim(`[${defaultEnvironment.profileName}] [${defaultEnvironment.email}]`);
-  infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}\n`);
+  infoMSG(`Using default environment: ${highlightMSG(defaultEnvName)} ${profileInfo}`);
 
   return { ...defaultEnvironment, ...defaultPaths, profileToken, profileRegion };
 }
@@ -147,7 +146,6 @@ function setDefault(environment: string) {
 
   if (!configFile[environment]) {
     errorHandler(`Environment ${environment} is not in the tagoconfig.json`);
-    return;
   }
 
   configFile.default = environment;

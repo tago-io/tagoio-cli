@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from "fs";
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 
 function addOnGitIgnore(folder: string, fileName: string) {
   const gitignorePath = `${folder}/.gitignore`;

@@ -102,7 +102,7 @@ Analysis.use(startAnalysis, { token: process.env.T_ANALYSIS_TOKEN });
 
 ```
 
-If you want to use the Debugger with -D, make sure you have a **.swcrc** file with sourceMaps activated. This repository contains a .swcrc.example file if you prefer to just copy to your folder.
+`tagoio run` executes your TypeScript file directly using Node's native experimental-transform-types runtime, so no build step or loader configuration is required. The `-d` flag forwards to Node so you can attach a debugger.
 
 ## Working with Environments
 
@@ -196,6 +196,37 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
   tagoio run --deno     # Force Deno runtime
   tagoio run --node     # Force Node.js runtime
   ```
+
+
+## Using in CI/CD Pipelines
+
+Deploy every analysis from `tagoconfig.json` directly from a GitHub Actions workflow — no need to maintain a custom deploy script per project:
+
+```yaml
+- name: Install TagoIO CLI and builder
+  run: npm install -g @tago-io/cli @tago-io/builder
+
+- name: Deploy analyses to TagoIO
+  run: tagoio deploy --all --env production -t ${{ secrets.TAGOIO_TOKEN }} --silent
+```
+
+The flag combination:
+- `--all` — deploys every analysis registered in `tagoconfig.json` without any interactive prompt
+- `--env, --environment` — picks the environment block from `tagoconfig.json`
+- `-t, --token` — a TagoIO token. Accepts either a **profile token** or an **external-analysis token** (see permissions below). Bypasses the local `.tago-lock` file, which doesn't exist in CI runners
+- `--silent` — skips confirmation prompts
+
+Together, the command runs fully non-interactively — suitable for any CI/CD system. No call to `tagoio init` or `tagoio login` is required before deploy, but your repository **must** include a pre-configured `tagoconfig.json` mapping each analysis file to its analysis ID.
+
+### Required permissions when using an external-analysis token
+
+Profile tokens always have full access and need no extra setup. If you'd rather use a scoped external-analysis token (recommended for least-privilege CI pipelines), create an Access Management rule in TagoIO with the **Analysis** resource type and the following permissions enabled:
+
+- **Access Analysis**
+- **Edit Analysis**
+- **Upload Analysis Script**
+
+Attach that rule to the token you pass via `-t, --token`. Without these permissions, `tagoio deploy` will fail with an Authorization Denied error from the TagoIO API.
 
 
 ## License

@@ -1,12 +1,12 @@
 import { Command } from "commander";
 import kleur from "kleur";
 
-import { connectAnalysisConsole } from "./analysis-console";
-import { analysisSetMode } from "./analysis-set-mode";
-import { deployAnalysis } from "./deploy";
-import { duplicateAnalysis } from "./duplicate-analysis";
-import { runAnalysis } from "./run-analysis";
-import { triggerAnalysis } from "./trigger-analysis";
+import { connectAnalysisConsole } from "./analysis-console.js";
+import { analysisSetMode } from "./analysis-set-mode.js";
+import { deployAnalysis } from "./deploy.js";
+import { duplicateAnalysis } from "./duplicate-analysis.js";
+import { runAnalysis } from "./run-analysis.js";
+import { triggerAnalysis } from "./trigger-analysis.js";
 
 function analysisCommands(program: Command) {
   program.command("Analysis Header");
@@ -26,16 +26,19 @@ function analysisCommands(program: Command) {
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
+    .option("--all", "deploy every analysis from tagoconfig.json without prompting", false)
+    .option("-t, --token <profile-token>", "profile token for this run (bypasses lock file, for CI/CD)")
     .action(deployAnalysis)
     .addHelpText(
       "after",
       `
 Example:
-    $ tagoio deploy all
-    $ tagoio deploy all -e stage
     $ tagoio deploy dashboard-handler
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy --all                                       # deploy every analysis from tagoconfig.json
+    $ tagoio deploy --all --env stage                              # deploy all to the stage environment
+    $ tagoio deploy --all --env prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed
     $ tagoio deploy --node
     $ tagoio deploy --deno`,
     );

@@ -1,14 +1,13 @@
 import { Account, Data, Device, DeviceInfo, DeviceItem, Utils } from "@tago-io/sdk";
-import axios from "axios";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import kleur from "kleur";
 import { DateTime } from "luxon";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
-import { pickFileFromTagoIO } from "../../prompt/pick-files-from-tagoio";
-import { promptTextToEnter } from "../../prompt/text-prompt";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { pickFileFromTagoIO } from "../../prompt/pick-files-from-tagoio.js";
+import { promptTextToEnter } from "../../prompt/text-prompt.js";
 
 interface IOptions {
   environment?: string;
@@ -16,10 +15,12 @@ interface IOptions {
   local: boolean;
 }
 
-// function to get a JSON file from an URL using Axios
 async function getJSON(url: string, authorization: string) {
-  const { data } = await axios.get(url, { headers: { Authorization: authorization } });
-  return data;
+  const response = await fetch(url, { headers: { Authorization: authorization } });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response.json();
 }
 
 async function restoreBKP(account: Account, profileToken: string, device: Device, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
@@ -31,14 +32,12 @@ async function restoreBKP(account: Account, profileToken: string, device: Device
     const fileName = await pickFileFromTagoIO(account);
     if (!fileName) {
       errorHandler("No file selected");
-      return;
     }
     dataList = await getJSON(fileName, profileToken);
   } else {
     const filePath = await promptTextToEnter("File path", `./${id}.json`);
     if (!filePath) {
       errorHandler("No file selected");
-      return;
     }
     dataList = JSON.parse(readFileSync(filePath, "utf8"));
   }
@@ -89,8 +88,9 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
   }
 
   // store dataList on local
-  writeFileSync(`./${id}.json`, JSON.stringify(dataList, null, 4));
-  successMSG(`> Backup stored on ${name}.json`);
+  const filePath = `./${id}.json`;
+  writeFileSync(filePath, `${JSON.stringify(dataList, null, 4)}\n`);
+  successMSG(`> Backup stored on ${filePath} (${name})`);
 }
 
 /**
@@ -106,7 +106,6 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

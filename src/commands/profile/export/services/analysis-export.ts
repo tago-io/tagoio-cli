@@ -1,11 +1,10 @@
 import { Account, AnalysisListItem } from "@tago-io/sdk";
-import axios from "axios";
 import prompts from "prompts";
-import zlib from "zlib";
+import zlib from "node:zlib";
 
-import { infoMSG } from "../../../../lib/messages";
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
+import { infoMSG } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
 
 /**
  * Choose one of the values for your Environment Variable
@@ -102,7 +101,7 @@ async function analysisExport(account: Account, import_account: Account, export_
 
   const analysis_info = [];
   for (const { id: analysis_id, name } of list) {
-    console.info(`Exporting analysis ${name}...`);
+    infoMSG(`Exporting analysis ${name}...`);
     const analysis = await account.analysis.info(analysis_id);
     const export_id = analysis.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
@@ -123,11 +122,12 @@ async function analysisExport(account: Account, import_account: Account, export_
       analysis_info.push({ id: target_id, variables: new_analysis.variables });
     }
     const script = await account.analysis.downloadScript(analysis_id);
-    const script_base64 = await axios
-      .get(script.url, {
-        responseType: "arraybuffer",
-      })
-      .then((response) => zlib.gunzipSync(response.data).toString("base64"));
+    const scriptResponse = await fetch(script.url);
+    if (!scriptResponse.ok) {
+      throw new Error(`Request failed: ${scriptResponse.status}`);
+    }
+    const scriptBuffer = Buffer.from(await scriptResponse.arrayBuffer());
+    const script_base64 = zlib.gunzipSync(scriptBuffer).toString("base64");
 
     await import_account.analysis.uploadScript(target_id, { content: script_base64, language: "node", name: "script.js" });
 

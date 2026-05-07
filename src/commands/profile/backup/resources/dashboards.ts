@@ -1,10 +1,10 @@
 import { DashboardInfo, Resources, WidgetInfo } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface BackupWidget extends WidgetInfo {
   id: string;
@@ -75,7 +75,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   const { dashboard, exists } = task;
 
@@ -138,7 +138,7 @@ async function restoreDashboards(resources: Resources, extractDir: string, granu
   const existingIds = await fetchExistingDashboardIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing dashboards in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring dashboards...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

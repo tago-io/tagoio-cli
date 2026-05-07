@@ -1,9 +1,9 @@
 import { Account, OTPType } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { addHttpsToUrl } from "../lib/add-https-to-url";
-import { errorHandler, highlightMSG, successMSG } from "../lib/messages";
-import { writeToken } from "../lib/token";
+import { addHttpsToUrl } from "../lib/add-https-to-url.js";
+import { errorHandler, highlightMSG, successMSG } from "../lib/messages.js";
+import { writeToken } from "../lib/token.js";
 
 /**
  * @description Set the TagoIO deploy URL.
@@ -81,10 +81,25 @@ async function handleOTPLogin({ otp_autosend }: { otp_autosend: OTPType }, { ema
   const loginResult = await Account.login({ email, password, otp_type: otp_autosend, pin_code: pinCode.value } as any).catch(errorHandler);
   if (!loginResult) {
     errorHandler("Login failed");
-    return process.exit(1);
   }
 
   return { ...loginResult, otp_type: otp_autosend, pin_code: pinCode.value };
+}
+
+function _parseOTPError(error: unknown): { otp_enabled?: boolean; otp_autosend: OTPType } | undefined {
+  if (error && typeof error === "object" && "otp_enabled" in error) {
+    return error as { otp_enabled?: boolean; otp_autosend: OTPType };
+  }
+
+  if (typeof error === "string") {
+    try {
+      return JSON.parse(error);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -98,14 +113,10 @@ async function loginWithEmailPassword(email: string, password: string) {
     // @ts-expect-error ts don't know what kind of otp_enabled we are using
     const loginResult = await Account.login({ email, password });
     return loginResult;
-  } catch (error) {
-    try {
-      const errorJSON = JSON.parse(error);
-      if (errorJSON?.otp_enabled) {
-        return handleOTPLogin(errorJSON, { email, password });
-      }
-    } catch {
-      // Ignore JSON parsing errors
+  } catch (error: unknown) {
+    const otpPayload = _parseOTPError(error);
+    if (otpPayload?.otp_enabled) {
+      return handleOTPLogin(otpPayload, { email, password });
     }
 
     errorHandler(error);

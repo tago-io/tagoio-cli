@@ -1,22 +1,14 @@
 import { createWriteStream, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 import { Resources } from "@tago-io/sdk";
-import axios from "axios";
 import ora from "ora";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-import {
-  fetchBackups,
-  formatDate,
-  formatFileSize,
-  getDownloadUrl,
-  handleBackupError,
-  promptCredentials,
-  selectBackup,
-} from "./lib";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { fetchBackups, formatDate, formatFileSize, getDownloadUrl, handleBackupError, promptCredentials, selectBackup } from "./lib.js";
 
 const DOWNLOAD_FOLDER = "profile-backup-download";
 
@@ -28,8 +20,12 @@ async function downloadBackupToFolder(downloadUrl: string, outputDir: string, ba
   const filePath = join(outputDir, fileName);
 
   const spinner = ora("Downloading backup file...").start();
-  const response = await axios.get(downloadUrl, { responseType: "stream" });
-  await pipeline(response.data, createWriteStream(filePath));
+  const response = await fetch(downloadUrl);
+  if (!response.ok || !response.body) {
+    spinner.fail(`Download failed: ${response.status}`);
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(filePath));
   spinner.succeed(`Backup downloaded to: ${filePath}`);
 
   return filePath;
@@ -40,7 +36,6 @@ async function downloadBackup() {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
@@ -52,7 +47,7 @@ async function downloadBackup() {
   const profileID = profile.info.id;
   const baseURL = typeof config.profileRegion === "object" ? config.profileRegion.api : "https://api.tago.io";
 
-  infoMSG("Fetching available backups...\n");
+  infoMSG("Fetching available backups...");
 
   try {
     const backups = await fetchBackups(profileID, baseURL, config.profileToken);
@@ -65,8 +60,8 @@ async function downloadBackup() {
     infoMSG(`Created at: ${formatDate(selectedBackup.created_at)}`);
     infoMSG(`Size: ${formatFileSize(selectedBackup.file_size)}`);
 
-    console.info("");
-    infoMSG("Authentication required to download the backup.\n");
+    process.stderr.write("\n");
+    infoMSG("Authentication required to download the backup.");
 
     const credentials = await promptCredentials();
     if (!credentials) {
@@ -74,19 +69,19 @@ async function downloadBackup() {
     }
 
     successMSG("Credentials received.");
-    console.info("");
+    process.stderr.write("\n");
 
     infoMSG("Requesting backup download URL...");
     const downloadResult = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
     infoMSG(`Backup size: ${highlightMSG(downloadResult.fileSizeMb + " MB")}`);
     infoMSG(`Download expires at: ${highlightMSG(formatDate(downloadResult.expireAt))}`);
     successMSG("Download URL obtained.");
-    console.info("");
+    process.stderr.write("\n");
 
     const outputDir = join(process.cwd(), DOWNLOAD_FOLDER);
     await downloadBackupToFolder(downloadResult.url, outputDir, selectedBackup.id);
 
-    console.info("");
+    process.stderr.write("\n");
     successMSG("Backup download completed!");
   } catch (error) {
     handleBackupError(error, "Failed to download backup");

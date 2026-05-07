@@ -1,10 +1,11 @@
 import { Account } from "@tago-io/sdk";
 
-import { replaceObj } from "../../../../lib/replace-obj";
-import { IExportHolder } from "../types";
+import { infoMSG } from "../../../../lib/messages.js";
+import { replaceObj } from "../../../../lib/replace-obj.js";
+import { IExportHolder } from "../types.js";
 
 async function actionsExport(account: Account, import_account: Account, export_holder: IExportHolder) {
-  console.info("Exporting actions: started");
+  infoMSG("Exporting actions: started");
 
   // @ts-expect-error we are looking only for keys
   const list = await account.actions.list({ amount: 10000, fields: ["id", "name", "tags"], filter: { tags: [{ key: export_holder.config.export_tag }] } });
@@ -17,7 +18,7 @@ async function actionsExport(account: Account, import_account: Account, export_h
 
   for (const { id: action_id, name } of list) {
     await new Promise((resolve) => setTimeout(resolve, 250)); // sleep
-    console.info(`Exporting action ${name}`);
+    infoMSG(`Exporting action ${name}`);
     const action = await account.actions.info(action_id);
     const export_id = action.tags?.find((tag) => tag.key === export_holder.config.export_tag)?.value;
 
@@ -45,7 +46,7 @@ async function actionsExport(account: Account, import_account: Account, export_h
     }
   }
 
-  console.info("Exporting actions: finished");
+  infoMSG("Exporting actions: finished");
   return export_holder;
 }
 

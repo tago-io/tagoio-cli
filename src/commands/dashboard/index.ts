@@ -1,6 +1,6 @@
 import { Command } from "commander";
 
-import { copyTabWidgets } from "./copy-tab";
+import { copyTabWidgets } from "./copy-tab.js";
 
 function dashboardCommands(program: Command) {
   program.command("Dashboards Header");

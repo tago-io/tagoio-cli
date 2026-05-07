@@ -1,10 +1,10 @@
 import { ActionInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface RestoreTask {
   action: ActionInfo;
@@ -25,7 +25,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   const { action, exists } = task;
 
@@ -78,7 +78,7 @@ async function restoreActions(resources: Resources, extractDir: string, granular
   const existingIds = await fetchExistingActionIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing actions in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring actions...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

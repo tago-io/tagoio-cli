@@ -2,10 +2,10 @@ import { Account, DashboardInfo } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { confirmPrompt } from "../../prompt/confirm";
-import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { confirmPrompt } from "../../prompt/confirm.js";
+import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio.js";
 
 interface IOptions {
   to: string;
@@ -53,7 +53,7 @@ async function deleteWidgetsFromTab(account: Account, dashID: string, arrangemen
  */
 async function copyWidgetsFromTab(account: Account, dashID: string, arrangement: DashboardInfo["arrangement"], tabID: string, toTabID: string) {
   if (!arrangement) {
-    return;
+    return { arrangement, copied: 0 };
   }
 
   const fromTabWidgets = arrangement.filter((x) => x.tab === tabID);
@@ -70,7 +70,7 @@ async function copyWidgetsFromTab(account: Account, dashID: string, arrangement:
     });
   }
 
-  return arrangement;
+  return { arrangement, copied: fromTabWidgets.length };
 }
 
 /**
@@ -89,7 +89,6 @@ async function pickTabFromDashboard(list: { title: string; value: string }[], me
 
   if (!id) {
     errorHandler("Tab not selected");
-    return process.exit();
   }
 
   return id as string;
@@ -105,7 +104,6 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -130,24 +128,32 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
   const { to, from } = options;
   if (to === from) {
     errorHandler("You can't copy data from and to the same tab");
-    return;
   }
 
   const toTabName = (dashInfo.tabs as DashboardTabs[]).find((x) => x.key === to)?.value as string;
   const fromTabName = (dashInfo.tabs as DashboardTabs[]).find((x) => x.key === from)?.value as string;
 
-  infoMSG(`> Copying tab ${kleur.cyan(fromTabName)} to ${kleur.cyan(toTabName)}...`);
+  infoMSG(`Copying tab. source=${kleur.cyan(fromTabName)} target=${kleur.cyan(toTabName)}`);
   const yesNo = await confirmPrompt();
   if (!yesNo) {
     return;
   }
 
-  let arrangement = await deleteWidgetsFromTab(account, dashID, dashInfo.arrangement, to);
-  arrangement = await copyWidgetsFromTab(account, dashID, arrangement, from, to);
+  const arrangementAfterDelete = await deleteWidgetsFromTab(account, dashID, dashInfo.arrangement, to);
+  const { arrangement, copied } = await copyWidgetsFromTab(account, dashID, arrangementAfterDelete, from, to);
 
   await account.dashboards.edit(dashID, { arrangement });
 
-  successMSG(`> Tab ${fromTabName} [${kleur.cyan(from)}] copied to ${toTabName} [${kleur.cyan(to)}]`);
+  if (copied === 0) {
+    errorHandler(
+      `No widgets were copied. The source tab "${fromTabName}" has no widgets associated with its tab key. ` +
+        `This usually means the dashboard uses a model where arrangement entries have tab=null. ` +
+        `Verify with: tagoio dashboard widgets, or open an issue with the dashboard ID ${dashID}.`,
+    );
+  }
+  successMSG(
+    `Dashboard tab copied. dashboard=${kleur.blue(dashID)} source=${fromTabName}[${kleur.cyan(from)}] target=${toTabName}[${kleur.cyan(to)}] widgets=${kleur.cyan(copied)}`,
+  );
 }
 
 export { copyTabWidgets };

@@ -1,8 +1,8 @@
 import { Account, Device, Utils } from "@tago-io/sdk";
 
-import { getEnvironmentConfig } from "../../lib/config-file";
-import { errorHandler, successMSG } from "../../lib/messages";
-import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio";
+import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { errorHandler, successMSG } from "../../lib/messages.js";
+import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 
 interface IOptions {
   environment?: string;
@@ -13,7 +13,6 @@ async function postDeviceData(idOrToken: string, options: IOptions) {
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });

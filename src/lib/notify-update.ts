@@ -1,16 +1,17 @@
 /* IMPORT */
 
-import axios from "axios";
 import kleur from "kleur";
-import { compare } from "./compare";
+import { compare } from "./compare.js";
 
 const updaterUtils = {
   /* API */
 
   fetch: async (url: string): Promise<{ version?: string }> => {
-    // const signal = updaterUtils.getExitSignal();
-    const json = await axios.get(url, { responseType: "json" }).then((r) => r.data);
-    return json;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+    return response.json() as Promise<{ version?: string }>;
   },
 
   getLatestVersion: async (name: string): Promise<string | undefined> => {
@@ -24,7 +25,7 @@ const updaterUtils = {
   },
 
   notify: (name: string, version: string, latest: string) => {
-    return () => console.log(`\n\n📦 Update available for ${kleur.cyan(name)}: ${kleur.gray(version)} → ${kleur.green(latest)}`);
+    return () => process.stderr.write(`\n\n📦 Update available for ${kleur.cyan(name)}: ${kleur.gray(version)} → ${kleur.green(latest)}\n`);
   },
 };
 

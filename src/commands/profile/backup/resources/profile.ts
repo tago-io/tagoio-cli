@@ -1,9 +1,9 @@
 import { ProfileInfo, Resources } from "@tago-io/sdk";
 import ora from "ora";
 
-import { highlightMSG, infoMSG } from "../../../../lib/messages";
-import { getErrorMessage, readBackupSingleFile } from "../lib";
-import { RestoreResult } from "../types";
+import { highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { getErrorMessage, readBackupSingleFile } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface BackupProfile {
   id: string;
@@ -70,7 +70,7 @@ async function restoreProfile(resources: Resources, extractDir: string): Promise
 
   infoMSG(`Found profile ${highlightMSG(backupProfile.name)} in backup.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring profile settings...").start();
 
   try {

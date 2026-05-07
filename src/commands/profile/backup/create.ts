@@ -1,29 +1,27 @@
 import { Account } from "@tago-io/sdk";
-import axios from "axios";
 import kleur from "kleur";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-import { handleBackupError } from "./lib";
-import { BackupCreateResponse, BackupItem, BackupListResponse } from "./types";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { handleBackupError } from "./lib.js";
+import { BackupItem, BackupListResponse } from "./types.js";
 
 const POLL_INTERVAL_MS = 10000;
 
 /** Fetches the most recent backup for the profile. */
 async function fetchLatestBackup(profileID: string, baseURL: string, token: string): Promise<BackupItem | null> {
   const url = `${baseURL}/profile/${profileID}/backup?orderBy=created_at,desc&amount=1`;
-  const response = await axios.get<BackupListResponse>(url, { headers: { Authorization: token } });
-  return response.data.result?.[0] || null;
+  const response = await fetch(url, { headers: { Authorization: token } });
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  const body = (await response.json()) as BackupListResponse;
+  return body.result?.[0] || null;
 }
 
 /** Polls backup status until completed or failed. */
-async function waitForBackupCompletion(
-  profileID: string,
-  baseURL: string,
-  token: string,
-  spinner: ora.Ora
-): Promise<BackupItem | null> {
+async function waitForBackupCompletion(profileID: string, baseURL: string, token: string, spinner: Ora): Promise<BackupItem | null> {
   let elapsedSeconds = 0;
 
   while (true) {
@@ -53,7 +51,6 @@ async function createBackup() {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -69,11 +66,21 @@ async function createBackup() {
   infoMSG(`Creating backup for profile: ${highlightMSG(profile.info.name)} (${profileID})`);
 
   try {
-    await axios.post<BackupCreateResponse>(url, {}, { headers: { Authorization: config.profileToken } });
+    const postResponse = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: config.profileToken,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!postResponse.ok) {
+      throw new Error(`Request failed: ${postResponse.status}`);
+    }
 
-    console.info("");
-    console.info(kleur.gray("Press Ctrl+C to stop waiting. The backup will continue in the background."));
-    console.info("");
+    process.stderr.write("\n");
+    process.stderr.write(`${kleur.gray("Press Ctrl+C or Cmd+C to stop waiting. The backup will continue in the background.")}\n`);
+    process.stderr.write("\n");
 
     const spinner = ora("Creating backup...").start();
 
@@ -81,7 +88,7 @@ async function createBackup() {
 
     if (completedBackup) {
       spinner.succeed("Backup completed successfully!");
-      console.info("");
+      process.stderr.write("\n");
       successMSG(`Backup ID: ${highlightMSG(completedBackup.id)}`);
     }
   } catch (error) {

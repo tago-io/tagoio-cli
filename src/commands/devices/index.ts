@@ -1,14 +1,14 @@
 import { Command } from "commander";
 
-import { cmdRepeatableValue } from "../../lib/commander-repeatable";
-import { changeBucketType } from "./change-bucket-type";
-import { changeNetworkOrConnector } from "./change-network";
-import { copyDeviceData } from "./copy-data";
-import { getDeviceData } from "./data-get";
-import { bkpDeviceData } from "./device-bkp";
-import { deviceInfo } from "./device-info";
-import { deviceList } from "./device-list";
-import { inspectorConnection } from "./device-live-inspector";
+import { cmdRepeatableValue } from "../../lib/commander-repeatable.js";
+import { changeBucketType } from "./change-bucket-type.js";
+import { changeNetworkOrConnector } from "./change-network.js";
+import { copyDeviceData } from "./copy-data.js";
+import { getDeviceData } from "./data-get.js";
+import { bkpDeviceData } from "./device-bkp.js";
+import { deviceInfo } from "./device-info.js";
+import { deviceList } from "./device-list.js";
+import { inspectorConnection } from "./device-live-inspector.js";
 
 function handleNumber(value: any, _previous: any) {
   if (Number.isNaN(Number(value))) {
@@ -44,7 +44,7 @@ Example:
     .description("get information about a device and it's configuration parameters.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
-    .option("--json", "return json list", true)
+    .option("--json", "return json list")
     .option("--raw", "get object the same as stored")
     .option("-t, --tokens", "get tokens")
     .action(deviceInfo)
@@ -66,7 +66,7 @@ Example:
     .option("-v, --tagvalue [value]", "tag value to filter in", cmdRepeatableValue, [])
     .option("-s, --stringify", "return list as text")
     .option("--tags", "display tags")
-    .option("--json", "return json list", true)
+    .option("--json", "return json list")
     .option("--raw", "get object the same as stored")
     .action(deviceList)
     .addHelpText(
@@ -91,7 +91,7 @@ Example:
     .option("--start-date <date>", "Get data after date")
     .option("--end-date <date>", "Get data previous of date")
     .option("-q, --query [queryType]", "Perform an specific query", (value) => (isValidQuery(value) ? value : null))
-    .option("--json", "return json list", true)
+    .option("--json", "return json list")
     .option("--stringify", "return as text")
     .option("-p, --post <dataJSON>", "send data to the device")
     .option("-v, --var <variable>", "Filter by variable", cmdRepeatableValue, [])
@@ -142,8 +142,8 @@ Example:
       "after",
       `
 Example:
-   $ tagoio device-network 62151835435d540010b768c4 --n 62151835435d540010b768c4 --c 62151835435d540010b768c4
-   $ tagoio nc 62151835435d540010b768c4 --n 62151835435d540010b768c4
+   $ tagoio device-network 62151835435d540010b768c4 -n 62151835435d540010b768c4 -c 62151835435d540010b768c4
+   $ tagoio nc 62151835435d540010b768c4 -n 62151835435d540010b768c4 -c 62151835435d540010b768c4
    `,
     );
 

@@ -1,42 +1,34 @@
 import { createReadStream, createWriteStream, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
 import { Resources } from "@tago-io/sdk";
-import axios from "axios";
 import kleur from "kleur";
 import ora from "ora";
 import unzipper from "unzipper";
 
-import { getEnvironmentConfig } from "../../../lib/config-file";
-import { displayWarning } from "../../../lib/display-warning";
-import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages";
-import { chooseFromList } from "../../../prompt/choose-from-list";
-import { confirmPrompt } from "../../../prompt/confirm";
-import {
-  fetchBackups,
-  formatDate,
-  formatFileSize,
-  getDownloadUrl,
-  handleBackupError,
-  promptCredentials,
-  selectBackup,
-} from "./lib";
-import { restoreAccessManagement } from "./resources/access-management";
-import { restoreActions } from "./resources/actions";
-import { restoreAnalysis } from "./resources/analysis";
-import { restoreConnectors } from "./resources/connectors";
-import { restoreDashboards } from "./resources/dashboards";
-import { restoreDevices } from "./resources/devices";
-import { restoreDictionaries } from "./resources/dictionaries";
-import { restoreFiles } from "./resources/files";
-import { restoreNetworks } from "./resources/networks";
-import { restoreProfile } from "./resources/profile";
-import { restoreRun } from "./resources/run";
-import { restoreRunUsers } from "./resources/run-users";
-import { restoreSecrets } from "./resources/secrets";
-import { RestoreResult } from "./types";
+import { getEnvironmentConfig } from "../../../lib/config-file.js";
+import { displayWarning } from "../../../lib/display-warning.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { chooseFromList } from "../../../prompt/choose-from-list.js";
+import { confirmPrompt } from "../../../prompt/confirm.js";
+import { fetchBackups, formatDate, formatFileSize, getDownloadUrl, handleBackupError, promptCredentials, selectBackup } from "./lib.js";
+import { restoreAccessManagement } from "./resources/access-management.js";
+import { restoreActions } from "./resources/actions.js";
+import { restoreAnalysis } from "./resources/analysis.js";
+import { restoreConnectors } from "./resources/connectors.js";
+import { restoreDashboards } from "./resources/dashboards.js";
+import { restoreDevices } from "./resources/devices.js";
+import { restoreDictionaries } from "./resources/dictionaries.js";
+import { restoreFiles } from "./resources/files.js";
+import { restoreNetworks } from "./resources/networks.js";
+import { restoreProfile } from "./resources/profile.js";
+import { restoreRun } from "./resources/run.js";
+import { restoreRunUsers } from "./resources/run-users.js";
+import { restoreSecrets } from "./resources/secrets.js";
+import { RestoreResult } from "./types.js";
 
 interface RestoreOptions {
   resources?: boolean;
@@ -142,7 +134,7 @@ function analyzeBackupContents(extractDir: string): BackupSummary[] {
 function displayBackupSummary(summary: BackupSummary[]): number {
   const totalResources = summary.reduce((acc, item) => acc + item.count, 0);
 
-  console.info("");
+  process.stderr.write("\n");
   console.info(kleur.bold("Backup Contents:"));
   console.info(kleur.gray("─".repeat(40)));
 
@@ -163,12 +155,18 @@ async function downloadAndExtractBackup(downloadUrl: string, backupID: string): 
   mkdirSync(extractDir, { recursive: true });
 
   const spinner = ora("Downloading backup file...").start();
-  const response = await axios.get(downloadUrl, { responseType: "stream" });
-  await pipeline(response.data, createWriteStream(zipPath));
+  const response = await fetch(downloadUrl);
+  if (!response.ok || !response.body) {
+    spinner.fail(`Download failed: ${response.status}`);
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(zipPath));
   spinner.succeed("Backup downloaded successfully.");
 
   spinner.start("Extracting backup contents...");
-  await createReadStream(zipPath).pipe(unzipper.Extract({ path: extractDir })).promise();
+  await createReadStream(zipPath)
+    .pipe(unzipper.Extract({ path: extractDir }))
+    .promise();
   spinner.succeed("Backup extracted successfully.");
 
   return extractDir;
@@ -195,7 +193,6 @@ async function restoreBackup(options: RestoreOptions = {}) {
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
@@ -207,7 +204,7 @@ async function restoreBackup(options: RestoreOptions = {}) {
   const profileID = profile.info.id;
   const baseURL = typeof config.profileRegion === "object" ? config.profileRegion.api : "https://api.tago.io";
 
-  infoMSG("Fetching available backups...\n");
+  infoMSG("Fetching available backups...");
 
   try {
     const backups = await fetchBackups(profileID, baseURL, config.profileToken);
@@ -227,8 +224,8 @@ async function restoreBackup(options: RestoreOptions = {}) {
       return;
     }
 
-    console.info("");
-    infoMSG("Authentication required to download the backup.\n");
+    process.stderr.write("\n");
+    infoMSG("Authentication required to download the backup.");
 
     const credentials = await promptCredentials();
     if (!credentials) {
@@ -236,22 +233,21 @@ async function restoreBackup(options: RestoreOptions = {}) {
     }
 
     successMSG("Credentials received.");
-    console.info("");
+    process.stderr.write("\n");
 
     infoMSG("Requesting backup download URL...");
     const downloadResult = await getDownloadUrl(profileID, selectedBackup.id, baseURL, config.profileToken, credentials);
     infoMSG(`Backup size: ${highlightMSG(downloadResult.fileSizeMb + " MB")}`);
     infoMSG(`Download expires at: ${highlightMSG(formatDate(downloadResult.expireAt))}`);
     successMSG("Download URL obtained.");
-    console.info("");
+    process.stderr.write("\n");
 
     const extractDir = await downloadAndExtractBackup(downloadResult.url, selectedBackup.id);
-    console.info("");
+    process.stderr.write("\n");
 
     const summary = analyzeBackupContents(extractDir);
     if (summary.length === 0) {
       errorHandler("No valid resources found in the backup.");
-      return;
     }
 
     const totalResources = displayBackupSummary(summary);
@@ -267,7 +263,7 @@ async function restoreBackup(options: RestoreOptions = {}) {
     const isGranularItem = !!options.items;
 
     if (options.resources || options.items) {
-      console.info("");
+      process.stderr.write("\n");
       const selectedResources = await selectResourcesToRestore();
       if (!selectedResources || selectedResources.length === 0) {
         infoMSG("No resources selected. Restoration cancelled.");
@@ -282,15 +278,15 @@ async function restoreBackup(options: RestoreOptions = {}) {
       return;
     }
 
-    console.info("");
-    infoMSG("Starting resource restoration...\n");
+    process.stderr.write("\n");
+    infoMSG("Starting resource restoration...");
 
     const results: { config: RestoreConfig; result: RestoreResult }[] = [];
 
     for (const restoreConfig of restoreSequence) {
       const result = await restoreConfig.fn(resources, extractDir, isGranularItem);
       results.push({ config: restoreConfig, result });
-      console.info("");
+      process.stderr.write("\n");
     }
 
     successMSG("Restoration completed!");

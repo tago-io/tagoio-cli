@@ -1,10 +1,10 @@
 import { ConnectorInfo, Resources } from "@tago-io/sdk";
 import { queue } from "async";
-import ora from "ora";
+import ora, { type Ora } from "ora";
 
-import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages";
-import { readBackupFile, selectItemsFromBackup } from "../lib";
-import { RestoreResult } from "../types";
+import { errorHandler, highlightMSG, infoMSG } from "../../../../lib/messages.js";
+import { readBackupFile, selectItemsFromBackup } from "../lib.js";
+import { RestoreResult } from "../types.js";
 
 interface RestoreTask {
   connector: ConnectorInfo;
@@ -25,7 +25,7 @@ async function processRestoreTask(
   resources: Resources,
   task: RestoreTask,
   result: RestoreResult,
-  spinner: ora.Ora
+  spinner: Ora
 ): Promise<void> {
   const { connector, exists } = task;
 
@@ -78,7 +78,7 @@ async function restoreConnectors(resources: Resources, extractDir: string, granu
   const existingIds = await fetchExistingConnectorIds(resources);
   infoMSG(`Found ${highlightMSG(existingIds.size.toString())} existing connectors in profile.`);
 
-  console.info("");
+  process.stderr.write("\n");
   const spinner = ora("Restoring connectors...").start();
 
   const restoreQueue = queue<RestoreTask>(async (task) => {

@@ -1,11 +1,11 @@
 import { Account } from "@tago-io/sdk";
 import kleur from "kleur";
 
-import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file";
-import { errorHandler, infoMSG, successMSG } from "../../lib/messages";
-import { searchName } from "../../lib/search-name";
-import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config";
-import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio";
+import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
+import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { searchName } from "../../lib/search-name.js";
+import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
+import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.js";
 
 /**
  * Triggers an analysis with the given script name and options.
@@ -20,7 +20,6 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
 
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
-    return;
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
@@ -42,7 +41,6 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
 
   if (!script) {
     errorHandler("Analysis not found");
-    return;
   }
 
   infoMSG(`Analysis found: ${script.name} [${script.id}].`);
