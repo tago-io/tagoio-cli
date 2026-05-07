@@ -12,6 +12,8 @@ import unzipper from "unzipper";
 import { getEnvironmentConfig } from "../../../lib/config-file.js";
 import { displayWarning } from "../../../lib/display-warning.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { resolveScope } from "../../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../../lib/scope-notice.js";
 import { chooseFromList } from "../../../prompt/choose-from-list.js";
 import { confirmPrompt } from "../../../prompt/confirm.js";
 import { fetchBackups, formatDate, formatFileSize, getDownloadUrl, handleBackupError, promptCredentials, selectBackup } from "./lib.js";
@@ -190,6 +192,8 @@ async function selectResourcesToRestore(): Promise<RestoreConfig[] | null> {
 
 /** Interactive restore flow for profile backups. */
 async function restoreBackup(options: RestoreOptions = {}) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");

@@ -2,6 +2,8 @@ import { Account, Device, Utils } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 
@@ -31,6 +33,8 @@ async function startCopy(deviceFrom: Device, deviceTo: Device, options: IOptions
 }
 
 async function copyDeviceData(options: IOptions) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

@@ -1,8 +1,11 @@
+import { mkdirSync } from "node:fs";
 import { Account, OTPType } from "@tago-io/sdk";
 import prompts from "prompts";
 
 import { addHttpsToUrl } from "../lib/add-https-to-url.js";
 import { errorHandler, highlightMSG, successMSG } from "../lib/messages.js";
+import { globalConfigDir, resolveScope, setScopeOverride } from "../lib/resolve-scope.js";
+import { printScopeBanner } from "../lib/scope-notice.js";
 import { writeToken } from "../lib/token.js";
 
 /**
@@ -60,6 +63,7 @@ interface LoginOptions {
   token?: string;
   tagoDeployUrl?: string;
   tagoDeploySse?: string;
+  scope?: "local" | "global";
 }
 
 /**
@@ -112,6 +116,30 @@ async function loginWithEmailPassword(email: string, password: string) {
 }
 
 async function tagoLogin(environment: string, options: LoginOptions) {
+  // --scope <scope> forces the resolver. 'global' targets the user's global
+  // config dir; 'local' targets cwd.
+  if (options.scope && options.scope !== "local" && options.scope !== "global") {
+    errorHandler(`Invalid --scope value: '${options.scope}'. Use 'local' or 'global'.`);
+  }
+  if (options.scope === "global") {
+    mkdirSync(globalConfigDir(), { recursive: true, mode: 0o700 });
+    setScopeOverride("global");
+  }
+
+  // Login attaches a token to a profile that must already exist. Without a
+  // tagoconfig.json at the resolved scope, there is nothing to attach to —
+  // point the user at init.
+  const scope = resolveScope();
+  if (!scope.configExists) {
+    if (options.scope === "global") {
+      errorHandler("No global tagoconfig.json found. Run `tagoio init --scope global` to create one first.");
+    }
+    if (scope.scope === "global") {
+      errorHandler("No tagoconfig.json found. Run `tagoio init` to create one first.");
+    }
+  }
+  printScopeBanner(scope);
+
   const tagoDeploy = await getTagoDeployURL();
   options.tagoDeployUrl = tagoDeploy?.urlAPI;
   options.tagoDeploySse = tagoDeploy?.urlSSE;

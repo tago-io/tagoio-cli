@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { ResolvedScope } from "./resolve-scope.js";
+
 const existsSyncMock = vi.fn();
 const readFileSyncMock = vi.fn();
 const writeFileSyncMock = vi.fn();
-const getCurrentFolderMock = vi.fn();
+const resolveScopeMock = vi.fn<() => ResolvedScope>();
 const readTokenMock = vi.fn();
 const infoMSGMock = vi.fn();
 const errorHandlerMock = vi.fn();
@@ -14,8 +16,8 @@ vi.mock("node:fs", () => ({
   writeFileSync: writeFileSyncMock,
 }));
 
-vi.mock("./get-current-folder.js", () => ({
-  getCurrentFolder: getCurrentFolderMock,
+vi.mock("./resolve-scope.js", () => ({
+  resolveScope: () => resolveScopeMock(),
 }));
 
 vi.mock("./token.js", () => ({
@@ -32,12 +34,28 @@ vi.mock("./dotenv-config.js", () => ({
   setEnvironmentVariables: vi.fn(),
 }));
 
+const localScope: ResolvedScope = {
+  scope: "local",
+  root: "/repo",
+  configPath: "/repo/tagoconfig.json",
+  envFilePath: "/repo/.tagoio/personal.env",
+  configExists: true,
+};
+
+const globalScope: ResolvedScope = {
+  scope: "global",
+  root: "/home/user/.config/tagoio",
+  configPath: "/home/user/.config/tagoio/tagoconfig.json",
+  envFilePath: "/home/user/.config/tagoio/.tagoio/personal.env",
+  configExists: true,
+};
+
 describe("config-file", () => {
   beforeEach(() => {
     existsSyncMock.mockReset();
     readFileSyncMock.mockReset();
     writeFileSyncMock.mockReset();
-    getCurrentFolderMock.mockReset().mockReturnValue("/repo");
+    resolveScopeMock.mockReset().mockReturnValue(localScope);
     readTokenMock.mockReset().mockReturnValue("tok-123");
     infoMSGMock.mockReset();
     errorHandlerMock.mockReset();
@@ -150,22 +168,19 @@ describe("config-file", () => {
       expect(readTokenMock).toHaveBeenCalledWith("prod");
     });
 
-    test("routes through errorHandler when no default env is set and no name is provided", async () => {
+    test("error message names the resolved scope and config path when no default is set", async () => {
       existsSyncMock.mockReturnValue(true);
       readFileSyncMock.mockReturnValue(JSON.stringify(configFile));
       delete process.env.TAGOIO_DEFAULT;
-      // Real errorHandler terminates via process.exit(1) — simulate with a throw so code after it
-      // does not execute (otherwise the test hits an unrelated undefined access downstream).
       errorHandlerMock.mockImplementation((str: unknown) => {
         throw new Error(String(str));
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig()).toThrow(/No environment found/);
-      expect(errorHandlerMock).toHaveBeenCalled();
+      expect(() => getEnvironmentConfig()).toThrow(/local profile.*\/repo\/tagoconfig\.json/);
     });
 
-    test("routes through errorHandler when requested env is not in the config", async () => {
+    test("error message names the resolved scope when requested env is missing", async () => {
       existsSyncMock.mockReturnValue(true);
       readFileSyncMock.mockReturnValue(JSON.stringify(configFile));
       errorHandlerMock.mockImplementation((str: unknown) => {
@@ -173,10 +188,26 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig("missing-env")).toThrow(/Environment not found/);
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(
+        /Environment 'missing-env' not found in local profile/,
+      );
     });
 
-    test("routes through errorHandler when default env points to missing config entry", async () => {
+    test("error message uses 'global profile' when scope is global", async () => {
+      resolveScopeMock.mockReturnValue(globalScope);
+      existsSyncMock.mockReturnValue(true);
+      readFileSyncMock.mockReturnValue(JSON.stringify(configFile));
+      errorHandlerMock.mockImplementation((str: unknown) => {
+        throw new Error(String(str));
+      });
+
+      const { getEnvironmentConfig } = await import("./config-file.js");
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(
+        /global profile.*\/home\/user\/\.config\/tagoio/,
+      );
+    });
+
+    test("error message names the resolved scope when default env is missing from config", async () => {
       existsSyncMock.mockReturnValue(true);
       readFileSyncMock.mockReturnValue(JSON.stringify(configFile));
       process.env.TAGOIO_DEFAULT = "not-there";
@@ -185,7 +216,9 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig()).toThrow(/Default Environment not found/);
+      expect(() => getEnvironmentConfig()).toThrow(
+        /Default Environment 'not-there' not found in local profile/,
+      );
     });
   });
 
@@ -230,13 +263,12 @@ describe("config-file", () => {
   });
 
   describe("writeToConfigFile", () => {
-    test("writes the provided config object to disk", async () => {
-      getCurrentFolderMock.mockReturnValue("/repo");
+    test("writes the provided config object to disk at the resolved config path", async () => {
       const { writeToConfigFile } = await import("./config-file.js");
-      // The function signature accepts IConfigFile & IConfigFileEnvs, but internally only writes the JSON,
-      // so any plain object is sufficient for the write-path test.
       writeToConfigFile({ default: "prod", analysisPath: "x", buildPath: "y" } as never);
-      expect(writeFileSyncMock).toHaveBeenCalled();
+
+      const [filePath] = writeFileSyncMock.mock.calls[writeFileSyncMock.mock.calls.length - 1];
+      expect(filePath).toBe("/repo/tagoconfig.json");
     });
   });
 
@@ -256,7 +288,7 @@ describe("config-file", () => {
       expect(JSON.parse(payload as string).default).toBe("prod");
     });
 
-    test("errors out when the target env is not in the config", async () => {
+    test("error message names the resolved scope when target env is missing", async () => {
       existsSyncMock.mockReturnValue(true);
       readFileSyncMock.mockReturnValue(JSON.stringify({ default: "prod" }));
       errorHandlerMock.mockImplementation((str: unknown) => {
@@ -264,7 +296,7 @@ describe("config-file", () => {
       });
 
       const { setDefault } = await import("./config-file.js");
-      expect(() => setDefault("ghost")).toThrow(/not in the tagoconfig/);
+      expect(() => setDefault("ghost")).toThrow(/'ghost' is not in local profile/);
     });
   });
 

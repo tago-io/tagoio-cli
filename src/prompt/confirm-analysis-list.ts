@@ -1,7 +1,7 @@
 import prompts from "prompts";
 import { IEnvironment } from "../lib/config-file.js";
 
-async function confirmAnalysisFromConfig(analysis: IEnvironment["analysisList"], message: string = "Do you confirm the following analysis?") {
+async function confirmAnalysisFromConfig(analysis: NonNullable<IEnvironment["analysisList"]>, message: string = "Do you confirm the following analysis?") {
   const { scripts } = await prompts({
     message,
     name: "scripts",
@@ -9,7 +9,7 @@ async function confirmAnalysisFromConfig(analysis: IEnvironment["analysisList"],
     choices: analysis.map((x) => ({ title: `${x.fileName} [${x.name}]`, value: x, selected: true })),
   });
 
-  return (scripts || []) as IEnvironment["analysisList"];
+  return (scripts || []) as NonNullable<IEnvironment["analysisList"]>;
 }
 
 export { confirmAnalysisFromConfig };

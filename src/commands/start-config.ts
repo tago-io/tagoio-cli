@@ -1,4 +1,4 @@
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
@@ -6,6 +6,8 @@ import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
 import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages.js";
+import { globalConfigDir, resolveScope, setScopeOverride } from "../lib/resolve-scope.js";
+import { printScopeBanner } from "../lib/scope-notice.js";
 import { readToken, writeToken } from "../lib/token.js";
 import { promptTextToEnter } from "../prompt/text-prompt.js";
 import { getTagoDeployURL, tagoLogin } from "./login.js";
@@ -13,6 +15,7 @@ import { getTagoDeployURL, tagoLogin } from "./login.js";
 interface ConfigOptions {
   token: string | void;
   environment: string | void;
+  scope?: "local" | "global";
 }
 
 interface AnalysisFile {
@@ -100,7 +103,7 @@ async function chooseAnalysis(analysisOptions: any[]) {
  * @param oldList - An optional array of previously selected analyses.
  * @returns An array of selected analyses with their IDs, names, and file names.
  */
-async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
+async function getAnalysisList(account: Account, oldList: NonNullable<IEnvironment["analysisList"]> = []) {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
 
   if (!analysisList) {
@@ -120,7 +123,7 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
   const response = await chooseAnalysis(analysisOptions);
 
   const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
-  const analysisResult: IEnvironment["analysisList"] = response.map((x) => ({
+  const analysisResult: NonNullable<IEnvironment["analysisList"]> = response.map((x) => ({
     fileName: formatFileName(x.name),
     name: x.name,
     id: x.id,
@@ -136,8 +139,12 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
  * @param analysisPath - The path to search for analysis scripts.
  * @returns A Promise that resolves to the updated analysis list with the selected script file names.
  */
-async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
+async function getAnalysisScripts(analysisList: NonNullable<IEnvironment["analysisList"]>, analysisPath: string) {
   analysisPath = analysisPath.replace("./", "");
+  if (!analysisPath || !existsSync(analysisPath)) {
+    infoMSG(`Analysis folder not found at "${analysisPath || "(empty)"}"; skipping file matching. Edit tagoconfig.json or rerun init once the folder exists.`);
+    return analysisList;
+  }
   infoMSG(`Searching for files at ${analysisPath} and subfolders`);
   let files: Choice[] = scanAnalysisFiles(analysisPath).map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
 
@@ -181,7 +188,56 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
  * @param options The configuration options.
  * @param options.token The TagoIO token to use for authentication.
  */
-async function startConfig(environment: string, { token }: ConfigOptions) {
+async function startConfig(environment: string, { token, scope: scopeFlag }: ConfigOptions) {
+  // Resolve the target scope and make sure a tagoconfig.json exists at that
+  // scope so the rest of init can read/write it.
+  //
+  // Decision tree:
+  //   --scope global   → write to globalConfigDir()
+  //   --scope local    → write to ./tagoconfig.json
+  //   no flag, local config exists  → edit local
+  //   no flag, global config exists → edit global
+  //   no flag, neither exists       → prompt; "yes" creates global, "no" creates local
+  if (scopeFlag && scopeFlag !== "local" && scopeFlag !== "global") {
+    errorHandler(`Invalid --scope value: '${scopeFlag}'. Use 'local' or 'global'.`);
+  }
+  const SCHEMA_STUB = JSON.stringify({ $schema: "https://github.com/tago-io/tagoio-cli/blob/master/docs/schema.json" });
+  function bootstrapGlobalConfig(): void {
+    const globalRoot = globalConfigDir();
+    mkdirSync(globalRoot, { recursive: true, mode: 0o700 });
+    setScopeOverride("global");
+    const globalConfigPath = join(globalRoot, "tagoconfig.json");
+    if (!existsSync(globalConfigPath)) {
+      writeFileSync(globalConfigPath, SCHEMA_STUB, { encoding: "utf-8" });
+    }
+  }
+  function bootstrapLocalConfig(): void {
+    const localPath = join(process.cwd(), "tagoconfig.json");
+    if (!existsSync(localPath)) {
+      writeFileSync(localPath, SCHEMA_STUB, { encoding: "utf-8" });
+    }
+  }
+  if (scopeFlag === "global") {
+    bootstrapGlobalConfig();
+  } else if (scopeFlag === "local") {
+    bootstrapLocalConfig();
+  } else if (!resolveScope().configExists) {
+    const { createGlobal } = await prompts({
+      type: "confirm",
+      name: "createGlobal",
+      message: `No tagoconfig.json found in this directory or globally. Create a global configuration at ${globalConfigDir()}/tagoconfig.json?`,
+      initial: false,
+    });
+    if (createGlobal) {
+      bootstrapGlobalConfig();
+    } else {
+      bootstrapLocalConfig();
+    }
+  }
+
+  const scope = resolveScope();
+  printScopeBanner(scope);
+
   // Prompt user to enter environment name if not provided
   if (!environment) {
     ({ environment } = await prompts({
@@ -218,13 +274,16 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     tagoSSEURL = urlConfig?.urlSSE || "";
   }
 
-  // Prompt user to enter analysis and build paths if not found in config file
-  if (!configFile.analysisPath) {
-    configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
-  }
+  // Analysis-related paths only apply to local scope. Global is for
+  // device/dashboard/profile work — no analysisList there.
+  if (scope.scope === "local") {
+    if (!configFile.analysisPath) {
+      configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
+    }
 
-  if (!configFile.buildPath) {
-    configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
+    if (!configFile.buildPath) {
+      configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
+    }
   }
 
   // Return if token is not found
@@ -240,25 +299,29 @@ async function startConfig(environment: string, { token }: ConfigOptions) {
     };
   }
 
-  // Get account info and analysis list
+  // Get account info
   const account = new Account({ token, region });
   const profile = await account.profiles.info("current");
   const accountInfo = await account.info().catch(errorHandler);
   if (!accountInfo) {
     return;
   }
-  let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
-  analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
 
-  // Create new environment object and write to config file
+  // Create new environment object and write to config file. Local scope
+  // collects an analysisList; global scope omits the key entirely so the
+  // file shape stays a strict subset.
   const newEnv: IEnvironment = {
-    analysisList: analysisList,
     id: profile.info.id,
     profileName: profile.info.name,
     email: accountInfo.email,
     tagoSSEURL: tagoSSEURL,
     tagoAPIURL: tagoAPIURL,
   };
+  if (scope.scope === "local") {
+    let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
+    analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
+    newEnv.analysisList = analysisList;
+  }
   writeToConfigFile(configFile);
   writeConfigFileEnv(environment, newEnv);
 }

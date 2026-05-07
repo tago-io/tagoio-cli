@@ -3,6 +3,7 @@ import kleur from "kleur";
 
 import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { searchName } from "../../lib/search-name.js";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.js";
@@ -16,6 +17,8 @@ import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.j
  * @param options.tago - Whether to pick the analysis from TagoIO.
  */
 async function triggerAnalysis(scriptName: string | void, options: { environment?: string; json?: string; tago: boolean }) {
+  requireLocalScope("analysis-trigger");
+
   const config = getEnvironmentConfig(options.environment);
 
   if (!config || !config.profileToken) {
@@ -23,9 +26,10 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
   }
 
   const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  const analysisList = config.analysisList.filter((x) => x.fileName);
+  const fullList = config.analysisList ?? [];
+  const analysisList = fullList.filter((x) => x.fileName);
 
-  let script: IEnvironment["analysisList"][0] | undefined;
+  let script: NonNullable<IEnvironment["analysisList"]>[number] | undefined;
 
   if (!scriptName && options.tago) {
     const analysis = await pickAnalysisFromTagoIO(account);
@@ -35,7 +39,7 @@ async function triggerAnalysis(scriptName: string | void, options: { environment
   } else {
     script = searchName(
       scriptName,
-      config.analysisList.map((x) => ({ names: [x.name, x.fileName], value: x })),
+      fullList.map((x) => ({ names: [x.name, x.fileName], value: x })),
     );
   }
 

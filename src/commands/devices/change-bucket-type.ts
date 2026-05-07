@@ -3,6 +3,8 @@ import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { chooseFromList } from "../../prompt/choose-from-list.js";
 import { promptNumber } from "../../prompt/number-prompt.js";
 import { pickFromList } from "../../prompt/pick-from-list.js";
@@ -97,6 +99,8 @@ async function chooseBucketsFromList(account: Account) {
 }
 
 async function changeBucketType(id: string, options: { environment: string }) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

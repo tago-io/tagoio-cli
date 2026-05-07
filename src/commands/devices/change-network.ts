@@ -3,6 +3,8 @@ import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 import { promptTextToEnter } from "../../prompt/text-prompt.js";
 
@@ -44,6 +46,8 @@ async function updateDevice(config: environmentConfigResponse, deviceID: string,
 }
 
 async function changeNetworkOrConnector(id: string, options: { environment: string; networkID: string; connectorID: string }) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

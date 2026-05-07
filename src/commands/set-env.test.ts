@@ -21,6 +21,20 @@ vi.mock("../lib/messages.js", () => ({
   successMSG: successMSGMock,
 }));
 
+vi.mock("../lib/resolve-scope.js", () => ({
+  resolveScope: () => ({
+    scope: "local" as const,
+    root: "/repo",
+    configPath: "/repo/tagoconfig.json",
+    envFilePath: "/repo/.tagoio/personal.env",
+    configExists: true,
+  }),
+}));
+
+vi.mock("../lib/scope-notice.js", () => ({
+  printScopeBanner: vi.fn(),
+}));
+
 vi.mock("../prompt/pick-environment.js", () => ({
   pickEnvironment: pickEnvironmentMock,
 }));
