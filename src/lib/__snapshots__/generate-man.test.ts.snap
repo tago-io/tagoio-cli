@@ -35,18 +35,34 @@ create/update the config file for analysis in your current folder
 \\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI<profile\\-token>\\fR
 profile token of the environment and skip login step
 .TP
+\\fB\\-\\-name\\fR \\fI<name>\\fR
+env name (alias for [environment]); flag wins if both are passed
+.TP
 \\fB\\-\\-scope\\fR \\fI<scope>\\fR
-force a specific profile scope: 'local' (./tagoconfig.json) or 'global' (~/.config/tagoio/tagoconfig.json)
+force a specific profile scope: 'local' or 'global'
+.TP
+\\fB\\-\\-api\\-endpoint\\fR \\fI<url>\\fR
+API endpoint URL (must be paired with \\-\\-sse\\-endpoint)
+.TP
+\\fB\\-\\-sse\\-endpoint\\fR \\fI<url>\\fR
+SSE endpoint URL (must be paired with \\-\\-api\\-endpoint)
+.TP
+\\fB\\-\\-no\\-input\\fR
+fail instead of prompting; \\-\\-token required for authentication
+.TP
+\\fB\\-\\-force\\fR
+skip the existing\\-configuration overwrite confirmation
 .PP
 .nf
-    Note: If you don't store credentials in this command, you must run tagoio login
+    Note: If you don't store credentials with \\-t, you must run tagoio login.
 
 Example:
     $ tagoio init
     $ tagoio init prod
     $ tagoio init \\-t eb8a1d42\\-0f28\\-4ee7\\-9862\\-839920eb1cb0
     $ tagoio init \\-\\-scope global
-    $ tagoio init prod \\-\\-scope global
+    $ tagoio init \\-\\-no\\-input \\-\\-name dev \\-\\-scope local \\-\\-api\\-endpoint https://api.tago.io \\-\\-sse\\-endpoint https://sse.tago.io \\-t TOKEN
+    $ tagoio init prod \\-\\-force
 .fi
 .SS login [environment]
 login to your account and store profile_token in the tago\\-lock.

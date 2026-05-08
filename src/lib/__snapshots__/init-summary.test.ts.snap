@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`init-summary > summaryBlock > formats files, scope, env name, profile name, and endpoint 1`] = `
+"---------------------------------------------------------
+Initialization complete.
+
+Created files:
+  ./tagoconfig.json      (project configuration)
+  ./.tago-lock.dev.lock  (encrypted profile token)
+
+Configuration:
+  Environment:  dev
+  Profile:      Tago Production
+  Scope:        local
+  API URL:      https://api.tago.io
+  SSE URL:      https://sse.tago.io
+---------------------------------------------------------"
+`;
