@@ -438,6 +438,275 @@ Example:
     $ tagoio copy\\-tab 62151835435d540010b768c4 \\-\\-from 1688653060637 \\-\\-to 2688653060638
     $ tagoio copy\\-tab 62151835435d540010b768c4 \\-\\-env dev
 .fi
+.SS entity\\-list
+list entities in the active profile
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[substring]\\fR
+filter entities by partial name match
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter on (repeatable, paired with \\-v) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter on (repeatable, paired with \\-k) (default: [])
+.TP
+\\fB\\-\\-json\\fR
+emit a JSON array on stdout for machine readers
+.TP
+\\fB\\-\\-stringify\\fR
+emit pretty\\-printed JSON on stdout
+.TP
+\\fB\\-\\-silent\\fR
+fail instead of prompting; required for non\\-interactive callers
+.PP
+.nf
+Example:
+    $ tagoio entity\\-list
+    $ tagoio entity\\-list \\-n users
+    $ tagoio entity\\-list \\-k env \\-v prod \\-\\-json | jq '.[0].id'
+
+Output (\\-\\-json): array of { id, name, tags, created_at, updated_at }
+.fi
+.SS entity\\-info [id]
+show one entity's metadata and schema
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+emit a single JSON object on stdout
+.TP
+\\fB\\-\\-stringify\\fR
+emit pretty\\-printed JSON on stdout
+.TP
+\\fB\\-\\-silent\\fR
+fail instead of prompting; required for non\\-interactive callers
+.PP
+.nf
+Example:
+    $ tagoio entity\\-info
+    $ tagoio entity\\-info 65f8320dbef4690009a7d9dc \\-\\-json
+
+Output (\\-\\-json): { id, name, schema, index, tags, created_at, updated_at }
+.fi
+.SS entity\\-create [name]
+create a new entity (interactive by default; flag\\-driven via \\-\\-schema\\-json)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-schema\\fR \\fI<file>\\fR
+path to a JSON file with the full entity definition
+.TP
+\\fB\\-\\-schema\\-json\\fR \\fI<inline>\\fR
+inline JSON string with the full entity definition
+.TP
+\\fB\\-\\-silent\\fR
+fail instead of prompting; required for non\\-interactive callers
+.TP
+\\fB\\-\\-json\\fR
+emit {id, name} on stdout instead of the [OK] line
+.PP
+.nf
+    Schema format (file or \\-\\-schema\\-json):
+      {
+        "name": "users",
+        "description": "Customer roster",
+        "tags": [{ "key": "env", "value": "prod" }],
+        "schema": {
+          "email":     { "type": "string", "required": true },
+          "age":       { "type": "integer" },
+          "joined_at": { "type": "timestamp" }
+        }
+      }
+
+Example:
+    $ tagoio entity\\-create users
+    $ tagoio entity\\-create \\-\\-schema ./users.entity.json
+    $ tagoio entity\\-create \\-\\-schema\\-json '{"name":"users","schema":{"email":{"type":"string"}}}' \\-\\-silent
+
+Output (\\-\\-json): { id, name }
+.fi
+.SS entity\\-edit [id]
+update entity metadata (name, description)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI<new>\\fR
+new entity name
+.TP
+\\fB\\-d\\fR, \\fB\\-\\-description\\fR \\fI<new>\\fR
+new entity description
+.TP
+\\fB\\-\\-silent\\fR
+fail instead of prompting; required for non\\-interactive callers
+.TP
+\\fB\\-\\-json\\fR
+emit {id, ...patch} on stdout
+.PP
+.nf
+Example:
+    $ tagoio entity\\-edit 65f8320dbef4690009a7d9dc \\-n "Renamed"
+    $ tagoio entity\\-edit \\-d "New description" \\-\\-silent
+
+Output (\\-\\-json): { id, ...patch }
+.fi
+.SS entity\\-delete [id]
+permanently delete an entity
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-silent\\fR
+skip the confirmation prompt (required for non\\-interactive callers)
+.TP
+\\fB\\-\\-json\\fR
+emit {id, deleted: true} on stdout
+.PP
+.nf
+Example:
+    $ tagoio entity\\-delete 65f8320dbef4690009a7d9dc
+    $ tagoio entity\\-delete 65f8320dbef4690009a7d9dc \\-\\-silent
+
+Output (\\-\\-json): { id, deleted: true }
+.fi
+.SS entity\\-data [id]
+read / write / edit / delete / empty / count entity records
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-qty\\fR \\fI<n>\\fR
+number of records to fetch (read mode)
+.TP
+\\fB\\-\\-skip\\fR \\fI<n>\\fR
+records to skip (read mode pagination)
+.TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+field to order by (read mode)
+.TP
+\\fB\\-\\-order\\fR \\fI<asc/desc>\\fR
+order direction (default: asc)
+.TP
+\\fB\\-q\\fR, \\fB\\-\\-query\\fR \\fI[field=value]\\fR
+filter by field=value (repeatable) (default: [])
+.TP
+\\fB\\-\\-json\\fR
+emit JSON on stdout for machine readers
+.TP
+\\fB\\-\\-stringify\\fR
+emit pretty\\-printed JSON on stdout
+.TP
+\\fB\\-p\\fR, \\fB\\-\\-post\\fR \\fI<json>\\fR
+insert the JSON payload as new record(s)
+.TP
+\\fB\\-\\-edit\\fR \\fI<json>\\fR
+edit existing record(s) (each item requires an id)
+.TP
+\\fB\\-\\-delete\\fR \\fI<ids>\\fR
+delete records by id (JSON array or comma\\-separated ids)
+.TP
+\\fB\\-\\-empty\\fR
+delete ALL records from the entity (prompts unless \\-\\-silent)
+.TP
+\\fB\\-\\-count\\fR
+print the record count and exit
+.TP
+\\fB\\-\\-silent\\fR
+fail / skip confirms instead of prompting
+.PP
+.nf
+    Mutually\\-exclusive op flags: only one of \\-\\-post, \\-\\-edit, \\-\\-delete, \\-\\-empty, \\-\\-count may be passed at a time. Default is read.
+
+Example:
+    $ tagoio entity\\-data <id>                                       # read top 100
+    $ tagoio entity\\-data <id> \\-\\-count
+    $ tagoio entity\\-data <id> \\-p '{"email":"a@b.io"}'
+    $ tagoio entity\\-data <id> \\-\\-edit '{"id":"r1","email":"c@d.io"}'
+    $ tagoio entity\\-data <id> \\-\\-delete '["r1","r2"]' \\-\\-silent
+    $ tagoio entity\\-data <id> \\-\\-empty \\-\\-silent
+
+Output (\\-\\-json): read=array, post/edit/delete/empty={id, ..., result}, count={id, count}
+.fi
+.SS entity\\-schema [id]
+manage entity schema (fields + indexes)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-add\\-field\\fR \\fI<json>\\fR
+add one field, JSON: { <name>: <typedef> }
+.TP
+\\fB\\-\\-update\\-field\\fR \\fI<json>\\fR
+update one field, JSON: { <name>: <typedef> }
+.TP
+\\fB\\-\\-rename\\-field\\fR \\fI<from:to>\\fR
+rename a field (colon\\-separated)
+.TP
+\\fB\\-\\-delete\\-field\\fR \\fI<name>\\fR
+delete a field (prompts unless \\-\\-silent)
+.TP
+\\fB\\-\\-add\\-index\\fR \\fI<json>\\fR
+add one index, JSON: { <name>: { fields: [...] } }
+.TP
+\\fB\\-\\-delete\\-index\\fR \\fI<name>\\fR
+delete an index (prompts unless \\-\\-silent)
+.TP
+\\fB\\-\\-json\\fR
+emit JSON on stdout for machine readers
+.TP
+\\fB\\-\\-stringify\\fR
+emit pretty\\-printed JSON on stdout
+.TP
+\\fB\\-\\-silent\\fR
+fail / skip confirms instead of prompting
+.PP
+.nf
+    Mutually\\-exclusive op flags: only one schema op may be passed at a time. Default is print the current schema.
+
+Example:
+    $ tagoio entity\\-schema <id>                                                          # print
+    $ tagoio entity\\-schema <id> \\-\\-add\\-field '{"age":{"type":"integer"}}'
+    $ tagoio entity\\-schema <id> \\-\\-rename\\-field old:new
+    $ tagoio entity\\-schema <id> \\-\\-delete\\-field age \\-\\-silent
+    $ tagoio entity\\-schema <id> \\-\\-add\\-index '{"by_age":{"fields":["age"]}}'
+
+Output (\\-\\-json): print={id, schema, index}, ops={id, <action>: <name>}
+.fi
+.SS entity\\-copy
+copy data from one entity to another within the same profile
+.TP
+\\fB\\-\\-from\\fR \\fI<id>\\fR
+source entity id (required)
+.TP
+\\fB\\-\\-to\\fR \\fI<id>\\fR
+target entity id (required)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-qty\\fR \\fI<n>\\fR
+page size (default 10000)
+.TP
+\\fB\\-\\-silent\\fR
+fail instead of prompting; required for non\\-interactive callers
+.TP
+\\fB\\-\\-json\\fR
+emit {from, to, copied} on stdout
+.PP
+.nf
+    Both source and target must already exist on the target profile with compatible schemas; v1 does not migrate.
+
+Example:
+    $ tagoio entity\\-copy \\-\\-from <src\\-id> \\-\\-to <tgt\\-id>
+    $ tagoio entity\\-copy \\-\\-from <src\\-id> \\-\\-to <tgt\\-id> \\-\\-qty 5000 \\-\\-silent
+
+Output (\\-\\-json): { from, to, copied }
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP
