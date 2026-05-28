@@ -20,10 +20,13 @@
     "npm": ">=10.0.0"
   },
   "files": [
-    "build"
+    "build",
+    "man"
   ],
   "scripts": {
-    "build": "rm -rf ./build; tsc --build; chmod +x ./build/index.js",
+    "man": "mkdir -p man && tsx src/lib/generate-man.ts > man/tagoio.1 && chmod 644 man/tagoio.1",
+    "build": "npm run man && rm -rf ./build; tsc --build; chmod +x ./build/index.js",
+    "prepublishOnly": "npm run man",
     "test": "vitest run",
     "test:single": "vitest --",
     "test:coverage": "vitest run --coverage",
@@ -35,6 +38,7 @@
   "bin": {
     "tagoio": "./build/index.js"
   },
+  "man": "./man/tagoio.1",
   "author": "TagoIO LLC",
   "license": "ISC",
   "dependencies": {
@@ -59,8 +63,8 @@
     "@types/prompts": "^2.4.9",
     "@types/unzipper": "^0.10.11",
     "@vitest/coverage-v8": "^4.1.5",
-    "oxfmt": "^0.46.0",
-    "oxlint": "1.61.0",
+    "oxfmt": "^0.47.0",
+    "oxlint": "1.62.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   }
