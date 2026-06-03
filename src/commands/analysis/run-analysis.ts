@@ -1,13 +1,14 @@
-import { SpawnOptions, spawn } from "node:child_process";
+import { ChildProcess, SpawnOptions, spawn } from "node:child_process";
 import path from "node:path";
 
 import { Account } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
-import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
+import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
 import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { searchName } from "../../lib/search-name.js";
+import { installWatchShortcuts } from "../../lib/watch-shortcuts.js";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
 /**
@@ -58,16 +59,28 @@ function _buildCMD(options: { tsnd: boolean; debug: boolean; clear: boolean }, r
   return cmd;
 }
 
+interface RunAnalysisOptions {
+  environment: string;
+  debug: boolean;
+  clear: boolean;
+  tsnd: boolean;
+  deno: boolean;
+  node: boolean;
+  /**
+   * Commander negation flag (`--no-interactive`). Defaults to `true`. When
+   * `false`, the watch-mode keystroke shortcuts are not installed and the
+   * command runs exactly as it did before this feature shipped.
+   */
+  interactive?: boolean;
+}
+
 /**
  * Runs an analysis script.
  * @param scriptName - The name of the script to run.
  * @param options - The options for running the script.
  * @returns void
  */
-async function runAnalysis(
-  scriptName: string | undefined,
-  options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean; deno: boolean; node: boolean },
-) {
+async function runAnalysis(scriptName: string | undefined, options: RunAnalysisOptions) {
   // Analysis development requires a project directory.
   const scope = requireLocalScope("analysis-run");
 
@@ -112,10 +125,20 @@ async function runAnalysis(
     }
   }
 
+  // Interactive shortcuts (q/h/r/c + double-Ctrl-C) are only installed when
+  // stdin is a TTY and the caller did not pass `--no-interactive`. Outside a
+  // TTY (CI, piped stdin, Docker), the loop still works — it just won't
+  // respawn, because no keystroke handler ever flips `restartRequested`.
+  const isInteractive = Boolean(process.stdin.isTTY) && options.interactive !== false;
+
+  // When shortcuts are on, the parent owns stdin exclusively so single keys
+  // (q/h/r/c) route to our handler and never leak to tsx, which would interpret
+  // them as its own watch-mode rerun triggers. Non-interactive mode keeps the
+  // legacy "inherit" so an analysis that reads stdin still works under CI.
   const spawnOptions: SpawnOptions = {
     shell: true,
     cwd: scope.root,
-    stdio: "inherit",
+    stdio: isInteractive ? ["ignore", "inherit", "inherit"] : "inherit",
     env: analysisEnv,
   };
 
@@ -147,10 +170,49 @@ async function runAnalysis(
       spawnOptions.env.T_ANALYSIS_TOKEN = analysisToken;
     }
   }
-  const spawnProccess = spawn(`${cmd}${scriptPath}`, spawnOptions);
 
-  const killAnalysis = async () => await account.analysis.edit(scriptToRun.id, { run_on: "tago" });
-  spawnProccess.on("close", killAnalysis);
-  spawnProccess.on("SIGINT", killAnalysis);
+  let restartRequested = false;
+  let quitRequested = false;
+  let child: ChildProcess | undefined;
+
+  const teardown = installWatchShortcuts(
+    {
+      onQuit: () => {
+        if (quitRequested) {
+          return;
+        }
+        quitRequested = true;
+        infoMSG("Stopping analysis...");
+        child?.kill("SIGTERM");
+      },
+      onRestart: () => {
+        if (restartRequested) {
+          return;
+        }
+        restartRequested = true;
+        infoMSG("Restarting analysis...");
+        child?.kill("SIGTERM");
+      },
+    },
+    { enabled: isInteractive },
+  );
+
+  try {
+    do {
+      restartRequested = false;
+      // `exec` replaces the shell process with the analysis runtime so they
+      // share a PID — without it, killing the child only kills `sh -c …` and
+      // leaves the inner tsx/deno/tsnd process running as a zombie that keeps
+      // printing to the terminal (looks like a phantom restart on every key).
+      child = spawn(`exec ${cmd}${scriptPath}`, spawnOptions);
+      if (isInteractive) {
+        infoMSG("Watching for changes. Press h for help, r to restart, q to quit.");
+      }
+      await new Promise<void>((resolve) => child?.once("close", () => resolve()));
+    } while (restartRequested && !quitRequested);
+  } finally {
+    teardown();
+    await account.analysis.edit(scriptToRun.id, { run_on: "tago" });
+  }
 }
 export { runAnalysis, _buildCMD };

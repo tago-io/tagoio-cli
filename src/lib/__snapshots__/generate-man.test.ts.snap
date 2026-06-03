@@ -172,8 +172,17 @@ Force build for Deno runtime (default: false)
 .TP
 \\fB\\-\\-node\\fR
 Force build for Node.js runtime (default: false)
+.TP
+\\fB\\-\\-no\\-interactive\\fR
+disable single\\-key shortcuts (q/h/r/c); shortcuts default on when stdin is a TTY
 .PP
 .nf
+    Shortcuts (when stdin is a TTY, opt out with \\-\\-no\\-interactive):
+      r           restart the analysis
+      c           clear the screen
+      h, ?        show shortcut help
+      q, Ctrl\\-C   quit (press Ctrl\\-C twice within 2s to force quit)
+
 Example:
     $ tagoio run dashboard\\-handler
     $ tagoio run dash
@@ -183,6 +192,7 @@ Example:
     $ tagoio run dashboard\\-handler \\-\\-node
     $ tagoio run \\-\\-deno
     $ tagoio run \\-\\-node
+    $ tagoio run dashboard\\-handler \\-\\-no\\-interactive   # CI / piped logs
 .fi
 .SS analysis\\-trigger [name]
 send a signal to trigger your analysis TagoIO

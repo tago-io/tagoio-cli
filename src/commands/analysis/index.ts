@@ -61,10 +61,16 @@ Example:
     .option("--tsnd", "run with ts-node-dev if installed globally")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
+    .option("--no-interactive", "disable single-key shortcuts (q/h/r/c); shortcuts default on when stdin is a TTY")
     .action(runAnalysis)
     .addHelpText(
       "after",
       `
+    Shortcuts (when stdin is a TTY, opt out with --no-interactive):
+      r           restart the analysis
+      c           clear the screen
+      h, ?        show shortcut help
+      q, Ctrl-C   quit (press Ctrl-C twice within 2s to force quit)
 
 Example:
     $ tagoio run dashboard-handler
@@ -75,6 +81,7 @@ Example:
     $ tagoio run dashboard-handler --node
     $ tagoio run --deno
     $ tagoio run --node
+    $ tagoio run dashboard-handler --no-interactive   # CI / piped logs
        `,
     );
 

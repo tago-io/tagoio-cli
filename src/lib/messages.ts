@@ -126,5 +126,5 @@ function infoMSG(str: any) {
   writeStatus(`[${kleur.blue("INFO")}] ${str}`);
 }
 
-export { errorHandler, errorHandlerJSON, highlightMSG, infoMSG, requireOrFail, successMSG };
+export { errorHandler, errorHandlerJSON, highlightMSG, infoMSG, requireOrFail, successMSG, writeStatus };
 export type { RequireOrFailOptions };
