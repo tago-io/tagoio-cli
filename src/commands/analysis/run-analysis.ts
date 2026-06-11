@@ -204,7 +204,7 @@ async function runAnalysis(scriptName: string | undefined, options: RunAnalysisO
       // share a PID — without it, killing the child only kills `sh -c …` and
       // leaves the inner tsx/deno/tsnd process running as a zombie that keeps
       // printing to the terminal (looks like a phantom restart on every key).
-      child = spawn(`exec ${cmd}${scriptPath}`, spawnOptions);
+      child = spawn(`exec ${cmd}"${scriptPath}"`, spawnOptions);
       if (isInteractive) {
         infoMSG("Watching for changes. Press h for help, r to restart, q to quit.");
       }

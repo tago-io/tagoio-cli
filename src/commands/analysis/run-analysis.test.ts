@@ -448,6 +448,32 @@ describe("runAnalysis", () => {
     expect(opts.enabled).toBe(false);
   });
 
+  test("quotes the script path so a path containing spaces stays a single shell argument", async () => {
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/Users/maria/My Project",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    await runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+    });
+
+    const command = spawnMock.mock.calls[0][0];
+    // The whole path, spaces included, must sit inside one pair of quotes —
+    // otherwise the shell would split "/Users/maria/My Project/a.js" into two
+    // arguments and the runtime would fail to find the file.
+    expect(command).toContain('"/Users/maria/My Project/a.js"');
+  });
+
   test("non-TTY stdin disables shortcuts even when --no-interactive is absent", async () => {
     // beforeEach already sets isTTY = false; this is the explicit case.
     getEnvironmentConfigMock.mockReturnValue({
