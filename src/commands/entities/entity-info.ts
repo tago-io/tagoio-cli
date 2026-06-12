@@ -61,7 +61,6 @@ async function entityInfo(idArg: string | undefined, options: IOptions) {
   const meta: Record<string, unknown> = {
     id: info.id,
     name: info.name,
-    description: (info as { description?: string }).description ?? "",
     created_at: info.created_at,
     updated_at: info.updated_at,
   };

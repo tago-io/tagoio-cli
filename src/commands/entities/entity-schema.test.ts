@@ -96,10 +96,10 @@ describe("entitySchema", () => {
 
     const { entitySchema } = await import("./entity-schema.js");
     await entitySchema("ent1", {
-      updateField: JSON.stringify({ age: { type: "integer", required: true } }),
+      updateField: JSON.stringify({ age: { type: "int", required: true } }),
     } as never);
 
-    expect(resourcesInstance.entities.updateField).toHaveBeenCalledWith("ent1", "age", { type: "integer", required: true });
+    expect(resourcesInstance.entities.updateField).toHaveBeenCalledWith("ent1", "age", { type: "int", required: true });
   });
 
   test("--rename-field parses <from>:<to> and calls renameField", async () => {

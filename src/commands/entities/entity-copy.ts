@@ -53,16 +53,14 @@ async function entityCopy(options: IOptions) {
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
   const pageSize = options.qty ?? DEFAULT_PAGE;
   let total = 0;
-  let page = 0;
+  let page = 1;
 
   // Loop until the source is exhausted (page returns fewer than pageSize records).
   while (true) {
-    const batch = await resources.entities
-      .getEntityData(fromId, { amount: pageSize, skip: page * pageSize })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        return failWith(`Failed to read source entity ${fromId}: ${message}`, "read_failed", useJSON);
-      });
+    const batch = await resources.entities.getEntityData(fromId, { amount: pageSize, page }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      return failWith(`Failed to read source entity ${fromId}: ${message}`, "read_failed", useJSON);
+    });
 
     if (!batch || batch.length === 0) {
       break;

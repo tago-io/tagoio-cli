@@ -14,6 +14,9 @@ function handleNumber(value: string, _previous: unknown): number {
   if (Number.isNaN(Number(value))) {
     throw new Error(`${value} is not a number`);
   }
+  if (Number(value) > 10000) {
+    throw new Error(`Value ${value} exceeds maximum of 10000`);
+  }
   return Number(value);
 }
 
@@ -33,6 +36,8 @@ function entityCommands(program: Command): Command {
     .option("-n, --name [substring]", "filter entities by partial name match")
     .option("-k, --tagkey [key]", "tag key to filter on (repeatable, paired with -v)", cmdRepeatableValue, [])
     .option("-v, --tagvalue [value]", "tag value to filter on (repeatable, paired with -k)", cmdRepeatableValue, [])
+    .option("--order-by <field>", "field to order by (name, created_at, updated_at)")
+    .option("--order <asc/desc>", "order direction (default: asc)")
     .option("--json", "emit a JSON array on stdout for machine readers")
     .option("--stringify", "emit pretty-printed JSON on stdout")
     .option("--silent", "fail instead of prompting; required for non-interactive callers")
@@ -43,6 +48,7 @@ function entityCommands(program: Command): Command {
 Example:
     $ tagoio entity-list
     $ tagoio entity-list -n users
+    $ tagoio entity-list --order-by created_at --order desc
     $ tagoio entity-list -k env -v prod --json | jq '.[0].id'
 
 Output (--json): array of { id, name, tags, created_at, updated_at }`,
@@ -83,11 +89,10 @@ Output (--json): { id, name, schema, index, tags, created_at, updated_at }`,
     Schema format (file or --schema-json):
       {
         "name": "users",
-        "description": "Customer roster",
         "tags": [{ "key": "env", "value": "prod" }],
         "schema": {
           "email":     { "type": "string", "required": true },
-          "age":       { "type": "integer" },
+          "age":       { "type": "int" },
           "joined_at": { "type": "timestamp" }
         }
       }
@@ -102,11 +107,10 @@ Output (--json): { id, name }`,
 
   program
     .command("entity-edit")
-    .description("update entity metadata (name, description)")
+    .description("update entity metadata (name)")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name <new>", "new entity name")
-    .option("-d, --description <new>", "new entity description")
     .option("--silent", "fail instead of prompting; required for non-interactive callers")
     .option("--json", "emit {id, ...patch} on stdout")
     .action(entityEdit)
@@ -115,7 +119,7 @@ Output (--json): { id, name }`,
       `
 Example:
     $ tagoio entity-edit 65f8320dbef4690009a7d9dc -n "Renamed"
-    $ tagoio entity-edit -d "New description" --silent
+    $ tagoio entity-edit 65f8320dbef4690009a7d9dc -n "Renamed" --silent
 
 Output (--json): { id, ...patch }`,
     );
@@ -145,8 +149,6 @@ Output (--json): { id, deleted: true }`,
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--qty <n>", "number of records to fetch (read mode)", handleNumber)
     .option("--skip <n>", "records to skip (read mode pagination)", handleNumber)
-    .option("--order-by <field>", "field to order by (read mode)")
-    .option("--order <asc/desc>", "order direction (default: asc)")
     .option("-q, --query [field=value]", "filter by field=value (repeatable)", cmdRepeatableValue, [])
     .option("--json", "emit JSON on stdout for machine readers")
     .option("--stringify", "emit pretty-printed JSON on stdout")
@@ -195,7 +197,7 @@ Output (--json): read=array, post/edit/delete/empty={id, ..., result}, count={id
 
 Example:
     $ tagoio entity-schema <id>                                                          # print
-    $ tagoio entity-schema <id> --add-field '{"age":{"type":"integer"}}'
+    $ tagoio entity-schema <id> --add-field '{"age":{"type":"int"}}'
     $ tagoio entity-schema <id> --rename-field old:new
     $ tagoio entity-schema <id> --delete-field age --silent
     $ tagoio entity-schema <id> --add-index '{"by_age":{"fields":["age"]}}'
@@ -209,7 +211,7 @@ Output (--json): print={id, schema, index}, ops={id, <action>: <name>}`,
     .option("--from <id>", "source entity id (required)")
     .option("--to <id>", "target entity id (required)")
     .option("--env, --environment [environment]", "environment from config.js")
-    .option("--qty <n>", "page size (default 10000)", handleNumber)
+    .option("--qty <n>", "page size (default 10000; max 10000)", handleNumber)
     .option("--silent", "fail instead of prompting; required for non-interactive callers")
     .option("--json", "emit {from, to, copied} on stdout")
     .action(entityCopy)

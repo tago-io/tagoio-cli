@@ -94,11 +94,10 @@ describe("entityCreate", () => {
     );
   });
 
-  test("interactive path uses prompts for description / tags / schema-paste", async () => {
+  test("interactive path uses prompts for tags / schema-paste", async () => {
     requireOrFailMock.mockResolvedValue("interactive-entity");
     resourcesInstance.entities.create.mockResolvedValue({ id: "id-2" });
     prompts.inject([
-      "An optional description",                                  // description
       "env:prod,team:platform",                                   // tags
       JSON.stringify({ email: { type: "string", required: true } }), // schema paste
     ]);

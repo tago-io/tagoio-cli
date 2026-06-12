@@ -59,15 +59,14 @@ describe("entityEdit", () => {
     expect(resourcesInstance.entities.edit).toHaveBeenCalledWith("ent1", { name: "renamed" });
   });
 
-  test("merges --name and --description into a single patch", async () => {
+  test("builds the patch from --name", async () => {
     resourcesInstance.entities.edit.mockResolvedValue({ message: "ok" });
 
     const { entityEdit } = await import("./entity-edit.js");
-    await entityEdit("ent1", { name: "renamed", description: "new desc" } as never);
+    await entityEdit("ent1", { name: "renamed" } as never);
 
     expect(resourcesInstance.entities.edit).toHaveBeenCalledWith("ent1", {
       name: "renamed",
-      description: "new desc",
     });
   });
 
@@ -87,7 +86,7 @@ describe("entityEdit", () => {
     await expect(entityEdit(undefined, { silent: true, name: "x" } as never)).rejects.toThrow(/Missing required input: id/);
   });
 
-  test("no-op edit (no --name or --description) errors actionably", async () => {
+  test("no-op edit (no --name) errors actionably", async () => {
     const { entityEdit } = await import("./entity-edit.js");
     await expect(entityEdit("ent1", {} as never)).rejects.toThrow(/Nothing to update/);
   });
