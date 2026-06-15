@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { InitState } from "./init-state.js";
 import { ResolvedScope } from "./resolve-scope.js";
 
+vi.mock("./resolve-scope.js", () => ({
+  globalConfigDir: () => "/home/user/.config/tagoio",
+}));
+
 const localScope: ResolvedScope = {
   scope: "local",
   root: "/repo",
@@ -50,7 +54,7 @@ describe("init-summary", () => {
       expect(copy).toContain("env 'dev'");
       expect(copy).toContain("/repo/tagoconfig.json");
       expect(copy).toContain("Reinitializing will overwrite");
-      expect(copy).toContain("global config located in ~/.config/tagoio/");
+      expect(copy).toContain("global config located in /home/user/.config/tagoio");
     });
 
     test("global scope names the local config in projects as untouched", async () => {
@@ -77,18 +81,26 @@ describe("init-summary", () => {
       expect(written).toBe("[OK] Created ./tagoconfig.json\n");
     });
 
-    test("failStep writes [ERROR] <label>: <err.message> to stderr", async () => {
+    test("failStep writes [ERROR] <label>: <err.message> to stderr then exits 1", async () => {
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never);
       const { failStep } = await import("./init-summary.js");
-      failStep("Connecting", new Error("ENOTFOUND"));
+      expect(() => failStep("Connecting", new Error("ENOTFOUND"))).toThrow(/__exit:1/);
       const written = stripAnsi(stderrSpy.mock.calls[0][0] as string);
       expect(written).toBe("[ERROR] Connecting: ENOTFOUND\n");
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
-    test("failStep without err prints just the label", async () => {
+    test("failStep without err prints just the label then exits 1", async () => {
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+        throw new Error(`__exit:${code ?? 0}`);
+      }) as never);
       const { failStep } = await import("./init-summary.js");
-      failStep("Aborted");
+      expect(() => failStep("Aborted")).toThrow(/__exit:1/);
       const written = stripAnsi(stderrSpy.mock.calls[0][0] as string);
       expect(written).toBe("[ERROR] Aborted\n");
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
   });
 
