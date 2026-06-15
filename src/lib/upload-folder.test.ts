@@ -62,6 +62,34 @@ describe("uploadFolder", () => {
     vi.restoreAllMocks();
   });
 
+  test("uploads a single file to the full remote path (relativePath empty)", async () => {
+    mockTree({}, new Set(["/dist/index.html"]));
+    const uploadBase64 = vi.fn().mockResolvedValue("ok");
+    const resources = { files: { uploadBase64 } } as never;
+
+    const result = await uploadFolder({
+      resources,
+      localPath: "/dist/index.html",
+      remotePath: "files-test/private-index.html",
+      public: false,
+    });
+
+    expect(result).toEqual({ created: 1, failed: 0 });
+    expect(uploadBase64).toHaveBeenCalledTimes(1);
+    expect((uploadBase64.mock.calls[0][0] as { filename: string }[])[0].filename).toBe("/files-test/private-index.html");
+  });
+
+  test("returns zero counts when localPath does not exist", async () => {
+    existsSyncMock.mockReturnValue(false);
+    const uploadBase64 = vi.fn();
+    const resources = { files: { uploadBase64 } } as never;
+
+    const result = await uploadFolder({ resources, localPath: "/missing", remotePath: "w", public: true });
+
+    expect(result).toEqual({ created: 0, failed: 0 });
+    expect(uploadBase64).not.toHaveBeenCalled();
+  });
+
   test("uploads every file under the remote prefix and counts successes", async () => {
     mockTree(
       {

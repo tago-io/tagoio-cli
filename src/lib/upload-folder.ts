@@ -110,10 +110,19 @@ async function uploadFiles(params: UploadFilesParams): Promise<UploadResult> {
 
 /**
  * Uploads a local file or directory to TagoIO Files under `remotePath`. Sugar
- * over `collectFiles` + `uploadFiles` for the common whole-folder case.
+ * over `collectFiles` + `uploadFiles`. For a directory, `remotePath` is the
+ * prefix and each file keeps its relative path. For a single file, `remotePath`
+ * is the full destination path (the relative path is empty).
  */
 async function uploadFolder(params: UploadFolderParams): Promise<UploadResult> {
-  const tasks = collectFiles(params.localPath, params.localPath);
+  if (!existsSync(params.localPath)) {
+    return { created: 0, failed: 0 };
+  }
+
+  const tasks = statSync(params.localPath).isDirectory()
+    ? collectFiles(params.localPath, params.localPath)
+    : [{ filePath: params.localPath, relativePath: "" }];
+
   return uploadFiles({ ...params, tasks });
 }
 
