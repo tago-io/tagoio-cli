@@ -47,9 +47,24 @@ function describeScope(scope: ResolvedScope): string {
   return `${scope.scope} profile (${scope.configPath})`;
 }
 
+/**
+ * @description Pure read + parse of a tagoconfig.json. No side effects: never
+ * auto-creates the file and never emits status messages. Returns `undefined`
+ * when the file is missing or unparseable. Use this for read-only callers
+ * (e.g. whoami) that must not mutate disk; `getConfigFile` builds on it and
+ * adds the local-scope auto-create behavior.
+ */
+function readConfigFile(configPath: string): (IConfigFile & IConfigFileEnvs) | undefined {
+  try {
+    const configFile = readFileSync(configPath, { encoding: "utf-8" });
+    return { ...JSON.parse(configFile) } as IConfigFile & IConfigFileEnvs;
+  } catch {
+    return undefined;
+  }
+}
+
 function getConfigFile() {
   const configPath = getFilePath();
-  // const defaultPaths = { analysisPath: "./src/analysis", buildPath: "./build" };
 
   if (!existsSync(configPath)) {
     // Local scope: auto-create a schema-stub config so a fresh project starts
@@ -65,12 +80,7 @@ function getConfigFile() {
     }
   }
 
-  try {
-    const configFile = readFileSync(configPath, { encoding: "utf-8" });
-    return { ...JSON.parse(configFile) } as IConfigFile & IConfigFileEnvs;
-  } catch {
-    //any
-  }
+  return readConfigFile(configPath);
 }
 
 function getProfileRegion(userEnvironment: IEnvironment) {
@@ -167,4 +177,4 @@ function setDefault(environment: string) {
   writeFileSync(configPath, JSON.stringify(configFile), { encoding: "utf-8" });
 }
 
-export { getConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, getProfileRegion, IConfigFile, IEnvironment };
+export { getConfigFile, readConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, getProfileRegion, IConfigFile, IEnvironment };

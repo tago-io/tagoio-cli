@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-
+import { readConfigFile } from "../lib/config-file.js";
 import { errorHandler } from "../lib/messages.js";
 import { resolveScope } from "../lib/resolve-scope.js";
 import { readToken } from "../lib/token.js";
@@ -40,30 +39,24 @@ async function whoami(options: WhoamiOptions = {}): Promise<void> {
     }
   }
 
-  let configRaw: string;
-  try {
-    configRaw = readFileSync(scope.configPath, { encoding: "utf-8" });
-  } catch (err) {
-    errorHandler(`Failed to read ${scope.configPath}: ${(err as Error).message}`);
-  }
-
-  let config: Record<string, unknown>;
-  try {
-    config = JSON.parse(configRaw);
-  } catch (err) {
-    errorHandler(`Failed to parse ${scope.configPath}: ${(err as Error).message}`);
+  // Read-only: readConfigFile never auto-creates or mutates, keeping whoami
+  // a pure read of the resolved config (the configExists guard above already
+  // handled the missing-file case).
+  const config = readConfigFile(scope.configPath);
+  if (!config) {
+    errorHandler(`Failed to read or parse ${scope.configPath}. Run \`tagoio init\` to recreate it.`);
   }
 
   const activeEnv = process.env.TAGOIO_DEFAULT ?? "";
-  const envBlock = (activeEnv && (config[activeEnv] as Record<string, unknown>)) || {};
+  const envBlock = (activeEnv && config[activeEnv]) || undefined;
 
   const payload: WhoamiPayload = {
     scope: scope.scope,
     loadedFrom: scope.configPath,
     activeEnv: activeEnv || "(none)",
-    profileId: (envBlock.id as string) || "N/A",
-    profileName: (envBlock.profileName as string) || "N/A",
-    email: (envBlock.email as string) || "N/A",
+    profileId: envBlock?.id || "N/A",
+    profileName: envBlock?.profileName || "N/A",
+    email: envBlock?.email || "N/A",
     token: activeEnv && readToken(activeEnv) ? "loaded" : "missing",
   };
 

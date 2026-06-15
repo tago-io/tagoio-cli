@@ -2,6 +2,8 @@ import { Account, Device, Utils } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 
 interface IOptions {
@@ -10,6 +12,8 @@ interface IOptions {
 }
 
 async function postDeviceData(idOrToken: string, options: IOptions) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
