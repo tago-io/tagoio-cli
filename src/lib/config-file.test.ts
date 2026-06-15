@@ -107,6 +107,33 @@ describe("config-file", () => {
     });
   });
 
+  describe("getApiURL", () => {
+    test("returns the public API URL for the default us-e1 region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL("us-e1")).toBe("https://api.us-e1.tago.io");
+    });
+
+    test("returns the public API URL for the eu-w1 region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL("eu-w1")).toBe("https://api.eu-w1.tago.io");
+    });
+
+    test("returns the region's own API URL for a custom region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "https://api.eu.tago.io", sse: "https://sse.eu.tago.io" })).toBe("https://api.eu.tago.io");
+    });
+
+    test("trims a trailing slash from the region API URL", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "https://api.eu.tago.io/", sse: "" })).toBe("https://api.eu.tago.io");
+    });
+
+    test("falls back to the public API URL when a custom region has an empty api", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "", sse: "" })).toBe("https://api.tago.io");
+    });
+  });
+
   describe("getEnvironmentConfig", () => {
     const configFile = {
       default: "prod",
