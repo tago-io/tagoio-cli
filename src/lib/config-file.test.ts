@@ -215,9 +215,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig("missing-env")).toThrow(
-        /Environment 'missing-env' not found in local profile/,
-      );
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(/Environment 'missing-env' not found in local profile/);
     });
 
     test("error message uses 'global profile' when scope is global", async () => {
@@ -229,9 +227,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig("missing-env")).toThrow(
-        /global profile.*\/home\/user\/\.config\/tagoio/,
-      );
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(/global profile.*\/home\/user\/\.config\/tagoio/);
     });
 
     test("error message names the resolved scope when default env is missing from config", async () => {
@@ -243,9 +239,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig()).toThrow(
-        /Default Environment 'not-there' not found in local profile/,
-      );
+      expect(() => getEnvironmentConfig()).toThrow(/Default Environment 'not-there' not found in local profile/);
     });
   });
 

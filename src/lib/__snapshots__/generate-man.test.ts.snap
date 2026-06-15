@@ -714,6 +714,60 @@ Example:
 
 Output (\\-\\-json): { from, to, copied }
 .fi
+.SS files\\-upload <localPath> [remotePath]
+upload a local file or folder to TagoIO Files
+.TP
+\\fB\\-\\-public\\fR
+make every uploaded file public
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+Example:
+    $ tagoio files\\-upload ./widgets/_dist/line\\-chart custom\\-widgets/line\\-chart \\-\\-public
+    $ tagoio files\\-upload ./report.pdf reports/report.pdf
+    $ tagoio files\\-upload ./dist \\-\\-env prod \\-\\-token $TAGOIO_TOKEN
+.fi
+.SS files\\-url <remotePath>
+print the URL of a file already in TagoIO Files
+.TP
+\\fB\\-\\-signed\\fR
+return a signed URL for a private file
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+    The URL is printed on stdout alone, so it can be captured in scripts.
+
+Example:
+    $ tagoio files\\-url custom\\-widgets/line\\-chart/index.html
+    $ tagoio files\\-url private/report.pdf \\-\\-signed
+    $ URL=$(tagoio files\\-url custom\\-widgets/line\\-chart/index.html)
+.fi
+.SS widget\\-edit\\-url <dashboardID> <widgetID> <url>
+set the URL on a custom (iframe) widget
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+    Reads the widget first and preserves its existing parameters, theme,
+    and frame settings; only the URL changes.
+
+Example:
+    $ tagoio widget\\-edit\\-url 64f... 1700000000000 https://api.us\\-e1.tago.io/file/p/custom\\-widgets/line\\-chart/index.html
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP
