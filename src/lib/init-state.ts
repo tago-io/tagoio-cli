@@ -19,8 +19,8 @@ interface InitState {
  * @description Pre-flight detection (Step 0 of the clig.dev init flow).
  *
  * Reads the resolved scope and the on-disk state for the requested env name
- * so later steps can branch deterministically. No prompts, no API calls; a
- * handful of `existsSync` checks so it stays under 100ms even on slow disks.
+ * so later steps can branch deterministically. No prompts, no API calls; just
+ * a config read and a couple of `existsSync` checks.
  */
 function detectInitState(envName: string): InitState {
   const scope = resolveScope();

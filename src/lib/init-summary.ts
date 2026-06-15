@@ -1,7 +1,7 @@
 import kleur from "kleur";
 
 import { InitState } from "./init-state.js";
-import { ResolvedScope } from "./resolve-scope.js";
+import { globalConfigDir, ResolvedScope } from "./resolve-scope.js";
 
 /**
  * @description Banner printed at the top of `tagoio init` so the user knows
@@ -18,7 +18,7 @@ function banner(scope: ResolvedScope): string {
  */
 function overwriteConfirmCopy(state: InitState, envName: string): string {
   const sibling = state.scope.scope === "local"
-    ? "Your global config located in ~/.config/tagoio/ will remain untouched."
+    ? `Your global config located in ${globalConfigDir()} will remain untouched.`
     : "Your local config in any project directory will remain untouched.";
   return [
     `An existing configuration was found for env '${envName}' at ${state.scope.configPath}.`,
@@ -42,9 +42,10 @@ function endStep(label: string): void {
 }
 
 /** Failed marker on stderr: `[ERROR] <label>: <err>`. */
-function failStep(label: string, err?: unknown): void {
+function failStep(label: string, err?: unknown): never {
   const suffix = err === undefined ? "" : `: ${err instanceof Error ? err.message : String(err)}`;
   process.stderr.write(`[${kleur.red("ERROR")}] ${label}${suffix}\n`);
+  process.exit(1);
 }
 
 interface SummaryInput {

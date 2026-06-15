@@ -35,7 +35,7 @@ function parseTagsCSV(input: string): TagsObj[] {
 /**
  * @description Loads the entity definition from `--schema <file>` or
  * `--schema-json '<inline>'`. Accepts two shapes:
- *   1. A full envelope: `{ name, schema: {...}, tags?, description? }`
+ *   1. A full envelope: `{ name, schema: {...}, tags? }`
  *   2. A bare schema map: `{ field_name: {type: "string", ...}, ... }`
  *      — wrapped into `{ schema: <parsed> }` so the API receives the columns.
  *      Detected when none of the values look like an EntityCreateInfo field
@@ -60,7 +60,7 @@ function loadSchemaPayload(options: IOptions): EntityCreateInfo | undefined {
   // whole object is the schema. This matches `--add-field`'s bare-map shape
   // and avoids silently dropping schema columns when callers omit the
   // envelope.
-  const envelopeKeys = ["name", "schema", "tags", "description", "payload_decoder"] as const;
+  const envelopeKeys = ["name", "schema", "tags", "payload_decoder"] as const;
   const isEnvelope = envelopeKeys.some((key) => key in parsed);
   if (!isEnvelope) {
     return { schema: parsed } as unknown as EntityCreateInfo;
@@ -89,18 +89,15 @@ async function entityCreate(nameArg: string | undefined, options: IOptions) {
       failWith("Schema payload is missing required field: name.", "missing_name", Boolean(options.json));
     }
   } else {
-    // Interactive: prompt for name → description → tags → paste schema JSON.
+    // Interactive: prompt for name → tags → paste schema JSON.
     const name = await requireOrFail(nameArg, "name", {
       silent: options.silent,
       json: options.json,
       promptMessage: "Entity name:",
     });
-    let description: string | undefined;
     let tags: TagsObj[] | undefined;
     let schema: EntityCreateInfo["schema"] | undefined;
     if (!options.silent) {
-      const descAnswer = await prompts({ type: "text", name: "description", message: "Description (optional):" });
-      description = descAnswer.description ? String(descAnswer.description) : undefined;
       const tagAnswer = await prompts({ type: "text", name: "tags", message: "Tags as key:value,key2:value2 (optional):" });
       tags = tagAnswer.tags ? parseTagsCSV(String(tagAnswer.tags)) : undefined;
       const schemaAnswer = await prompts({
@@ -117,12 +114,7 @@ async function entityCreate(nameArg: string | undefined, options: IOptions) {
         }
       }
     }
-    payload = { name, ...(description ? { payload_decoder: null } : {}), ...(tags ? { tags } : {}), ...(schema ? { schema } : {}) };
-    // `description` lives on EntityInfo but not EntityCreateInfo per SDK types;
-    // keep it on the payload anyway since the API accepts it.
-    if (description) {
-      (payload as Record<string, unknown>).description = description;
-    }
+    payload = { name, ...(tags ? { tags } : {}), ...(schema ? { schema } : {}) };
   }
 
   const created = await resources.entities.create(payload).catch((error: unknown) => {

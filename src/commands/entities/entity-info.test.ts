@@ -106,7 +106,6 @@ describe("entityInfo", () => {
     resourcesInstance.entities.info.mockResolvedValue({
       id: "ent1",
       name: "Entity One",
-      description: "desc",
       schema: { email: { type: "string" } },
       index: { email_idx: { fields: ["email"] } },
       created_at: null,

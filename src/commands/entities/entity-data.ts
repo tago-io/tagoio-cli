@@ -9,8 +9,6 @@ interface IOptions {
   environment?: string;
   qty?: number;
   skip?: number;
-  orderBy?: string;
-  order?: "asc" | "desc";
   query?: string[];
   json?: boolean;
   stringify?: boolean;
@@ -134,9 +132,6 @@ async function entityData(idArg: string | undefined, options: IOptions) {
       if (options.skip !== undefined) {
         queryParams.skip = options.skip;
       }
-      if (options.orderBy) {
-        queryParams.order = `${options.orderBy},${options.order ?? "asc"}`;
-      }
       const filter = parseQueryFilters(options.query);
       if (filter) {
         queryParams.filter = filter;
@@ -175,12 +170,10 @@ async function entityData(idArg: string | undefined, options: IOptions) {
 
     case "edit": {
       const payload = parseJSON<unknown>(options.edit as string, "--edit", useJSON);
-      const result = await resources.entities
-        .editEntityData(id, payload as never)
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          return failWith(`Failed to edit entity ${id} data: ${message}`, "edit_failed", useJSON);
-        });
+      const result = await resources.entities.editEntityData(id, payload as never).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        return failWith(`Failed to edit entity ${id} data: ${message}`, "edit_failed", useJSON);
+      });
       if (useJSON) {
         process.stdout.write(`${JSON.stringify({ id, edited: true, result })}\n`);
         return;
@@ -196,7 +189,10 @@ async function entityData(idArg: string | undefined, options: IOptions) {
       if (raw.trim().startsWith("[")) {
         ids = parseJSON<string[]>(raw, "--delete", useJSON);
       } else {
-        ids = raw.split(",").map((s) => s.trim()).filter(Boolean);
+        ids = raw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
       if (ids.length === 0) {
         failWith("--delete requires at least one record id.", "empty_ids", useJSON);
@@ -206,12 +202,10 @@ async function entityData(idArg: string | undefined, options: IOptions) {
         infoMSG("Cancelled. No changes made.");
         return;
       }
-      const result = await resources.entities
-        .deleteEntityData(id, { ids })
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          return failWith(`Failed to delete entity ${id} records: ${message}`, "delete_failed", useJSON);
-        });
+      const result = await resources.entities.deleteEntityData(id, { ids }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        return failWith(`Failed to delete entity ${id} records: ${message}`, "delete_failed", useJSON);
+      });
       if (useJSON) {
         process.stdout.write(`${JSON.stringify({ id, deleted: ids.length, result })}\n`);
         return;
@@ -243,12 +237,10 @@ async function entityData(idArg: string | undefined, options: IOptions) {
       // data (verified live against the TagoIO API). Counting via the data
       // endpoint keeps `--count` consistent with what `entity-data` itself
       // returns. The page-size cap (10000) matches `entity-copy`'s default.
-      const data = await resources.entities
-        .getEntityData(id, { amount: 10000 })
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          return failWith(`Failed to count entity ${id}: ${message}`, "count_failed", useJSON);
-        });
+      const data = await resources.entities.getEntityData(id, { amount: 10000 }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        return failWith(`Failed to count entity ${id}: ${message}`, "count_failed", useJSON);
+      });
       const count = Array.isArray(data) ? data.length : 0;
       if (useJSON || options.stringify) {
         writeJSON({ id, count }, options);

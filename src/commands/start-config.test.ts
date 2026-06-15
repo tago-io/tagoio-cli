@@ -49,7 +49,11 @@ vi.mock("../lib/init-summary.js", () => ({
   overwriteConfirmCopy: () => "OVERWRITE_COPY_STUB",
   startStep: vi.fn(),
   endStep: vi.fn(),
-  failStep: vi.fn(),
+  // Real failStep is typed `never` and calls process.exit(1); model that here
+  // so callers can't fall through after a failed step.
+  failStep: (label: string) => {
+    throw new Error(`__failStep:${label}`);
+  },
   summaryBlock: () => "SUMMARY_BLOCK_STUB",
 }));
 
@@ -126,8 +130,9 @@ describe("startConfig — clig.dev flow", () => {
 
     const { startConfig } = await import("./start-config.js");
     // No prompt injection — if a prompt fires, it would hang. With --force we expect
-    // it to skip the confirm and proceed (then exit early because getConfigFile returns undefined).
-    await expect(startConfig("dev", { token: "tok-1", force: true })).resolves.toBeUndefined();
+    // it to skip the confirm and proceed; getConfigFile returns undefined, so the
+    // "Creating project structure" stage fails via failStep (which aborts).
+    await expect(startConfig("dev", { token: "tok-1", force: true })).rejects.toThrow(/__failStep:Creating project structure/);
   });
 
   test("--no-input + existing env without --force errors with the --force hint", async () => {

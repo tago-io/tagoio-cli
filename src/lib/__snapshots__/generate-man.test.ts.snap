@@ -463,6 +463,12 @@ tag key to filter on (repeatable, paired with \\-v) (default: [])
 \\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
 tag value to filter on (repeatable, paired with \\-k) (default: [])
 .TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+field to order by (name, created_at, updated_at)
+.TP
+\\fB\\-\\-order\\fR \\fI<asc/desc>\\fR
+order direction (default: asc)
+.TP
 \\fB\\-\\-json\\fR
 emit a JSON array on stdout for machine readers
 .TP
@@ -476,6 +482,7 @@ fail instead of prompting; required for non\\-interactive callers
 Example:
     $ tagoio entity\\-list
     $ tagoio entity\\-list \\-n users
+    $ tagoio entity\\-list \\-\\-order\\-by created_at \\-\\-order desc
     $ tagoio entity\\-list \\-k env \\-v prod \\-\\-json | jq '.[0].id'
 
 Output (\\-\\-json): array of { id, name, tags, created_at, updated_at }
@@ -524,11 +531,10 @@ emit {id, name} on stdout instead of the [OK] line
     Schema format (file or \\-\\-schema\\-json):
       {
         "name": "users",
-        "description": "Customer roster",
         "tags": [{ "key": "env", "value": "prod" }],
         "schema": {
           "email":     { "type": "string", "required": true },
-          "age":       { "type": "integer" },
+          "age":       { "type": "int" },
           "joined_at": { "type": "timestamp" }
         }
       }
@@ -541,16 +547,13 @@ Example:
 Output (\\-\\-json): { id, name }
 .fi
 .SS entity\\-edit [id]
-update entity metadata (name, description)
+update entity metadata (name)
 .TP
 \\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
 environment from config.js
 .TP
 \\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI<new>\\fR
 new entity name
-.TP
-\\fB\\-d\\fR, \\fB\\-\\-description\\fR \\fI<new>\\fR
-new entity description
 .TP
 \\fB\\-\\-silent\\fR
 fail instead of prompting; required for non\\-interactive callers
@@ -561,7 +564,7 @@ emit {id, ...patch} on stdout
 .nf
 Example:
     $ tagoio entity\\-edit 65f8320dbef4690009a7d9dc \\-n "Renamed"
-    $ tagoio entity\\-edit \\-d "New description" \\-\\-silent
+    $ tagoio entity\\-edit 65f8320dbef4690009a7d9dc \\-n "Renamed" \\-\\-silent
 
 Output (\\-\\-json): { id, ...patch }
 .fi
@@ -595,12 +598,6 @@ number of records to fetch (read mode)
 .TP
 \\fB\\-\\-skip\\fR \\fI<n>\\fR
 records to skip (read mode pagination)
-.TP
-\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
-field to order by (read mode)
-.TP
-\\fB\\-\\-order\\fR \\fI<asc/desc>\\fR
-order direction (default: asc)
 .TP
 \\fB\\-q\\fR, \\fB\\-\\-query\\fR \\fI[field=value]\\fR
 filter by field=value (repeatable) (default: [])
@@ -680,7 +677,7 @@ fail / skip confirms instead of prompting
 
 Example:
     $ tagoio entity\\-schema <id>                                                          # print
-    $ tagoio entity\\-schema <id> \\-\\-add\\-field '{"age":{"type":"integer"}}'
+    $ tagoio entity\\-schema <id> \\-\\-add\\-field '{"age":{"type":"int"}}'
     $ tagoio entity\\-schema <id> \\-\\-rename\\-field old:new
     $ tagoio entity\\-schema <id> \\-\\-delete\\-field age \\-\\-silent
     $ tagoio entity\\-schema <id> \\-\\-add\\-index '{"by_age":{"fields":["age"]}}'
@@ -700,7 +697,7 @@ target entity id (required)
 environment from config.js
 .TP
 \\fB\\-\\-qty\\fR \\fI<n>\\fR
-page size (default 10000)
+page size (default 10000; max 10000)
 .TP
 \\fB\\-\\-silent\\fR
 fail instead of prompting; required for non\\-interactive callers

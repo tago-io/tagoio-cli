@@ -60,22 +60,19 @@ describe("entityData", () => {
     expect(resourcesInstance.entities.getEntityData).toHaveBeenCalledWith("ent1", {});
   });
 
-  test("read mode applies --qty / --skip / --order-by / --order / -q filters", async () => {
+  test("read mode applies --qty / --skip / -q filters", async () => {
     resourcesInstance.entities.getEntityData.mockResolvedValue([]);
 
     const { entityData } = await import("./entity-data.js");
     await entityData("ent1", {
       qty: 50,
       skip: 10,
-      orderBy: "created_at",
-      order: "desc",
       query: ["status=active", "tier=gold"],
     } as never);
 
     expect(resourcesInstance.entities.getEntityData).toHaveBeenCalledWith("ent1", {
       amount: 50,
       skip: 10,
-      order: "created_at,desc",
       filter: { status: "active", tier: "gold" },
     });
   });

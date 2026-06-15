@@ -7,7 +7,6 @@ import { pickEntityIDFromTagoIO } from "../../prompt/pick-entity-id-from-tagoio.
 interface IOptions {
   environment?: string;
   name?: string;
-  description?: string;
   silent?: boolean;
   json?: boolean;
 }
@@ -36,19 +35,16 @@ async function entityEdit(idArg: string | undefined, options: IOptions) {
   }
 
   // Build the patch from only the flags the user set. Empty patch = no-op.
-  const patch: Partial<EntityCreateInfo> & { description?: string } = {};
+  const patch: Partial<EntityCreateInfo> = {};
   if (options.name !== undefined) {
     patch.name = options.name;
   }
-  if (options.description !== undefined) {
-    patch.description = options.description;
-  }
 
   if (Object.keys(patch).length === 0) {
-    failWith("Nothing to update — pass at least one of --name or --description.", "noop_edit", Boolean(options.json));
+    failWith("Nothing to update — pass --name.", "noop_edit", Boolean(options.json));
   }
 
-  await resources.entities.edit(id, patch as Partial<EntityCreateInfo>).catch((error: unknown) => {
+  await resources.entities.edit(id, patch).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     failWith(`Failed to edit entity ${id}: ${message}`, "edit_failed", Boolean(options.json));
   });

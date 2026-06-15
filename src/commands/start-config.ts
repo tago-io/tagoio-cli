@@ -8,7 +8,7 @@ import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } fr
 import { detectInitState, InitState } from "../lib/init-state.js";
 import { banner, endStep, failStep, overwriteConfirmCopy, startStep, summaryBlock } from "../lib/init-summary.js";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages.js";
-import { globalConfigDir, setScopeOverride } from "../lib/resolve-scope.js";
+import { globalConfigDir, resolveScope, setScopeOverride } from "../lib/resolve-scope.js";
 import { readToken, writeToken } from "../lib/token.js";
 import { promptTextToEnter } from "../prompt/text-prompt.js";
 import { getTagoDeployURL, tagoLogin } from "./login.js";
@@ -30,7 +30,8 @@ interface ConfigOptions {
   sseEndpoint?: string;
   /**
    * Commander stores `--no-input` as `input: false` (negation flag), with the
-   * default being `true`. We normalize to a `noInput` boolean inside startConfig.
+   * default being `true`. startConfig normalizes this (plus the non-TTY case)
+   * into a single `noInput` boolean.
    */
   input?: boolean;
   /** Skip the existing-config overwrite confirmation. */
@@ -177,11 +178,11 @@ function resolveEnvName(positional: string | undefined, flag: string | undefined
  * overwrite, hard-errors under --no-input, or returns silently when nothing
  * needs confirming.
  */
-async function handleExistingEnv(state: InitState, envName: string, options: ConfigOptions): Promise<void> {
+async function handleExistingEnv(state: InitState, envName: string, options: ConfigOptions, noInput: boolean): Promise<void> {
   if (!state.envExists || options.force) {
     return;
   }
-  if ((options.input === false)) {
+  if (noInput) {
     errorHandler(
       `Configuration for env '${envName}' already exists at ${state.scope.configPath}. Pass --force to overwrite, or pick a different env name.`,
     );
@@ -204,7 +205,7 @@ async function handleExistingEnv(state: InitState, envName: string, options: Con
  * the existing-config decision tree from #4. Bootstraps the stub config file
  * at the chosen scope so the rest of init has something to read/write.
  */
-async function resolveTargetScope(options: ConfigOptions): Promise<void> {
+async function resolveTargetScope(options: ConfigOptions, noInput: boolean): Promise<void> {
   if (options.scope === "global") {
     bootstrapGlobalConfig();
     return;
@@ -214,12 +215,11 @@ async function resolveTargetScope(options: ConfigOptions): Promise<void> {
     return;
   }
   // No flag: rely on the resolver. If neither config exists, prompt (or
-  // default to local under --no-input).
-  const initial = detectInitState("__probe__");
-  if (initial.configExists) {
+  // default to local in non-interactive mode).
+  if (resolveScope().configExists) {
     return;
   }
-  if ((options.input === false)) {
+  if (noInput) {
     bootstrapLocalConfig();
     return;
   }
@@ -251,20 +251,29 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
 
   const envName = resolveEnvName(positional, options.name);
 
-  // Step 2 (early): bootstrap the chosen scope's tagoconfig.json. We need
-  // this before detectInitState() so envExists/tokenExists reflect the
-  // resolved scope and not the cwd-default fallback.
-  await resolveTargetScope(options);
+  // Step 2 (early): bootstrap the chosen scope's tagoconfig.json. Must run
+  // before detectInitState() so envExists/tokenExists (and state.scope under
+  // --scope global) reflect the resolved scope, not the cwd-default fallback.
+  // The TTY-vs-flag nuance does not matter here: this only decides WHERE to
+  // create a brand-new config when none exists yet.
+  await resolveTargetScope(options, options.input === false);
 
-  // Step 0: pre-flight detection.
+  // Step 0: pre-flight detection (reads on-disk state + isTTY).
   const state = detectInitState(envName);
+
+  // Non-interactive when --no-input is passed OR stdin is not a TTY (piped
+  // input, CI). Deriving from state.isTTY keeps the decision in one place and
+  // testable. Treating non-TTY as no-input prevents prompts() from returning
+  // undefined and silently proceeding on empty answers; instead we fail fast
+  // or require flags, exactly as --no-input does.
+  const noInput = options.input === false || !state.isTTY;
 
   // Step 1: banner + overwrite confirm.
   process.stderr.write(`${banner(state.scope)}\n`);
-  await handleExistingEnv(state, envName, options);
+  await handleExistingEnv(state, envName, options, noInput);
 
-  // Step 2 (continued): resolve token. --no-input requires -t.
-  if ((options.input === false) && !options.token && !state.tokenExists) {
+  // Step 2 (continued): resolve token. Non-interactive requires -t.
+  if (noInput && !options.token && !state.tokenExists) {
     errorHandler("--no-input requires --token <token> when no existing lock file is on disk for this env.");
   }
 
@@ -274,8 +283,9 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
   startStep("Creating project structure");
   const configFile = getConfigFile();
   if (!configFile) {
+    // failStep is typed `never` (it calls process.exit(1)), so init aborts here
+    // with a non-zero code instead of falling through and reporting success.
     failStep("Creating project structure", "could not read or create tagoconfig.json");
-    return;
   }
   endStep(`Created ${state.scope.configPath}`);
   filesWritten.push({ path: state.scope.configPath, description: "project configuration" });
@@ -296,7 +306,7 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
     token = readToken(envName);
   }
   if (!token) {
-    if ((options.input === false)) {
+    if (noInput) {
       errorHandler("--no-input requires --token <token> for authentication.");
     }
     const data = await createEnvironmentToken(envName);
@@ -305,7 +315,7 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
     tagoSSEURL = tagoSSEURL || data?.tagoDeploySse;
   } else if (options.token) {
     // Token came from the flag. Persist it to the lock file.
-    if (!(options.input === false) && !options.apiEndpoint) {
+    if (!noInput && !options.apiEndpoint) {
       const urlConfig = await getTagoDeployURL();
       tagoAPIURL = urlConfig?.urlAPI || tagoAPIURL;
       tagoSSEURL = urlConfig?.urlSSE || tagoSSEURL;
@@ -325,10 +335,10 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
 
   // Local-only prompts for analysis paths.
   if (state.scope.scope === "local") {
-    if (!configFile.analysisPath && !(options.input === false)) {
+    if (!configFile.analysisPath && !noInput) {
       configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
     }
-    if (!configFile.buildPath && !(options.input === false)) {
+    if (!configFile.buildPath && !noInput) {
       configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
     }
   }
@@ -347,7 +357,6 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
     accountInfo = await account.info();
   } catch (err) {
     failStep("Authenticating with TagoIO", err);
-    process.exit(1);
   }
   endStep(`Authenticated as ${profile.info.name}`);
 
@@ -360,7 +369,7 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
     tagoAPIURL,
   };
   if (state.scope.scope === "local") {
-    if ((options.input === false)) {
+    if (noInput) {
       // Non-interactive: preserve whatever analysisList is already on disk
       // (re-init keeps it; fresh init starts empty). The user can populate it
       // by editing tagoconfig.json or rerunning init interactively.

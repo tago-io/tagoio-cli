@@ -97,6 +97,34 @@ describe("entityList", () => {
     );
   });
 
+  test("--order-by + --order builds the [field, direction] tuple the SDK expects", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    resourcesInstance.entities.list.mockResolvedValue([]);
+
+    const { entityList } = await import("./entity-list.js");
+    await entityList({ tagkey: [], tagvalue: [], orderBy: "created_at", order: "desc" } as never);
+
+    expect(resourcesInstance.entities.list).toHaveBeenCalledWith(expect.objectContaining({ orderBy: ["created_at", "desc"] }));
+  });
+
+  test("--order-by defaults to asc when --order is omitted", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    resourcesInstance.entities.list.mockResolvedValue([]);
+
+    const { entityList } = await import("./entity-list.js");
+    await entityList({ tagkey: [], tagvalue: [], orderBy: "name" } as never);
+
+    expect(resourcesInstance.entities.list).toHaveBeenCalledWith(expect.objectContaining({ orderBy: ["name", "asc"] }));
+  });
+
+  test("rejects an --order-by field that is not orderable", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+
+    const { entityList } = await import("./entity-list.js");
+    await expect(entityList({ tagkey: [], tagvalue: [], orderBy: "email" } as never)).rejects.toThrow(/Cannot order by "email"/);
+    expect(resourcesInstance.entities.list).not.toHaveBeenCalled();
+  });
+
   test("routes a SDK failure through errorHandler with an actionable message", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     resourcesInstance.entities.list.mockRejectedValue(new Error("Authorization Denied"));
