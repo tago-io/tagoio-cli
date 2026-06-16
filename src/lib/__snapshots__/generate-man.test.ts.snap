@@ -752,22 +752,6 @@ Example:
     $ tagoio files\\-url private/report.pdf \\-\\-signed
     $ URL=$(tagoio files\\-url custom\\-widgets/line\\-chart/index.html)
 .fi
-.SS widget\\-edit\\-url <dashboardID> <widgetID> <url>
-set the URL on a custom (iframe) widget
-.TP
-\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
-environment from tagoconfig.json
-.TP
-\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
-profile token, bypasses the lock file (CI/CD)
-.PP
-.nf
-    Reads the widget first and preserves its existing parameters, theme,
-    and frame settings; only the URL changes.
-
-Example:
-    $ tagoio widget\\-edit\\-url 64f... 1700000000000 https://api.us\\-e1.tago.io/file/p/custom\\-widgets/line\\-chart/index.html
-.fi
 .SS app\\-export
 export application from one profile to another
 .TP
