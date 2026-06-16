@@ -752,6 +752,129 @@ Example:
     $ tagoio files\\-url private/report.pdf \\-\\-signed
     $ URL=$(tagoio files\\-url custom\\-widgets/line\\-chart/index.html)
 .fi
+.SS files\\-list [path]
+list files and folders under a path in TagoIO Files
+.TP
+\\fB\\-\\-json\\fR
+emit a JSON object on stdout for machine readers
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+Example:
+    $ tagoio files\\-list
+    $ tagoio files\\-list custom\\-widgets/line\\-chart
+    $ tagoio files\\-list custom\\-widgets \\-\\-json | jq '.files'
+.fi
+.SS files\\-move <from> <to>
+move a file or folder prefix to a new path
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the confirmation prompt for folder moves (CI/CD)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+Example:
+    $ tagoio files\\-move custom\\-widgets/lc/index.html backups/lc/index.html
+    $ tagoio files\\-move custom\\-widgets/line\\-chart backups/line\\-chart \\-\\-yes
+.fi
+.SS files\\-rename <path> <newName>
+rename a file or folder in place (keeps its directory)
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the confirmation prompt for folder renames (CI/CD)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+    Keeps the parent directory and changes only the last segment. Use
+    'tagoio files\\-move' to move across directories.
+
+Example:
+    # rename a file (stays in the same directory)
+    $ tagoio files\\-rename custom\\-widgets/lc/index.html app.html
+    # rename a folder (every file under the prefix moves with it)
+    $ tagoio files\\-rename custom\\-widgets/line\\-chart line\\-chart\\-v2 \\-\\-yes
+.fi
+.SS files\\-copy <from> <to>
+copy a file or folder prefix to a new path
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+Example:
+    $ tagoio files\\-copy reports/a.pdf backups/a.pdf
+    $ tagoio files\\-copy custom\\-widgets/line\\-chart backups/line\\-chart
+.fi
+.SS files\\-delete <path>
+delete a file or every file under a folder prefix
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the confirmation prompt (CI/CD)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+    Always confirms (a folder shows the file count) unless \\-\\-yes.
+
+Example:
+    $ tagoio files\\-delete reports/old.pdf
+    $ tagoio files\\-delete custom\\-widgets/line\\-chart\\-test \\-\\-yes
+.fi
+.SS files\\-download <remotePath> [localDest]
+download a file or folder prefix to the local disk
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+    Private files are downloaded via a signed URL automatically.
+
+Example:
+    $ tagoio files\\-download reports/a.pdf
+    $ tagoio files\\-download custom\\-widgets/line\\-chart ./local\\-lc
+.fi
+.SS files\\-permission <path> <visibility>
+make a file or folder public or private
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the confirmation prompt for folder changes (CI/CD)
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from tagoconfig.json
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI[token]\\fR
+profile token, bypasses the lock file (CI/CD)
+.PP
+.nf
+Example:
+    $ tagoio files\\-permission custom\\-widgets/line\\-chart public \\-\\-yes
+    $ tagoio files\\-permission private/report.pdf private
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP

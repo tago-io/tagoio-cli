@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const { resolveResourcesMock, executeMoveMock, errorHandlerMock, infoMSGMock, successMSGMock } = vi.hoisted(() => ({
-  resolveResourcesMock: vi.fn(() => ({ marker: "resources" })),
+  resolveResourcesMock: vi.fn((..._args: unknown[]) => ({ marker: "resources" })),
   executeMoveMock: vi.fn(),
   errorHandlerMock: vi.fn<(str: unknown) => never>((str) => {
     throw new Error(String(str));
