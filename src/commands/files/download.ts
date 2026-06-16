@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, resolve, sep } from "node:path";
 
-import { Resources } from "@tago-io/sdk";
+import type { Resources } from "@tago-io/sdk";
 
-import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
+import { getApiURL } from "../../lib/config-file.js";
 import { isFolderPath, listFilesRecursive, remapPrefix } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 import { DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 
 interface DownloadOptions {
@@ -35,22 +36,21 @@ async function downloadOne(resources: Resources, baseURL: string, remotePath: st
   await writeFile(localDest, buffer);
 }
 
+/** Joins `relative` under `destRoot`, refusing any path that escapes it. */
+function safeJoin(destRoot: string, relative: string): string {
+  const target = resolve(destRoot, relative);
+  const root = resolve(destRoot);
+  if (target !== root && !target.startsWith(root + sep)) {
+    errorHandler(`Refusing to write outside ${destRoot}: ${relative}`);
+  }
+  return target;
+}
+
 /** Downloads a file or a folder prefix from TagoIO Files to the local disk. */
 async function filesDownloadCommand(remotePath: string, localDest: string | undefined, options: DownloadOptions) {
-  const config = getEnvironmentConfig(options.environment);
-  if (!config) {
-    errorHandler("Environment not found");
-  }
-  if (options.token) {
-    config.profileToken = options.token;
-  }
-  if (!config.profileToken) {
-    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
-  }
-
-  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const { resources, region } = resolveResources(options);
   const profile = await resources.profiles.info("current");
-  const baseURL = `${getApiURL(config.profileRegion)}/file/${profile.info.id}`;
+  const baseURL = `${getApiURL(region)}/file/${profile.info.id}`;
 
   if (!isFolderPath(remotePath)) {
     const dest = localDest ?? basename(remotePath);
@@ -70,8 +70,8 @@ async function filesDownloadCommand(remotePath: string, localDest: string | unde
 
   for (const filePath of files) {
     const relative = remapPrefix(filePath, remotePath, "").replace(/^\/+/, "");
-    await downloadOne(resources, baseURL, filePath, join(destRoot, relative));
-    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
+    await downloadOne(resources, baseURL, filePath, safeJoin(destRoot, relative));
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, DELAY_BETWEEN_REQUESTS_MS));
   }
 
   successMSG(`Downloaded ${files.length} file(s).`);

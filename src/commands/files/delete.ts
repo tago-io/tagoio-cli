@@ -2,7 +2,7 @@ import { isFolderPath, listFilesRecursive } from "../../lib/files-paths.js";
 import { infoMSG, successMSG } from "../../lib/messages.js";
 import { DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
-import { resolveResources } from "./move.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface DeleteOptions {
   environment?: string;
@@ -17,7 +17,7 @@ const DELETE_BATCH_SIZE = 50;
 
 /** Deletes a file or every file under a folder prefix, after confirmation. */
 async function filesDeleteCommand(path: string, options: DeleteOptions) {
-  const resources = resolveResources(options);
+  const { resources } = resolveResources(options);
 
   const targets = isFolderPath(path) ? await listFilesRecursive(resources, path) : [path];
 

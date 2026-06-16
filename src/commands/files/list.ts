@@ -1,7 +1,4 @@
-import { Resources } from "@tago-io/sdk";
-
-import { getEnvironmentConfig } from "../../lib/config-file.js";
-import { errorHandler } from "../../lib/messages.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface ListOptions {
   environment?: string;
@@ -12,19 +9,7 @@ interface ListOptions {
 
 /** Lists files and folders under a path in TagoIO Files. */
 async function filesListCommand(path: string | undefined, options: ListOptions) {
-  const config = getEnvironmentConfig(options.environment);
-  if (!config) {
-    errorHandler("Environment not found");
-  }
-
-  if (options.token) {
-    config.profileToken = options.token;
-  }
-  if (!config.profileToken) {
-    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
-  }
-
-  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const { resources } = resolveResources(options);
 
   // The API only returns a folder's contents when the path ends with a slash;
   // normalize a non-empty path so `files-list custom-widgets` lists its contents.

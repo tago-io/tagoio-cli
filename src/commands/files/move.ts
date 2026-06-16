@@ -1,9 +1,9 @@
-import { Resources } from "@tago-io/sdk";
+import type { Resources } from "@tago-io/sdk";
 import { queue } from "async";
 
-import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { isFolderPath, listFilesRecursive, remapPrefix } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
 
@@ -13,21 +13,6 @@ interface MoveOptions {
   /** Skip the confirmation prompt for folder-wide moves (CI/CD). */
   yes?: boolean;
   silent?: boolean;
-}
-
-/** Resolves a Resources client from the environment + token, or errors. */
-function resolveResources(options: { environment?: string; token?: string }): Resources {
-  const config = getEnvironmentConfig(options.environment);
-  if (!config) {
-    errorHandler("Environment not found");
-  }
-  if (options.token) {
-    config.profileToken = options.token;
-  }
-  if (!config.profileToken) {
-    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
-  }
-  return new Resources({ token: config.profileToken, region: config.profileRegion });
 }
 
 interface ExecuteMoveParams {
@@ -79,7 +64,7 @@ async function executeMove(params: ExecuteMoveParams): Promise<number> {
 
 /** Moves a file or folder prefix to a new path. */
 async function filesMoveCommand(from: string, to: string, options: MoveOptions) {
-  const resources = resolveResources(options);
+  const { resources } = resolveResources(options);
 
   infoMSG(`Moving ${from} -> ${to} ...`);
   const moved = await executeMove({ resources, from, to, skipConfirm: Boolean(options.yes || options.silent) });
@@ -89,4 +74,4 @@ async function filesMoveCommand(from: string, to: string, options: MoveOptions) 
   }
 }
 
-export { executeMove, filesMoveCommand, resolveResources };
+export { executeMove, filesMoveCommand };

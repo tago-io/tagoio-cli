@@ -4,7 +4,7 @@ import { isFolderPath, listFilesRecursive } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
 import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
-import { resolveResources } from "./move.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface PermissionOptions {
   environment?: string;
@@ -21,7 +21,7 @@ async function filesPermissionCommand(path: string, visibility: string, options:
   }
   const isPublic = visibility === "public";
 
-  const resources = resolveResources(options);
+  const { resources } = resolveResources(options);
 
   if (!isFolderPath(path)) {
     await resources.files.changePermission([{ file: path, public: isPublic }]);

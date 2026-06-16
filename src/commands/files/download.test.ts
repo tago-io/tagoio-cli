@@ -120,6 +120,13 @@ describe("filesDownloadCommand", () => {
     await expect(filesDownloadCommand("empty", "./dest", {})).rejects.toThrow(/no files|not found/i);
   });
 
+  test("refuses to write outside the destination (path traversal)", async () => {
+    listMock.mockResolvedValue({ files: [{ filename: "evil/../../escape.txt" }], folders: [] });
+
+    await expect(filesDownloadCommand("evil", "./dest", {})).rejects.toThrow(/outside|traversal|refus/i);
+    expect(writeFileMock).not.toHaveBeenCalled();
+  });
+
   test("errors when the fetch fails", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 404 });
 

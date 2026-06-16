@@ -1,5 +1,6 @@
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
-import { executeMove, resolveResources } from "./move.js";
+import { executeMove } from "./move.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface RenameOptions {
   environment?: string;
@@ -22,7 +23,7 @@ async function filesRenameCommand(path: string, newName: string, options: Rename
     errorHandler(`New name must not contain '/'. Use 'tagoio files-move' to move across directories.`);
   }
 
-  const resources = resolveResources(options);
+  const { resources } = resolveResources(options);
   const to = renameDestination(path, newName);
 
   infoMSG(`Renaming ${path} -> ${to} ...`);

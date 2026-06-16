@@ -3,7 +3,7 @@ import { queue } from "async";
 import { isFolderPath, listFilesRecursive, remapPrefix } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
 import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
-import { resolveResources } from "./move.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface CopyOptions {
   environment?: string;
@@ -12,7 +12,7 @@ interface CopyOptions {
 
 /** Copies a file or folder prefix to a new path. */
 async function filesCopyCommand(from: string, to: string, options: CopyOptions) {
-  const resources = resolveResources(options);
+  const { resources } = resolveResources(options);
   infoMSG(`Copying ${from} -> ${to} ...`);
 
   if (!isFolderPath(from)) {
