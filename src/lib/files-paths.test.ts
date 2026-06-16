@@ -38,14 +38,16 @@ describe("remapPrefix", () => {
 describe("listFilesRecursive", () => {
   test("flattens files across nested folders", async () => {
     const list = vi.fn();
-    // root prefix has one file and one subfolder; the subfolder has one file.
+    // The TagoIO API: a prefix is only listed with a trailing slash, `folders`
+    // are RELATIVE names (not full paths), and `files` are full paths.
     list.mockImplementation(({ path }: { path: string }) => {
-      if (path === "custom-widgets/lc" || path === "custom-widgets/lc/") {
-        return Promise.resolve({ files: [{ filename: "custom-widgets/lc/index.html" }], folders: ["custom-widgets/lc/sub"] });
+      if (path === "custom-widgets/lc/") {
+        return Promise.resolve({ files: [{ filename: "custom-widgets/lc/index.html" }], folders: ["sub"] });
       }
-      if (path === "custom-widgets/lc/sub" || path === "custom-widgets/lc/sub/") {
+      if (path === "custom-widgets/lc/sub/") {
         return Promise.resolve({ files: [{ filename: "custom-widgets/lc/sub/app.js" }], folders: [] });
       }
+      // Listing without a trailing slash returns the folder as a sibling, no contents.
       return Promise.resolve({ files: [], folders: [] });
     });
     const resources = { files: { list } } as never;
@@ -53,6 +55,15 @@ describe("listFilesRecursive", () => {
     const result = await listFilesRecursive(resources, "custom-widgets/lc");
 
     expect(result.sort()).toEqual(["custom-widgets/lc/index.html", "custom-widgets/lc/sub/app.js"]);
+  });
+
+  test("lists with a trailing slash regardless of input", async () => {
+    const list = vi.fn().mockResolvedValue({ files: [], folders: [] });
+    const resources = { files: { list } } as never;
+
+    await listFilesRecursive(resources, "custom-widgets/lc");
+
+    expect(list).toHaveBeenCalledWith({ path: "custom-widgets/lc/" });
   });
 
   test("returns an empty array for an empty prefix", async () => {

@@ -41,10 +41,15 @@ function remapPrefix(filePath: string, from: string, to: string): string {
  * filenames.
  */
 async function listFilesRecursive(resources: Resources, prefix: string): Promise<string[]> {
-  const { files, folders } = await resources.files.list({ path: prefix });
+  // The API only returns a folder's contents when the path ends with a slash;
+  // without it the folder comes back as a sibling and the listing is empty.
+  const normalizedPrefix = `${prefix.replace(/\/+$/, "")}/`;
+
+  const { files, folders } = await resources.files.list({ path: normalizedPrefix });
   const here = files.map((f) => f.filename);
 
-  const nested = await Promise.all(folders.map((folder) => listFilesRecursive(resources, folder)));
+  // `folders` are relative names, so join each with the prefix before recursing.
+  const nested = await Promise.all(folders.map((folder) => listFilesRecursive(resources, `${normalizedPrefix}${folder}`)));
 
   return [...here, ...nested.flat()];
 }

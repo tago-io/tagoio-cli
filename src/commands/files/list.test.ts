@@ -56,7 +56,14 @@ describe("filesListCommand", () => {
     const out = stdout.join("");
     expect(out).toContain("custom-widgets/lc/sub");
     expect(out).toContain("custom-widgets/lc/index.html");
-    expect(listMock).toHaveBeenCalledWith({ path: "custom-widgets/lc" });
+    // The API only returns a folder's contents when the path ends with a slash.
+    expect(listMock).toHaveBeenCalledWith({ path: "custom-widgets/lc/" });
+  });
+
+  test("does not append a slash when the path already ends with one", async () => {
+    await filesListCommand("custom-widgets/lc/", {});
+
+    expect(listMock).toHaveBeenCalledWith({ path: "custom-widgets/lc/" });
   });
 
   test("emits a JSON object on stdout with --json", async () => {

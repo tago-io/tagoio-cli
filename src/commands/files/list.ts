@@ -25,7 +25,12 @@ async function filesListCommand(path: string | undefined, options: ListOptions) 
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
-  const result = await resources.files.list({ path: path ?? "" });
+
+  // The API only returns a folder's contents when the path ends with a slash;
+  // normalize a non-empty path so `files-list custom-widgets` lists its contents.
+  const rawPath = path ?? "";
+  const listPath = rawPath === "" || rawPath.endsWith("/") ? rawPath : `${rawPath}/`;
+  const result = await resources.files.list({ path: listPath });
 
   if (options.json) {
     process.stdout.write(`${JSON.stringify({ folders: result.folders, files: result.files })}\n`);
