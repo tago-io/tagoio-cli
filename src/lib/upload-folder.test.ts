@@ -24,6 +24,12 @@ function mockTree(tree: Record<string, string[]>, files: Set<string>) {
   }));
 }
 
+/** uploadFile(content, filename, options) — pull args by name for assertions. */
+function uploadArgs(mock: ReturnType<typeof vi.fn>, call = 0) {
+  const [content, filename, options] = mock.mock.calls[call];
+  return { content, filename, options: options as { isPublic: boolean; contentType: string } };
+}
+
 describe("collectFiles", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,8 +70,8 @@ describe("uploadFolder", () => {
 
   test("uploads a single file to the full remote path (relativePath empty)", async () => {
     mockTree({}, new Set(["/dist/index.html"]));
-    const uploadBase64 = vi.fn().mockResolvedValue("ok");
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
 
     const result = await uploadFolder({
       resources,
@@ -75,19 +81,19 @@ describe("uploadFolder", () => {
     });
 
     expect(result).toEqual({ created: 1, failed: 0 });
-    expect(uploadBase64).toHaveBeenCalledTimes(1);
-    expect((uploadBase64.mock.calls[0][0] as { filename: string }[])[0].filename).toBe("/files-test/private-index.html");
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(uploadArgs(uploadFile).filename).toBe("/files-test/private-index.html");
   });
 
   test("returns zero counts when localPath does not exist", async () => {
     existsSyncMock.mockReturnValue(false);
-    const uploadBase64 = vi.fn();
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn();
+    const resources = { files: { uploadFile } } as never;
 
     const result = await uploadFolder({ resources, localPath: "/missing", remotePath: "w", public: true });
 
     expect(result).toEqual({ created: 0, failed: 0 });
-    expect(uploadBase64).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
   });
 
   test("uploads every file under the remote prefix and counts successes", async () => {
@@ -98,8 +104,8 @@ describe("uploadFolder", () => {
       },
       new Set(["/dist/index.html", "/dist/sub/app.js"]),
     );
-    const uploadBase64 = vi.fn().mockResolvedValue("ok");
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
 
     const result = await uploadFolder({
       resources,
@@ -109,25 +115,53 @@ describe("uploadFolder", () => {
     });
 
     expect(result).toEqual({ created: 2, failed: 0 });
-    expect(uploadBase64).toHaveBeenCalledTimes(2);
-    const filenames = uploadBase64.mock.calls.map((c) => (c[0] as { filename: string }[])[0].filename).sort();
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    const filenames = uploadFile.mock.calls.map((c) => c[1]).sort();
     expect(filenames).toEqual(["/custom-widgets/line-chart/index.html", "/custom-widgets/line-chart/sub/app.js"]);
   });
 
-  test("flows the public flag through to uploadBase64", async () => {
+  test("sets the Content-Type by file extension (so browsers render, not download)", async () => {
+    mockTree(
+      {
+        "/dist": ["index.html", "index-abc.js", "index-abc.css"],
+      },
+      new Set(["/dist/index.html", "/dist/index-abc.js", "/dist/index-abc.css"]),
+    );
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
+
+    await uploadFolder({ resources, localPath: "/dist", remotePath: "w", public: true });
+
+    const byName = new Map(uploadFile.mock.calls.map((c) => [c[1] as string, c[2] as { contentType: string }]));
+    expect(byName.get("/w/index.html")?.contentType).toBe("text/html");
+    expect(byName.get("/w/index-abc.js")?.contentType).toBe("text/javascript");
+    expect(byName.get("/w/index-abc.css")?.contentType).toBe("text/css");
+  });
+
+  test("defaults unknown extensions to application/octet-stream", async () => {
+    mockTree({}, new Set(["/dist/data.bin"]));
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
+
+    await uploadFolder({ resources, localPath: "/dist/data.bin", remotePath: "w/data.bin", public: true });
+
+    expect(uploadArgs(uploadFile).options.contentType).toBe("application/octet-stream");
+  });
+
+  test("flows the public flag through to uploadFile as isPublic", async () => {
     mockTree({ "/dist": ["index.html"] }, new Set(["/dist/index.html"]));
-    const uploadBase64 = vi.fn().mockResolvedValue("ok");
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
 
     await uploadFolder({ resources, localPath: "/dist", remotePath: "w", public: false });
 
-    expect((uploadBase64.mock.calls[0][0] as { public: boolean }[])[0].public).toBe(false);
+    expect(uploadArgs(uploadFile).options.isPublic).toBe(false);
   });
 
   test("invokes onProgress after each file with the running counts", async () => {
     mockTree({ "/dist": ["a.txt", "b.txt"] }, new Set(["/dist/a.txt", "/dist/b.txt"]));
-    const uploadBase64 = vi.fn().mockResolvedValue("ok");
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn().mockResolvedValue({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
     const onProgress = vi.fn();
 
     await uploadFolder({ resources, localPath: "/dist", remotePath: "w", public: true, onProgress });
@@ -138,19 +172,19 @@ describe("uploadFolder", () => {
 
   test("returns zero counts when the folder has no files", async () => {
     existsSyncMock.mockReturnValue(false);
-    const uploadBase64 = vi.fn();
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn();
+    const resources = { files: { uploadFile } } as never;
 
     const result = await uploadFolder({ resources, localPath: "/empty", remotePath: "w", public: true });
 
     expect(result).toEqual({ created: 0, failed: 0 });
-    expect(uploadBase64).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
   });
 
   test("counts a per-file failure without aborting the run", async () => {
     mockTree({ "/dist": ["a.txt", "b.txt"] }, new Set(["/dist/a.txt", "/dist/b.txt"]));
-    const uploadBase64 = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce("ok");
-    const resources = { files: { uploadBase64 } } as never;
+    const uploadFile = vi.fn().mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce({ file: "ok" });
+    const resources = { files: { uploadFile } } as never;
 
     const result = await uploadFolder({ resources, localPath: "/dist", remotePath: "w", public: true });
 

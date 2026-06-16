@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { extname, join, relative } from "node:path";
 
 import type { Resources } from "@tago-io/sdk";
 import { queue } from "async";
@@ -7,6 +7,35 @@ import { queue } from "async";
 interface FileTask {
   filePath: string;
   relativePath: string;
+}
+
+// Content types by extension. uploadBase64 cannot set a Content-Type, so files
+// land in storage as application/octet-stream and browsers download them instead
+// of rendering — which breaks custom-widget index.html in the dashboard iframe.
+// uploadFile lets us set the type explicitly.
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html",
+  ".js": "text/javascript",
+  ".mjs": "text/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".map": "application/json",
+  ".txt": "text/plain",
+};
+
+/** Resolves the Content-Type for a file by extension, defaulting to octet-stream. */
+function contentTypeFor(filePath: string): string {
+  return CONTENT_TYPES[extname(filePath).toLowerCase()] ?? "application/octet-stream";
 }
 
 interface UploadFilesParams {
@@ -64,13 +93,15 @@ function collectFiles(dir: string, baseDir: string): FileTask[] {
   return files;
 }
 
-/** Uploads a single file as base64 under the remote prefix. */
+/** Uploads a single file under the remote prefix with an explicit Content-Type. */
 async function uploadOne(params: UploadFilesParams, task: FileTask, result: UploadResult) {
-  const base64Content = readFileSync(task.filePath).toString("base64");
+  const content = readFileSync(task.filePath);
   const filename = `/${join(params.remotePath, task.relativePath)}`;
 
+  // uploadFile (multipart) is used over uploadBase64 because only it accepts a
+  // contentType; without it browsers download files instead of rendering them.
   await params.resources.files
-    .uploadBase64([{ filename, file: base64Content, public: params.public }])
+    .uploadFile(content, filename, { isPublic: params.public, contentType: contentTypeFor(task.filePath) })
     .then(() => {
       result.created++;
     })

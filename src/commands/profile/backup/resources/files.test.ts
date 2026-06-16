@@ -46,15 +46,15 @@ describe("restoreFiles", () => {
     writeFileSync(join(filesDir, "a.txt"), "alpha");
     writeFileSync(join(filesDir, "nested", "b.txt"), "beta");
 
-    const uploadBase64Mock = vi.fn().mockResolvedValue(undefined);
-    const resources = { files: { uploadBase64: uploadBase64Mock } };
+    const uploadFileMock = vi.fn().mockResolvedValue(undefined);
+    const resources = { files: { uploadFile: uploadFileMock } };
 
     const { restoreFiles } = await import("./files.js");
     const promise = restoreFiles(resources as never, tmpRoot);
     await vi.runAllTimersAsync();
     const result = await promise;
 
-    expect(uploadBase64Mock).toHaveBeenCalledTimes(2);
+    expect(uploadFileMock).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ created: 2, updated: 0, failed: 0 });
   });
 
@@ -64,7 +64,7 @@ describe("restoreFiles", () => {
     writeFileSync(join(filesDir, "boom.txt"), "boom");
 
     const resources = {
-      files: { uploadBase64: vi.fn().mockRejectedValue(new Error("upload failed")) },
+      files: { uploadFile: vi.fn().mockRejectedValue(new Error("upload failed")) },
     };
 
     const { restoreFiles } = await import("./files.js");
@@ -95,14 +95,14 @@ describe("restoreFiles", () => {
     // Mock returns first file only
     selectItemsFromBackupMock.mockImplementation(async (items: unknown[]) => [items[0]]);
 
-    const uploadBase64Mock = vi.fn().mockResolvedValue(undefined);
-    const resources = { files: { uploadBase64: uploadBase64Mock } };
+    const uploadFileMock = vi.fn().mockResolvedValue(undefined);
+    const resources = { files: { uploadFile: uploadFileMock } };
 
     const { restoreFiles } = await import("./files.js");
     const promise = restoreFiles(resources as never, tmpRoot, true);
     await vi.runAllTimersAsync();
     const result = await promise;
-    expect(uploadBase64Mock).toHaveBeenCalledTimes(1);
+    expect(uploadFileMock).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ created: 1, updated: 0, failed: 0 });
   });
 });
