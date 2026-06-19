@@ -15,8 +15,9 @@ interface IQueue {
   export_holder: IExportHolder;
   importAccount: Account;
   exportAccount: Account;
+  ignoreCustomWidgets: boolean;
 }
-async function updateDashboard({ label, dash_id, import_list, export_holder, exportAccount, importAccount }: IQueue) {
+async function updateDashboard({ label, dash_id, import_list, export_holder, exportAccount, importAccount, ignoreCustomWidgets }: IQueue) {
   infoMSG(`Exporting dashboard ${label}...`);
   const exportDash = await exportAccount.dashboards.info(dash_id).catch((error) => {
     throw `Error on dashboard ${label} in export account: ${error}`;
@@ -34,9 +35,9 @@ async function updateDashboard({ label, dash_id, import_list, export_holder, exp
 
   await storeExportBackup("target", "dashboards", importDash);
 
-  await removeAllWidgets(importAccount, importDash).catch(errorHandler);
+  const keptIframes = await removeAllWidgets(importAccount, importDash, ignoreCustomWidgets).catch(errorHandler);
   importDash.arrangement = [];
-  await insertWidgets(exportAccount, importAccount, exportDash, importDash, export_holder).catch(errorHandler);
+  await insertWidgets(exportAccount, importAccount, exportDash, importDash, export_holder, ignoreCustomWidgets, keptIframes).catch(errorHandler);
   export_holder.dashboards[dash_id] = importDash.id;
 }
 
@@ -82,6 +83,7 @@ async function resolveDashboardTarget(
 
 async function dashboardExport(exportAccount: Account, importAccount: Account, export_holder: IExportHolder, options: IExportOptions) {
   infoMSG("Exporting dashboard: started");
+  const ignoreCustomWidgets = Boolean(options.ignoreCustomWidgets);
 
   let exportList = await exportAccount.dashboards.list({
     page: 1,
@@ -110,7 +112,7 @@ async function dashboardExport(exportAccount: Account, importAccount: Account, e
   dashboardQueue.error(errorHandler);
 
   for (const { id: dash_id, label } of exportList) {
-    void dashboardQueue.push({ dash_id, label, import_list, importAccount, export_holder, exportAccount }).catch(null);
+    void dashboardQueue.push({ dash_id, label, import_list, importAccount, export_holder, exportAccount, ignoreCustomWidgets }).catch(null);
   }
 
   await dashboardQueue.drain();
