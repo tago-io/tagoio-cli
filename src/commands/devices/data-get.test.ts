@@ -1,3 +1,4 @@
+import prompts from "prompts";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
@@ -8,23 +9,29 @@ const errorHandlerMock = vi.fn((str: unknown) => {
 });
 
 const accountDevicesInfoMock = vi.fn();
-const utilsGetDeviceMock = vi.fn();
 const deviceInfoMock = vi.fn();
 const deviceGetDataMock = vi.fn();
+const deviceDeleteDataMock = vi.fn();
+const deviceEmptyDataMock = vi.fn();
 const pickDeviceIDFromTagoIOMock = vi.fn();
 const postDeviceDataMock = vi.fn();
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
-    return { devices: { info: (...args: unknown[]) => accountDevicesInfoMock(...args) } };
+  Resources: function Resources() {
+    return {
+      devices: {
+        info: (...args: unknown[]) => accountDevicesInfoMock(...args),
+        getDeviceData: (...args: unknown[]) => deviceGetDataMock(...args),
+        deleteDeviceData: (...args: unknown[]) => deviceDeleteDataMock(...args),
+        emptyDeviceData: (...args: unknown[]) => deviceEmptyDataMock(...args),
+      },
+    };
   },
   Device: function Device() {
     return {
       info: (...args: unknown[]) => deviceInfoMock(...args),
-      getData: (...args: unknown[]) => deviceGetDataMock(...args),
     };
   },
-  Utils: { getDevice: (...args: unknown[]) => utilsGetDeviceMock(...args) },
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -112,15 +119,13 @@ describe("getDeviceData", () => {
   test("fetches device by id when length is not 36", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountDevicesInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
-    utilsGetDeviceMock.mockResolvedValue({
-      getData: deviceGetDataMock,
-    });
     deviceGetDataMock.mockResolvedValue([]);
     vi.spyOn(console, "table").mockImplementation(() => undefined);
 
     const { getDeviceData } = await import("./data-get.js");
     await getDeviceData("short-id", { post: "", json: true } as never);
     expect(accountDevicesInfoMock).toHaveBeenCalledWith("short-id");
+    expect(deviceGetDataMock).toHaveBeenCalledWith("dev", expect.any(Object));
   });
 
   test("emits pretty-printed JSON to stdout when --stringify is set", async () => {
@@ -142,12 +147,76 @@ describe("getDeviceData", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     pickDeviceIDFromTagoIOMock.mockResolvedValue("picked-id");
     accountDevicesInfoMock.mockResolvedValue({ id: "dev", name: "X", type: "mutable" });
-    utilsGetDeviceMock.mockResolvedValue({ getData: deviceGetDataMock });
     deviceGetDataMock.mockResolvedValue([]);
     vi.spyOn(console, "table").mockImplementation(() => undefined);
 
     const { getDeviceData } = await import("./data-get.js");
     await getDeviceData("", { post: "" } as never);
     expect(pickDeviceIDFromTagoIOMock).toHaveBeenCalled();
+  });
+
+  test("--delete deletes data matching the query filter", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    deviceDeleteDataMock.mockResolvedValue("3 Data Removed");
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { delete: true, var: ["temperature"] } as never);
+
+    expect(deviceDeleteDataMock).toHaveBeenCalledWith("dev", expect.objectContaining({ variables: ["temperature"] }));
+    expect(deviceGetDataMock).not.toHaveBeenCalled();
+  });
+
+  test("--empty deletes all data after confirmation via emptyDeviceData", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    deviceEmptyDataMock.mockResolvedValue("All Data Removed");
+    prompts.inject([true]);
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { empty: true } as never);
+
+    expect(deviceEmptyDataMock).toHaveBeenCalledWith("dev");
+  });
+
+  test("--empty without confirmation makes no delete call", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    prompts.inject([false]);
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { empty: true } as never);
+
+    expect(deviceEmptyDataMock).not.toHaveBeenCalled();
+  });
+
+  test("--empty -y skips confirmation", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    deviceEmptyDataMock.mockResolvedValue("All Data Removed");
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { empty: true, yes: true } as never);
+
+    expect(deviceEmptyDataMock).toHaveBeenCalledWith("dev");
+  });
+
+  test("--delete together with --post is rejected (mutual exclusivity)", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+
+    const { getDeviceData } = await import("./data-get.js");
+    await expect(getDeviceData("a".repeat(36), { delete: true, post: "{...}" } as never)).rejects.toThrow(
+      /mutually exclusive/,
+    );
+    expect(postDeviceDataMock).not.toHaveBeenCalled();
+  });
+
+  test("--delete and --empty together is rejected", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+
+    const { getDeviceData } = await import("./data-get.js");
+    await expect(getDeviceData("a".repeat(36), { delete: true, empty: true } as never)).rejects.toThrow(
+      /mutually exclusive/,
+    );
   });
 });

@@ -13,18 +13,18 @@ const pickDeviceIDFromTagoIOMock = vi.fn();
 
 let accountInstance: ReturnType<typeof makeAccount>;
 const deviceInstance = { sendData: vi.fn(), info: vi.fn() };
-const getDeviceMock = vi.fn();
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
+  Resources: function Resources() {
     return accountInstance;
   },
   Device: function Device() {
     return deviceInstance;
   },
-  Utils: {
-    getDevice: (...args: unknown[]) => getDeviceMock(...args),
-  },
+}));
+
+vi.mock("./device-sender.js", () => ({
+  getDeviceForSending: vi.fn(async () => deviceInstance),
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -63,7 +63,6 @@ describe("postDeviceData", () => {
     successMSGMock.mockClear();
     deviceInstance.sendData.mockReset();
     deviceInstance.info.mockReset();
-    getDeviceMock.mockReset();
     pickDeviceIDFromTagoIOMock.mockReset();
     resetInjectedPrompts();
   });
@@ -75,16 +74,15 @@ describe("postDeviceData", () => {
     await expect(postDeviceData("dev-id", { environment: "prod", post: "[]" })).rejects.toThrow(/Environment not found/);
   });
 
-  test("sends the parsed JSON payload via the resolved device", async () => {
+  test("sends the parsed JSON payload via a device token instance", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockResolvedValue({ id: "dev-id" });
-    const device = { sendData: vi.fn().mockResolvedValue({ ok: 1 }) };
-    getDeviceMock.mockResolvedValue(device);
+    deviceInstance.sendData.mockResolvedValue({ ok: 1 });
 
     const { postDeviceData } = await import("./data-post.js");
     await postDeviceData("dev-id", { environment: "prod", post: '[{"variable":"temp","value":20}]' });
 
-    expect(device.sendData).toHaveBeenCalledWith([{ variable: "temp", value: 20 }]);
+    expect(deviceInstance.sendData).toHaveBeenCalledWith([{ variable: "temp", value: 20 }]);
     expect(successMSGMock).toHaveBeenCalled();
   });
 
@@ -92,8 +90,7 @@ describe("postDeviceData", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     pickDeviceIDFromTagoIOMock.mockResolvedValue("picked-id");
     accountInstance.devices.info.mockResolvedValue({ id: "picked-id" });
-    const device = { sendData: vi.fn().mockResolvedValue({ ok: 1 }) };
-    getDeviceMock.mockResolvedValue(device);
+    deviceInstance.sendData.mockResolvedValue({ ok: 1 });
 
     const { postDeviceData } = await import("./data-post.js");
     await postDeviceData("", { environment: "prod", post: "[]" });
@@ -104,13 +101,12 @@ describe("postDeviceData", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockRejectedValue(new Error("404"));
     deviceInstance.info.mockResolvedValue({ id: "dev-from-token" });
-    const device = { sendData: vi.fn().mockResolvedValue({ ok: 1 }) };
-    getDeviceMock.mockResolvedValue(device);
+    deviceInstance.sendData.mockResolvedValue({ ok: 1 });
 
     const { postDeviceData } = await import("./data-post.js");
     await postDeviceData("some-token", { environment: "prod", post: "[]" });
     expect(deviceInstance.info).toHaveBeenCalled();
-    expect(device.sendData).toHaveBeenCalled();
+    expect(deviceInstance.sendData).toHaveBeenCalledWith([]);
   });
 
   test("returns silently when both account and device lookup fail", async () => {

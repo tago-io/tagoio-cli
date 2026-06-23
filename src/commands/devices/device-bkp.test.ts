@@ -9,7 +9,6 @@ const getEnvironmentConfigMock = vi.fn();
 const errorHandlerMock = vi.fn((str: unknown): void => {
   throw new Error(String(str));
 });
-const getDeviceMock = vi.fn();
 const pickDeviceIDFromTagoIOMock = vi.fn();
 const pickFileFromTagoIOMock = vi.fn();
 const promptTextToEnterMock = vi.fn();
@@ -18,17 +17,22 @@ let fetchMock: ReturnType<typeof installFetchMock>;
 
 let accountInstance: ReturnType<typeof makeAccount>;
 
+const sendDataStreamingMock = vi.fn();
+
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
+  Resources: function Resources() {
     return accountInstance;
   },
   Device: function Device() {
     return { info: vi.fn().mockRejectedValue(new Error("no device")) };
   },
   Utils: {
-    getDevice: (...args: unknown[]) => getDeviceMock(...args),
     uploadFile: (...args: unknown[]) => uploadFileMock(...args),
   },
+}));
+
+vi.mock("./device-sender.js", () => ({
+  getDeviceForSending: vi.fn(async () => ({ sendDataStreaming: sendDataStreamingMock })),
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -78,7 +82,6 @@ describe("bkpDeviceData", () => {
     accountInstance = makeAccount();
     getEnvironmentConfigMock.mockReset();
     errorHandlerMock.mockClear();
-    getDeviceMock.mockReset();
     pickDeviceIDFromTagoIOMock.mockReset();
     pickFileFromTagoIOMock.mockReset();
     promptTextToEnterMock.mockReset();
@@ -112,9 +115,7 @@ describe("bkpDeviceData", () => {
       name: "Picked",
       created_at: new Date("2026-01-01"),
     });
-    getDeviceMock.mockResolvedValue({
-      getData: vi.fn().mockResolvedValue([]),
-    });
+    accountInstance.devices.getDeviceData.mockResolvedValue([]);
     promptTextToEnterMock.mockResolvedValue("./backup/file.json");
     uploadFileMock.mockResolvedValue(undefined);
 
@@ -123,39 +124,24 @@ describe("bkpDeviceData", () => {
     expect(pickDeviceIDFromTagoIOMock).toHaveBeenCalled();
   });
 
-  test("stops silently when getDevice returns null", async () => {
-    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    accountInstance.devices.info.mockResolvedValue({
-      id: "x",
-      name: "X",
-      created_at: new Date("2026-01-01"),
-    });
-    getDeviceMock.mockResolvedValue(null);
-
-    const { bkpDeviceData } = await import("./device-bkp.js");
-    const result = await bkpDeviceData("x", { environment: "prod", restore: false, local: false });
-    expect(result).toBeUndefined();
-  });
-
-  test("restore path with remote file downloads JSON and uploads data", async () => {
+  test("restore path with remote file downloads JSON and streams data back", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockResolvedValue({ id: "d1", name: "D1", created_at: new Date() });
     accountInstance.devices.emptyDeviceData.mockResolvedValue(undefined);
-    const sendDataStreaming = vi.fn().mockResolvedValue(undefined);
-    getDeviceMock.mockResolvedValue({ sendDataStreaming });
+    sendDataStreamingMock.mockResolvedValue(undefined);
     pickFileFromTagoIOMock.mockResolvedValue("http://example/backup.json");
     fetchMock.mockResolvedValue(makeFetchResponse([{ variable: "a", value: 1 }]));
 
     const { bkpDeviceData } = await import("./device-bkp.js");
     await bkpDeviceData("d1", { environment: "prod", restore: true, local: false });
     expect(accountInstance.devices.emptyDeviceData).toHaveBeenCalledWith("d1");
-    expect(sendDataStreaming).toHaveBeenCalled();
+    // Restore writes through the device token instance, not the profile token.
+    expect(sendDataStreamingMock).toHaveBeenCalledWith(expect.any(Array), expect.any(Object));
   });
 
   test("restore path errors out when remote file is not selected", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     accountInstance.devices.info.mockResolvedValue({ id: "d1", name: "D1", created_at: new Date() });
-    getDeviceMock.mockResolvedValue({ sendDataStreaming: vi.fn() });
     pickFileFromTagoIOMock.mockResolvedValue("");
 
     const { bkpDeviceData } = await import("./device-bkp.js");
@@ -169,11 +155,10 @@ describe("bkpDeviceData", () => {
       name: "D1",
       created_at: new Date("2026-03-01"),
     });
-    const getData = vi.fn().mockResolvedValue([{ variable: "x", value: 1 }]);
-    getDeviceMock.mockResolvedValue({ getData });
+    accountInstance.devices.getDeviceData.mockResolvedValue([{ variable: "x", value: 1 }]);
 
     const { bkpDeviceData } = await import("./device-bkp.js");
     await bkpDeviceData("d1", { environment: "prod", restore: false, local: true });
-    expect(getData).toHaveBeenCalled();
+    expect(accountInstance.devices.getDeviceData).toHaveBeenCalled();
   });
 });

@@ -9,16 +9,19 @@ const accountTokenListMock = vi.fn();
 const deviceInfoMock = vi.fn();
 const pickDeviceIDFromTagoIOMock = vi.fn();
 
+function makeDevicesNamespace() {
+  return {
+    devices: {
+      info: accountInfoMock,
+      paramList: accountParamListMock,
+      tokenList: accountTokenListMock,
+    },
+  };
+}
+
 vi.mock("@tago-io/sdk", () => ({
-  Account: vi.fn(function Account() {
-    return {
-      devices: {
-        info: accountInfoMock,
-        paramList: accountParamListMock,
-        tokenList: accountTokenListMock,
-      },
-    };
-  }),
+  Resources: vi.fn(makeDevicesNamespace),
+  Account: vi.fn(makeDevicesNamespace),
   Device: vi.fn(function Device() {
     return { info: deviceInfoMock };
   }),
