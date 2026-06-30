@@ -97,6 +97,34 @@ describe("widgets-export", () => {
     expect(kept).toEqual([{ widget_id: "w-iframe", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 }]);
   });
 
+  test("removeAllWidgets returns kept iframes in arrangement order despite out-of-order completion", async () => {
+    const deleteMock = vi.fn().mockResolvedValue(undefined);
+    // The first iframe's info resolves slower than the second, so without the index sort the kept
+    // array would come back reversed and insertWidgets would pair the wrong geometry.
+    const infoMock = vi.fn((_dashId: string, widgetId: string) => {
+      const delay = widgetId === "iframe-a" ? 100 : 10;
+      return new Promise((resolve) => setTimeout(() => resolve({ id: widgetId, type: "iframe" }), delay));
+    });
+    const importAccount = {
+      dashboards: { widgets: { delete: deleteMock, info: infoMock } },
+    } as never;
+
+    const dashboard = {
+      id: "d",
+      arrangement: [
+        { widget_id: "iframe-a", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 },
+        { widget_id: "iframe-b", tab: "tab-1", x: 4, y: 0, width: 4, height: 4 },
+      ],
+    };
+
+    const { removeAllWidgets } = await import("./widgets-export.js");
+    const promise = removeAllWidgets(importAccount, dashboard as never, true);
+    await vi.runAllTimersAsync();
+    const kept = await promise;
+
+    expect(kept.map((k: { widget_id: string }) => k.widget_id)).toEqual(["iframe-a", "iframe-b"]);
+  });
+
   test("removeAllWidgets returns early when arrangement is empty", async () => {
     const deleteMock = vi.fn();
     const importAccount = {

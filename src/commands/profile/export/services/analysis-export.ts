@@ -113,7 +113,7 @@ async function analysisExport(account: Account, import_account: Account, export_
     // Propagate the source runtime as-is so it is not reset, defaulting to node-legacy when absent.
     const runtime: RunTypeOptions = new_analysis.runtime ?? "node-legacy";
     if (!target_id) {
-      ({ id: target_id } = await import_account.analysis.create(new_analysis));
+      ({ id: target_id } = await import_account.analysis.create({ ...new_analysis, runtime }));
     } else {
       await import_account.analysis.edit(target_id, {
         name: new_analysis.name,

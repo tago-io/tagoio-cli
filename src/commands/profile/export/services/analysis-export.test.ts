@@ -87,10 +87,7 @@ describe("analysisExport", () => {
     const { analysisExport } = await import("./analysis-export.js");
     await analysisExport(account as never, importAccount as never, makeHolder());
 
-    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith(
-      "new-a",
-      expect.objectContaining({ language: "deno-rt2025" }),
-    );
+    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith("new-a", expect.objectContaining({ language: "deno-rt2025" }));
   });
 
   test("defaults to node-legacy runtime when the source has none", async () => {
@@ -111,17 +108,14 @@ describe("analysisExport", () => {
     const { analysisExport } = await import("./analysis-export.js");
     await analysisExport(account as never, importAccount as never, makeHolder());
 
-    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith(
-      "new-a",
-      expect.objectContaining({ language: "node-legacy" }),
-    );
+    // create gets the same defaulted runtime as uploadScript (parity), not a runtime-less object.
+    expect(importAccount.analysis.create).toHaveBeenCalledWith(expect.objectContaining({ runtime: "node-legacy" }));
+    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith("new-a", expect.objectContaining({ language: "node-legacy" }));
   });
 
   test("edits an existing analysis when target is found", async () => {
     account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [] }]);
-    importAccount.analysis.list.mockResolvedValue([
-      { id: "tgt-a", tags: [{ key: "export_id", value: "v1" }], variables: [] },
-    ]);
+    importAccount.analysis.list.mockResolvedValue([{ id: "tgt-a", tags: [{ key: "export_id", value: "v1" }], variables: [] }]);
     account.analysis.info.mockResolvedValue({
       id: "a1",
       name: "A1",
@@ -144,9 +138,7 @@ describe("analysisExport", () => {
   });
 
   test("prompts the user to resolve duplicate env variable values", async () => {
-    account.analysis.list.mockResolvedValue([
-      { id: "a1", name: "A1", variables: [{ key: "API_URL", value: "src.example" }] },
-    ]);
+    account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [{ key: "API_URL", value: "src.example" }] }]);
     importAccount.analysis.list.mockResolvedValue([
       {
         id: "tgt-a",

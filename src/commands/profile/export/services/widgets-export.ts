@@ -6,7 +6,7 @@ import { replaceObj } from "../../../../lib/replace-obj.js";
 import { IExportHolder } from "../types.js";
 import { storeExportBackup } from "./export-backup/export-backup.js";
 
-type DashboardTabs = { type?: string; key: string };
+type DashboardTabs = { type?: string; hidden?: boolean; key: string };
 type WidgetArrangement = { tab?: string | null };
 // The SDK declares Arrangement but does not export it; mirror the shape we read/write here.
 type Arrangement = { widget_id: string; x: number; y: number; width: number; height: number; tab?: string | null };
@@ -15,10 +15,11 @@ type Arrangement = { widget_id: string; x: number; y: number; width: number; hei
  * Orders widgets so the ones in hidden tabs are created first. A header button on a visible widget
  * references a hidden widget by id, and that reference is only remapped (via widgetIDMappings) if
  * the hidden widget already exists when the referencing widget is created. A tab is hidden when its
- * `type` is "hidden".
+ * `type` is "hidden" (current shape) or its legacy `hidden` flag is true — live payloads carry both
+ * consistently, so we accept either to stay robust against schema variation.
  */
 function _sortHiddenWidgetsFirst<T extends WidgetArrangement>(arrangement: T[], tabs: DashboardTabs[]) {
-  const hiddenTabKeys = new Set((tabs || []).filter((tab) => tab.type === "hidden").map((tab) => tab.key));
+  const hiddenTabKeys = new Set((tabs || []).filter((tab) => tab.type === "hidden" || tab.hidden === true).map((tab) => tab.key));
   const isHidden = (item: T) => Boolean(item.tab && hiddenTabKeys.has(item.tab));
   return [...arrangement].sort((a, b) => Number(isHidden(b)) - Number(isHidden(a)));
 }
@@ -130,16 +131,20 @@ async function insertWidgets(
  * the kept widgets so the caller can re-attach them to the rebuilt arrangement.
  */
 async function removeAllWidgets(importAccount: Account, dashboard: DashboardInfo, ignoreCustomWidgets: boolean) {
-  const kept: Arrangement[] = [];
   if (!dashboard.arrangement || dashboard.arrangement?.length === 0) {
-    return kept;
+    return [];
   }
 
-  const widgetQueue = queue(async (entry: Arrangement) => {
+  // The queue runs at concurrency 5, so callbacks finish out of order. Tag each kept entry with its
+  // arrangement index and sort by it before returning, so insertWidgets' positional shift() pairs
+  // each source iframe to the target iframe in arrangement order — not task-completion order.
+  const kept: { index: number; entry: Arrangement }[] = [];
+
+  const widgetQueue = queue(async ({ entry, index }: { entry: Arrangement; index: number }) => {
     if (ignoreCustomWidgets) {
       const info = await importAccount.dashboards.widgets.info(dashboard.id, entry.widget_id).catch(() => null);
       if (info?.type === "iframe") {
-        kept.push(entry);
+        kept.push({ index, entry });
         await new Promise((resolve) => setTimeout(resolve, 50)); // sleep
         return;
       }
@@ -149,12 +154,12 @@ async function removeAllWidgets(importAccount: Account, dashboard: DashboardInfo
   }, 5);
 
   widgetQueue.error(errorHandler);
-  for (const entry of dashboard.arrangement) {
-    widgetQueue.push(entry).catch(errorHandler);
+  for (let index = 0; index < dashboard.arrangement.length; index++) {
+    widgetQueue.push({ entry: dashboard.arrangement[index], index }).catch(errorHandler);
   }
 
   await widgetQueue.drain();
-  return kept;
+  return kept.sort((a, b) => a.index - b.index).map((k) => k.entry);
 }
 
 export { removeAllWidgets, insertWidgets };
