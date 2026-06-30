@@ -30,6 +30,16 @@ vi.mock("../../lib/messages.js", () => ({
   highlightMSG: (s: string) => s,
 }));
 
+vi.mock("../../lib/resolve-scope.js", () => ({
+  requireLocalScope: () => ({
+    scope: "local" as const,
+    root: "/repo",
+    configPath: "/repo/tagoconfig.json",
+    envFilePath: "/repo/.tagoio/personal.env",
+    configExists: true,
+  }),
+}));
+
 describe("analysisSetMode", () => {
   // Factory — the command sorts these in place, so each test needs a fresh copy.
   const makeAnalyses = () => [

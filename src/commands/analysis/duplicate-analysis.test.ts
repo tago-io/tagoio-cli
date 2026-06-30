@@ -39,6 +39,16 @@ vi.mock("../../lib/messages.js", () => ({
   highlightMSG: (s: string) => s,
 }));
 
+vi.mock("../../lib/resolve-scope.js", () => ({
+  requireLocalScope: () => ({
+    scope: "local" as const,
+    root: "/repo",
+    configPath: "/repo/tagoconfig.json",
+    envFilePath: "/repo/.tagoio/personal.env",
+    configExists: true,
+  }),
+}));
+
 const pickAnalysisFromTagoIOMock = vi.fn();
 vi.mock("../../prompt/pick-analysis-from-tagoio.js", () => ({
   pickAnalysisFromTagoIO: (...args: unknown[]) => pickAnalysisFromTagoIOMock(...args),

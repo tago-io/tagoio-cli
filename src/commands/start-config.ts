@@ -1,18 +1,41 @@
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
 import stringComparison from "string-comparison";
 import { getConfigFile, IEnvironment, writeConfigFileEnv, writeToConfigFile } from "../lib/config-file.js";
+import { detectInitState, InitState } from "../lib/init-state.js";
+import { banner, endStep, failStep, overwriteConfirmCopy, startStep, summaryBlock } from "../lib/init-summary.js";
 import { errorHandler, highlightMSG, infoMSG } from "../lib/messages.js";
+import { globalConfigDir, resolveScope, setScopeOverride } from "../lib/resolve-scope.js";
 import { readToken, writeToken } from "../lib/token.js";
 import { promptTextToEnter } from "../prompt/text-prompt.js";
 import { getTagoDeployURL, tagoLogin } from "./login.js";
 
+const DEFAULT_ENV = "dev";
+const DEFAULT_API_ENDPOINT = "https://api.tago.io";
+const DEFAULT_SSE_ENDPOINT = "https://sse.tago.io";
+
 interface ConfigOptions {
-  token: string | void;
-  environment: string | void;
+  /** Profile token; bypasses interactive login when set. */
+  token?: string;
+  /** Alias for the positional [environment] argument. Flag wins on conflict. */
+  name?: string;
+  /** Force local or global scope. Falls through to the decision tree if unset. */
+  scope?: "local" | "global";
+  /** API endpoint URL. Must be paired with `sseEndpoint`. */
+  apiEndpoint?: string;
+  /** SSE endpoint URL. Must be paired with `apiEndpoint`. */
+  sseEndpoint?: string;
+  /**
+   * Commander stores `--no-input` as `input: false` (negation flag), with the
+   * default being `true`. startConfig normalizes this (plus the non-TTY case)
+   * into a single `noInput` boolean.
+   */
+  input?: boolean;
+  /** Skip the existing-config overwrite confirmation. */
+  force?: boolean;
 }
 
 interface AnalysisFile {
@@ -22,12 +45,7 @@ interface AnalysisFile {
 
 const analysisPath = "./src/analysis";
 
-/**
- * Recursively scans a directory and its subdirectories for analysis files.
- * @param dirPath - The directory path to scan.
- * @param basePath - The base analysis path for relative path calculation.
- * @returns An array of file paths with their relative paths.
- */
+/** Recursively scans a directory for `.ts`/`.js` analysis files. */
 function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): AnalysisFile[] {
   const files: AnalysisFile[] = [];
   const items = readdirSync(dirPath);
@@ -47,42 +65,6 @@ function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): Analysi
   return files;
 }
 
-/**
- * Creates a TagoIO environment token.
- * @param environment - The name of the environment to create the token for.
- * @returns The created token, or undefined if the user chooses not to login.
- */
-async function createEnvironmentToken(environment: string) {
-  const { tryLogin } = await prompts({
-    message: "Do you want to login and create a profile-token now?",
-    type: "confirm",
-    name: "tryLogin",
-    hint: "Press N to enter a token later",
-  });
-  if (!tryLogin) {
-    return;
-  }
-  infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
-
-  const options = {
-    token: undefined,
-    tagoDeployUrl: undefined,
-    tagoDeploySse: undefined,
-  };
-  await tagoLogin(environment, options);
-
-  return {
-    profileToken: options.token,
-    tagoDeployUrl: options?.tagoDeployUrl,
-    tagoDeploySse: options?.tagoDeploySse,
-  };
-}
-
-/**
- * Prompts the user to choose one or more analysis options from a list.
- * @param analysisOptions - An array of analysis options to choose from.
- * @returns An array of AnalysisInfo objects representing the user's selected options.
- */
 async function chooseAnalysis(analysisOptions: any[]) {
   const { response } = await prompts({
     type: "autocompleteMultiselect",
@@ -94,24 +76,15 @@ async function chooseAnalysis(analysisOptions: any[]) {
   return (response || []) as AnalysisInfo[];
 }
 
-/**
- * Retrieves a list of analyses from the TagoIO account and prompts the user to select which ones to use.
- * @param account - The TagoIO account object.
- * @param oldList - An optional array of previously selected analyses.
- * @returns An array of selected analyses with their IDs, names, and file names.
- */
-async function getAnalysisList(account: Account, oldList: IEnvironment["analysisList"] = []) {
+async function getAnalysisList(account: Account, oldList: NonNullable<IEnvironment["analysisList"]> = []) {
   const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
-
   if (!analysisList) {
     return [];
   }
 
   const getName = (analysis: AnalysisListItem<"id" | "name" | "tags">) => `[${analysis.id}] ${analysis.name}`;
-
   const oldIDList = new Set(oldList.map((x) => x.id));
   const configList: AnalysisListItem<"id" | "name" | "tags">[] = analysisList.filter((x) => oldIDList.has(x.id));
-
   const analysisOptions = analysisList.map((x) => ({
     title: getName(x),
     selected: configList.some((y) => y.id === x.id),
@@ -120,26 +93,21 @@ async function getAnalysisList(account: Account, oldList: IEnvironment["analysis
   const response = await chooseAnalysis(analysisOptions);
 
   const formatFileName = (x: string) => x.toLowerCase().replace(" ", "-");
-  const analysisResult: IEnvironment["analysisList"] = response.map((x) => ({
+  return response.map((x) => ({
     fileName: formatFileName(x.name),
     name: x.name,
     id: x.id,
     ...oldList.find((old) => old.id === x.id),
-  }));
-
-  return analysisResult;
+  })) as NonNullable<IEnvironment["analysisList"]>;
 }
 
-/**
- * Searches for analysis scripts in the specified path and prompts the user to select a script for each analysis in the list.
- * @param analysisList - The list of analyses to associate with scripts.
- * @param analysisPath - The path to search for analysis scripts.
- * @returns A Promise that resolves to the updated analysis list with the selected script file names.
- */
-async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], analysisPath: string) {
-  analysisPath = analysisPath.replace("./", "");
-  infoMSG(`Searching for files at ${analysisPath} and subfolders`);
-  let files: Choice[] = scanAnalysisFiles(analysisPath).map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
+async function getAnalysisScripts(analysisList: NonNullable<IEnvironment["analysisList"]>, analysisPathInput: string) {
+  const cleaned = analysisPathInput.replace("./", "");
+  if (!cleaned || !existsSync(cleaned)) {
+    infoMSG(`Analysis folder not found at "${cleaned || "(empty)"}"; skipping file matching.`);
+    return analysisList;
+  }
+  let files: Choice[] = scanAnalysisFiles(cleaned).map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
 
   for (const analysis of analysisList) {
     files = files.sort((a, b) =>
@@ -163,10 +131,9 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
 
     const file = files.find((x) => x.value === response);
     analysis.fileName = file?.title as string;
-    if (file?.description && file?.description?.length > 0) {
-      analysis.path = file?.description as string;
+    if (file?.description && file.description.length > 0) {
+      analysis.path = file.description;
     }
-
     const fileIndex = files.findIndex((x) => x.title === response);
     if (fileIndex !== -1) {
       files.splice(fileIndex, 1);
@@ -175,92 +142,285 @@ async function getAnalysisScripts(analysisList: IEnvironment["analysisList"], an
   return analysisList;
 }
 
+const SCHEMA_STUB = JSON.stringify({ $schema: "https://github.com/tago-io/tagoio-cli/blob/master/docs/schema.json" });
+
+function bootstrapGlobalConfig(): void {
+  const globalRoot = globalConfigDir();
+  mkdirSync(globalRoot, { recursive: true, mode: 0o700 });
+  setScopeOverride("global");
+  const globalConfigPath = join(globalRoot, "tagoconfig.json");
+  if (!existsSync(globalConfigPath)) {
+    writeFileSync(globalConfigPath, SCHEMA_STUB, { encoding: "utf-8" });
+  }
+}
+
+function bootstrapLocalConfig(): void {
+  const localPath = join(process.cwd(), "tagoconfig.json");
+  if (!existsSync(localPath)) {
+    writeFileSync(localPath, SCHEMA_STUB, { encoding: "utf-8" });
+  }
+}
+
 /**
- * Starts the configuration process for a TagoIO environment.
- * @param environment The name of the environment to configure.
- * @param options The configuration options.
- * @param options.token The TagoIO token to use for authentication.
+ * @description Resolves the env name following the precedence:
+ *   1. --name flag, 2. positional argument, 3. default "dev"
+ * Emits a stderr note when the flag overrides the positional value.
  */
-async function startConfig(environment: string, { token }: ConfigOptions) {
-  // Prompt user to enter environment name if not provided
-  if (!environment) {
-    ({ environment } = await prompts({
-      message: "Enter a name for this environment (e.g dev): ",
-      type: "text",
-      name: "environment",
-    }));
+function resolveEnvName(positional: string | undefined, flag: string | undefined): string {
+  if (flag && positional && flag !== positional) {
+    infoMSG(`--name overrides positional environment '${positional}'`);
+  }
+  return flag || positional || DEFAULT_ENV;
+}
+
+/**
+ * @description Step 1: existing-env handling. Either prompts to confirm
+ * overwrite, hard-errors under --no-input, or returns silently when nothing
+ * needs confirming.
+ */
+async function handleExistingEnv(state: InitState, envName: string, options: ConfigOptions, noInput: boolean): Promise<void> {
+  if (!state.envExists || options.force) {
+    return;
+  }
+  if (noInput) {
+    errorHandler(
+      `Configuration for env '${envName}' already exists at ${state.scope.configPath}. Pass --force to overwrite, or pick a different env name.`,
+    );
+  }
+  process.stderr.write(`\n${overwriteConfirmCopy(state, envName)}\n\n`);
+  const { confirm } = await prompts({
+    type: "confirm",
+    name: "confirm",
+    message: "Overwrite existing configuration?",
+    initial: false,
+  });
+  if (confirm !== true) {
+    infoMSG("Cancelled. No changes made.");
+    process.exit(0);
+  }
+}
+
+/**
+ * @description Resolves the target scope (Step 2). Honors --scope flag, then
+ * the existing-config decision tree from #4. Bootstraps the stub config file
+ * at the chosen scope so the rest of init has something to read/write.
+ */
+async function resolveTargetScope(options: ConfigOptions, noInput: boolean): Promise<void> {
+  if (options.scope === "global") {
+    bootstrapGlobalConfig();
+    return;
+  }
+  if (options.scope === "local") {
+    bootstrapLocalConfig();
+    return;
+  }
+  // No flag: rely on the resolver. If neither config exists, prompt (or
+  // default to local in non-interactive mode).
+  if (resolveScope().configExists) {
+    return;
+  }
+  if (noInput) {
+    bootstrapLocalConfig();
+    return;
+  }
+  const { createGlobal } = await prompts({
+    type: "confirm",
+    name: "createGlobal",
+    message: `No tagoconfig.json found in this directory or globally. Create a global configuration at ${globalConfigDir()}/tagoconfig.json?`,
+    initial: false,
+  });
+  if (createGlobal) {
+    bootstrapGlobalConfig();
+  } else {
+    bootstrapLocalConfig();
+  }
+}
+
+/**
+ * @description The init flow, restructured per clig.dev:
+ *   Step 0: pre-flight detection (silent)
+ *   Step 1: banner + overwrite confirm
+ *   Step 2: resolve inputs (flag → positional → existing → default)
+ *   Step 3: execute stages with [..]/[OK] progress markers
+ *   Step 4: state-change summary block
+ */
+async function startConfig(positional: string, options: ConfigOptions = {}): Promise<void> {
+  if (options.scope && options.scope !== "local" && options.scope !== "global") {
+    errorHandler(`Invalid --scope value: '${options.scope}'. Use 'local' or 'global'.`);
   }
 
-  // Get config file or return if not found
+  const envName = resolveEnvName(positional, options.name);
+
+  // Step 2 (early): bootstrap the chosen scope's tagoconfig.json. Must run
+  // before detectInitState() so envExists/tokenExists (and state.scope under
+  // --scope global) reflect the resolved scope, not the cwd-default fallback.
+  // The TTY-vs-flag nuance does not matter here: this only decides WHERE to
+  // create a brand-new config when none exists yet.
+  await resolveTargetScope(options, options.input === false);
+
+  // Step 0: pre-flight detection (reads on-disk state + isTTY).
+  const state = detectInitState(envName);
+
+  // Non-interactive when --no-input is passed OR stdin is not a TTY (piped
+  // input, CI). Deriving from state.isTTY keeps the decision in one place and
+  // testable. Treating non-TTY as no-input prevents prompts() from returning
+  // undefined and silently proceeding on empty answers; instead we fail fast
+  // or require flags, exactly as --no-input does.
+  const noInput = options.input === false || !state.isTTY;
+
+  // Step 1: banner + overwrite confirm.
+  process.stderr.write(`${banner(state.scope)}\n`);
+  await handleExistingEnv(state, envName, options, noInput);
+
+  // Step 2 (continued): resolve token. Non-interactive requires -t.
+  if (noInput && !options.token && !state.tokenExists) {
+    errorHandler("--no-input requires --token <token> when no existing lock file is on disk for this env.");
+  }
+
+  const filesWritten: { path: string; description: string }[] = [];
+
+  // Stage 1: project structure.
+  startStep("Creating project structure");
   const configFile = getConfigFile();
   if (!configFile) {
-    return;
+    // failStep is typed `never` (it calls process.exit(1)), so init aborts here
+    // with a non-zero code instead of falling through and reporting success.
+    failStep("Creating project structure", "could not read or create tagoconfig.json");
+  }
+  endStep(`Created ${state.scope.configPath}`);
+  filesWritten.push({ path: state.scope.configPath, description: "project configuration" });
+
+  // Stage 2 + 3: authenticate + persist credentials.
+  // --api-endpoint and --sse-endpoint must be passed together (or neither).
+  // TagoIO Deploy installations have non-derivable subdomains, so we never
+  // try to infer one from the other.
+  if ((options.apiEndpoint && !options.sseEndpoint) || (!options.apiEndpoint && options.sseEndpoint)) {
+    errorHandler("--api-endpoint and --sse-endpoint must both be set together (or neither).");
   }
 
-  let tagoAPIURL, tagoSSEURL: string | undefined;
+  let token = options.token;
+  let tagoAPIURL = options.apiEndpoint;
+  let tagoSSEURL: string | undefined = options.sseEndpoint;
 
-  // Get token from file or prompt user to create one
   if (!token) {
-    token = readToken(environment);
-    if (!token) {
-      const data = await createEnvironmentToken(environment);
-      token = data?.profileToken;
-      tagoAPIURL = data?.tagoDeployUrl;
-      tagoSSEURL = data?.tagoDeploySse;
-    } else {
-      tagoAPIURL = configFile[environment]?.tagoAPIURL;
-      tagoSSEURL = configFile[environment]?.tagoSSEURL;
+    token = readToken(envName);
+  }
+  if (!token) {
+    if (noInput) {
+      errorHandler("--no-input requires --token <token> for authentication.");
     }
+    const data = await createEnvironmentToken(envName);
+    token = data?.profileToken;
+    tagoAPIURL = tagoAPIURL || data?.tagoDeployUrl;
+    tagoSSEURL = tagoSSEURL || data?.tagoDeploySse;
+  } else if (options.token) {
+    // Token came from the flag. Persist it to the lock file.
+    if (!noInput && !options.apiEndpoint) {
+      const urlConfig = await getTagoDeployURL();
+      tagoAPIURL = urlConfig?.urlAPI || tagoAPIURL;
+      tagoSSEURL = urlConfig?.urlSSE || tagoSSEURL;
+    }
+    writeToken(token, envName);
+    filesWritten.push({ path: `${state.scope.root}/.tago-lock.${envName}.lock`, description: "encrypted profile token" });
   } else {
-    const urlConfig = await getTagoDeployURL();
-    writeToken(token, environment);
-    tagoAPIURL = urlConfig?.urlAPI || "";
-    tagoSSEURL = urlConfig?.urlSSE || "";
+    // Token already on disk; preserve URL settings from prior config.
+    tagoAPIURL = tagoAPIURL || configFile[envName]?.tagoAPIURL;
+    tagoSSEURL = tagoSSEURL || configFile[envName]?.tagoSSEURL;
   }
 
-  // Prompt user to enter analysis and build paths if not found in config file
-  if (!configFile.analysisPath) {
-    configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
-  }
-
-  if (!configFile.buildPath) {
-    configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
-  }
-
-  // Return if token is not found
   if (!token) {
+    infoMSG("Cancelled. No changes made.");
     return;
   }
 
+  // Local-only prompts for analysis paths.
+  if (state.scope.scope === "local") {
+    if (!configFile.analysisPath && !noInput) {
+      configFile.analysisPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("analysis")} folder: `, "./src/analysis");
+    }
+    if (!configFile.buildPath && !noInput) {
+      configFile.buildPath = await promptTextToEnter(`Enter the path of your ${kleur.cyan("building")} folder (typescript): `, "./build");
+    }
+  }
+
+  // API call to fetch profile metadata.
+  startStep("Authenticating with TagoIO");
   let region: GenericModuleParams["region"] = "us-e1";
   if (tagoAPIURL) {
-    region = {
-      api: tagoAPIURL || "",
-      sse: tagoSSEURL || "",
-    };
+    region = { api: tagoAPIURL, sse: tagoSSEURL || "" };
   }
-
-  // Get account info and analysis list
   const account = new Account({ token, region });
-  const profile = await account.profiles.info("current");
-  const accountInfo = await account.info().catch(errorHandler);
-  if (!accountInfo) {
-    return;
+  let profile;
+  let accountInfo;
+  try {
+    profile = await account.profiles.info("current");
+    accountInfo = await account.info();
+  } catch (err) {
+    failStep("Authenticating with TagoIO", err);
   }
-  let analysisList = await getAnalysisList(account, configFile[environment]?.analysisList);
-  analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
+  endStep(`Authenticated as ${profile.info.name}`);
 
-  // Create new environment object and write to config file
+  // Stage 4: build the new env block.
   const newEnv: IEnvironment = {
-    analysisList: analysisList,
     id: profile.info.id,
     profileName: profile.info.name,
     email: accountInfo.email,
-    tagoSSEURL: tagoSSEURL,
-    tagoAPIURL: tagoAPIURL,
+    tagoSSEURL,
+    tagoAPIURL,
   };
+  if (state.scope.scope === "local") {
+    if (noInput) {
+      // Non-interactive: preserve whatever analysisList is already on disk
+      // (re-init keeps it; fresh init starts empty). The user can populate it
+      // by editing tagoconfig.json or rerunning init interactively.
+      newEnv.analysisList = configFile[envName]?.analysisList ?? [];
+    } else {
+      let analysisList = await getAnalysisList(account, configFile[envName]?.analysisList);
+      analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
+      newEnv.analysisList = analysisList;
+    }
+  }
+  startStep("Setting up environment");
   writeToConfigFile(configFile);
-  writeConfigFileEnv(environment, newEnv);
+  writeConfigFileEnv(envName, newEnv);
+  endStep("Environment ready");
+  filesWritten.push({ path: state.scope.envFilePath, description: "active environment marker" });
+
+  // Step 4: state-change summary.
+  process.stderr.write(`\n${summaryBlock({
+    filesWritten,
+    scope: state.scope.scope,
+    envName,
+    profileName: profile.info.name,
+    apiEndpoint: tagoAPIURL || DEFAULT_API_ENDPOINT,
+    sseEndpoint: tagoSSEURL || DEFAULT_SSE_ENDPOINT,
+  })}\n`);
+}
+
+/**
+ * @description Helper used by interactive flows when no token is on disk and
+ * the user has not passed `-t`. Prompts for the login flow.
+ */
+async function createEnvironmentToken(environment: string) {
+  const { tryLogin } = await prompts({
+    message: "Do you want to login and create a profile-token now?",
+    type: "confirm",
+    name: "tryLogin",
+    hint: "Press N to enter a token later",
+  });
+  if (!tryLogin) {
+    return;
+  }
+  infoMSG(`You can create a token by running: ${highlightMSG("tagoio login")}`);
+
+  const opts = { token: undefined, tagoDeployUrl: undefined, tagoDeploySse: undefined };
+  await tagoLogin(environment, opts);
+
+  return {
+    profileToken: opts.token,
+    tagoDeployUrl: opts.tagoDeployUrl,
+    tagoDeploySse: opts.tagoDeploySse,
+  };
 }
 
 export { startConfig };

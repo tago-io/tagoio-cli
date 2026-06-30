@@ -2,6 +2,7 @@ import { Account, AnalysisInfo } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
 import { getEnvironmentConfig, IEnvironment } from "../../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { searchName } from "../../lib/search-name.js";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
@@ -25,8 +26,8 @@ function apiSSE(profileToken: string, analysisID: string, urlSSERealtime?: strin
  * @param analysisList - The list of analysis objects to search through.
  * @returns The script object that matches the script name or the one selected by the user.
  */
-async function getScriptObj(scriptName: string | void, analysisList: IEnvironment["analysisList"]) {
-  let scriptObj: IEnvironment["analysisList"][0] | undefined;
+async function getScriptObj(scriptName: string | void, analysisList: NonNullable<IEnvironment["analysisList"]>) {
+  let scriptObj: NonNullable<IEnvironment["analysisList"]>[number] | undefined;
   if (scriptName) {
     scriptObj = searchName(
       scriptName,
@@ -69,12 +70,14 @@ function setupSSE(sse: ReturnType<typeof apiSSE>, _script_id: string, analysis_i
  * @returns void
  */
 async function connectAnalysisConsole(scriptName: string | void, options: { environment: string }) {
+  requireLocalScope("analysis-console");
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
   }
 
-  const scriptObj = await getScriptObj(scriptName, config.analysisList);
+  const scriptObj = await getScriptObj(scriptName, config.analysisList ?? []);
   if (!scriptObj) {
     errorHandler(`Analysis not found: ${scriptName}`);
   }

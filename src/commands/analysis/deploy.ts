@@ -5,8 +5,9 @@ import { Account, RunTypeOptions } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IConfigFile, IEnvironment } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
-import { getCurrentFolder } from "../../lib/get-current-folder.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { searchName } from "../../lib/search-name.js";
 import { chooseAnalysisListFromConfig } from "../../prompt/choose-analysis-list-config.js";
 import { confirmAnalysisFromConfig } from "../../prompt/confirm-analysis-list.js";
@@ -20,6 +21,8 @@ interface BuildScriptParams {
   config: EnvConfig;
   runtime: string;
   path: string;
+  /** Resolved local-scope project root. */
+  projectRoot: string;
 }
 
 /**
@@ -27,11 +30,10 @@ interface BuildScriptParams {
  * @param config - An object containing the configuration for the environment.
  * @returns An object containing the paths for analysis, build and current folder.
  */
-function getPaths(config: EnvConfig) {
-  const folderPath = getCurrentFolder();
+function getPaths(config: EnvConfig, projectRoot: string) {
   const buildPath = config.buildPath || `./build`;
   const analysisPath = config.analysisPath || `./src/analysis`;
-  return { analysisPath, buildPath, folderPath };
+  return { analysisPath, buildPath, folderPath: projectRoot };
 }
 
 /**
@@ -64,8 +66,8 @@ async function deleteOldFile(buildedFile: string) {
  * @param params - The parameters for building and uploading the script.
  */
 async function buildScript(params: BuildScriptParams) {
-  const { account, scriptName, analysisID, config, runtime, path } = params;
-  const { analysisPath, buildPath, folderPath } = getPaths(config);
+  const { account, scriptName, analysisID, config, runtime, path, projectRoot } = params;
+  const { analysisPath, buildPath, folderPath } = getPaths(config, projectRoot);
 
   let analysisFile;
   if (path) {
@@ -142,6 +144,10 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
     errorHandler('Did you mean "tagoio deploy --all"? The "all" positional argument is no longer supported.');
   }
 
+  // Analysis development requires a project directory.
+  const scope = requireLocalScope("analysis-deploy");
+  printScopeBanner(scope, options.silent);
+
   const config = getEnvironmentConfig(options.environment);
   if (!config) {
     errorHandler("Environment not found");
@@ -155,12 +161,12 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
   }
 
   // --all skips selection entirely; everything in analysisList with a fileName ships.
-  let scriptList = config.analysisList.filter((x) => x.fileName);
+  let scriptList = (config.analysisList ?? []).filter((x) => x.fileName);
   if (!options.all) {
     if (!cmdScriptName) {
       scriptList = await chooseAnalysisListFromConfig(scriptList);
     } else {
-      const analysisFound: IEnvironment["analysisList"][0] = searchName(
+      const analysisFound: NonNullable<IEnvironment["analysisList"]>[number] = searchName(
         cmdScriptName,
         scriptList.map((x) => ({ names: [x.name, x.fileName], value: x })),
       );
@@ -202,6 +208,7 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
       config,
       runtime,
       path: path || "",
+      projectRoot: scope.root,
     });
   }
   process.exit();

@@ -28,6 +28,20 @@ vi.mock("../../../lib/get-current-folder.js", () => ({
   getCurrentFolder: () => "/tmp/test",
 }));
 
+vi.mock("../../../lib/resolve-scope.js", () => ({
+  resolveScope: () => ({
+    scope: "local" as const,
+    root: "/tmp/test",
+    configPath: "/tmp/test/tagoconfig.json",
+    envFilePath: "/tmp/test/.tagoio/personal.env",
+    configExists: true,
+  }),
+}));
+
+vi.mock("../../../lib/scope-notice.js", () => ({
+  printScopeBanner: vi.fn(),
+}));
+
 vi.mock("../../../lib/config-file.js", () => ({
   getEnvironmentConfig: vi.fn(),
 }));

@@ -5,6 +5,8 @@ import { DateTime } from "luxon";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 import { pickFileFromTagoIO } from "../../prompt/pick-files-from-tagoio.js";
 import { promptTextToEnter } from "../../prompt/text-prompt.js";
@@ -103,6 +105,8 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
  * @returns A Promise that resolves when the backup or restore process is complete.
  */
 async function bkpDeviceData(idOrToken: string, options: IOptions) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

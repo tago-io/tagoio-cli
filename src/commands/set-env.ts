@@ -1,9 +1,13 @@
 import { getConfigFile } from "../lib/config-file.js";
 import { setEnvironmentVariables } from "../lib/dotenv-config.js";
 import { errorHandler, successMSG } from "../lib/messages.js";
+import { resolveScope } from "../lib/resolve-scope.js";
+import { printScopeBanner } from "../lib/scope-notice.js";
 import { pickEnvironment } from "../prompt/pick-environment.js";
 
 async function setEnvironment(arg?: string) {
+  printScopeBanner(resolveScope());
+
   const configFile = getConfigFile();
   if (!configFile) {
     return;

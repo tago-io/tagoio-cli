@@ -36,8 +36,14 @@ vi.mock("../../lib/current-runtime.js", () => ({
   detectRuntime: detectRuntimeMock,
 }));
 
-vi.mock("../../lib/get-current-folder.js", () => ({
-  getCurrentFolder: () => "/tmp/test",
+vi.mock("../../lib/resolve-scope.js", () => ({
+  requireLocalScope: () => ({
+    scope: "local" as const,
+    root: "/tmp/test",
+    configPath: "/tmp/test/tagoconfig.json",
+    envFilePath: "/tmp/test/.tagoio/personal.env",
+    configExists: true,
+  }),
 }));
 
 vi.mock("../../lib/messages.js", () => ({

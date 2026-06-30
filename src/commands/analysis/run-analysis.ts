@@ -5,8 +5,8 @@ import { Account } from "@tago-io/sdk";
 
 import { getEnvironmentConfig, IEnvironment, resolveCLIPath } from "../../lib/config-file.js";
 import { detectRuntime } from "../../lib/current-runtime.js";
-import { getCurrentFolder } from "../../lib/get-current-folder.js";
 import { errorHandler, highlightMSG, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { searchName } from "../../lib/search-name.js";
 import { pickAnalysisFromConfig } from "../../prompt/pick-analysis-from-config.js";
 
@@ -68,13 +68,16 @@ async function runAnalysis(
   scriptName: string | undefined,
   options: { environment: string; debug: boolean; clear: boolean; tsnd: boolean; deno: boolean; node: boolean },
 ) {
+  // Analysis development requires a project directory.
+  const scope = requireLocalScope("analysis-run");
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
   }
 
-  const analysisList = config.analysisList.filter((x) => x.fileName);
-  let scriptToRun: IEnvironment["analysisList"][0];
+  const analysisList = (config.analysisList ?? []).filter((x) => x.fileName);
+  let scriptToRun: NonNullable<IEnvironment["analysisList"]>[number];
   if (scriptName) {
     scriptName = scriptName.toLowerCase();
     scriptToRun = searchName(
@@ -111,7 +114,7 @@ async function runAnalysis(
 
   const spawnOptions: SpawnOptions = {
     shell: true,
-    cwd: getCurrentFolder(),
+    cwd: scope.root,
     stdio: "inherit",
     env: analysisEnv,
   };

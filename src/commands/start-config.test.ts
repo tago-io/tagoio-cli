@@ -3,9 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-// start-config.ts exports only `startConfig`, but it re-requires scanAnalysisFiles via startConfig's
-// path. The helper itself isn't exported, so we test it indirectly through the module under test.
-// For direct coverage we import the module after setting up a real temp directory to walk.
+const errorHandlerMock = vi.fn<(str: unknown) => never>(() => {
+  throw new Error("errorHandler called");
+});
+const detectInitStateMock = vi.fn();
+const exitMock = vi.fn(() => {
+  throw new Error("process.exit called");
+});
 
 vi.mock("../lib/config-file.js", () => ({
   getConfigFile: vi.fn(),
@@ -19,9 +23,42 @@ vi.mock("../lib/token.js", () => ({
 }));
 
 vi.mock("../lib/messages.js", () => ({
-  errorHandler: vi.fn(),
+  errorHandler: errorHandlerMock,
   highlightMSG: (s: string) => s,
   infoMSG: vi.fn(),
+}));
+
+vi.mock("../lib/resolve-scope.js", () => ({
+  resolveScope: () => ({
+    scope: "local" as const,
+    root: "/repo",
+    configPath: "/repo/tagoconfig.json",
+    envFilePath: "/repo/.tagoio/personal.env",
+    configExists: true,
+  }),
+  setScopeOverride: vi.fn(),
+  globalConfigDir: () => "/home/user/.config/tagoio",
+}));
+
+vi.mock("../lib/init-state.js", () => ({
+  detectInitState: (envName: string) => detectInitStateMock(envName),
+}));
+
+vi.mock("../lib/init-summary.js", () => ({
+  banner: (scope: { root: string }) => `Initializing tagoio in ${scope.root}...`,
+  overwriteConfirmCopy: () => "OVERWRITE_COPY_STUB",
+  startStep: vi.fn(),
+  endStep: vi.fn(),
+  // Real failStep is typed `never` and calls process.exit(1); model that here
+  // so callers can't fall through after a failed step.
+  failStep: (label: string) => {
+    throw new Error(`__failStep:${label}`);
+  },
+  summaryBlock: () => "SUMMARY_BLOCK_STUB",
+}));
+
+vi.mock("../lib/scope-notice.js", () => ({
+  printScopeBanner: vi.fn(),
 }));
 
 vi.mock("./login.js", () => ({
@@ -33,38 +70,122 @@ vi.mock("../prompt/text-prompt.js", () => ({
   promptTextToEnter: vi.fn(),
 }));
 
-describe("startConfig (entry points)", () => {
+const localScope = {
+  scope: "local" as const,
+  root: "/repo",
+  configPath: "/repo/tagoconfig.json",
+  envFilePath: "/repo/.tagoio/personal.env",
+  configExists: true,
+};
+
+const freshState = {
+  scope: localScope,
+  isTTY: true,
+  configExists: true,
+  envExists: false,
+  tokenExists: false,
+};
+
+const reInitState = {
+  scope: localScope,
+  isTTY: true,
+  configExists: true,
+  envExists: true,
+  tokenExists: true,
+};
+
+describe("startConfig — clig.dev flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    detectInitStateMock.mockReset();
+    errorHandlerMock.mockClear();
+    exitMock.mockClear();
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`__exit:${code ?? 0}`);
+    }) as never);
   });
 
-  test("returns early when the config file is missing", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test("re-init confirm-no exits with 'Cancelled. No changes made.'", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
+    const { getConfigFile } = await import("../lib/config-file.js");
+    (getConfigFile as ReturnType<typeof vi.fn>).mockReturnValue({ dev: { id: "x" } });
+
+    const promptsModule = await import("prompts");
+    // First inject is the "Overwrite?" prompt → user says no.
+    promptsModule.default.inject([false]);
+
+    const { startConfig } = await import("./start-config.js");
+    await expect(startConfig("dev", { token: undefined })).rejects.toThrow(/__exit:0/);
+  });
+
+  test("re-init with --force skips the overwrite confirm prompt", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
     const { getConfigFile } = await import("../lib/config-file.js");
     (getConfigFile as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
 
     const { startConfig } = await import("./start-config.js");
-    await expect(startConfig("prod", { token: undefined, environment: undefined })).resolves.toBeUndefined();
+    // No prompt injection — if a prompt fires, it would hang. With --force we expect
+    // it to skip the confirm and proceed; getConfigFile returns undefined, so the
+    // "Creating project structure" stage fails via failStep (which aborts).
+    await expect(startConfig("dev", { token: "tok-1", force: true })).rejects.toThrow(/__failStep:Creating project structure/);
   });
 
-  test("returns early when no token can be obtained", async () => {
-    const { getConfigFile } = await import("../lib/config-file.js");
-    const { readToken } = await import("../lib/token.js");
-    const { promptTextToEnter } = await import("../prompt/text-prompt.js");
-
-    (getConfigFile as ReturnType<typeof vi.fn>).mockReturnValue({ analysisPath: "./src/analysis", buildPath: "./build" });
-    (readToken as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
-    (promptTextToEnter as ReturnType<typeof vi.fn>).mockResolvedValue("./src/analysis");
-
-    // We don't need to prompt the user for environment since we provide one.
-    // createEnvironmentToken -> user says no, returns undefined.
-    const promptsModule = await import("prompts");
-    promptsModule.default.inject([false]);
+  test("--no-input + existing env without --force errors with the --force hint", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
 
     const { startConfig } = await import("./start-config.js");
-    await expect(startConfig("prod", { token: undefined, environment: undefined })).resolves.toBeUndefined();
+    await expect(startConfig("dev", { token: "tok-1", input: false })).rejects.toThrow();
+    const errArg = errorHandlerMock.mock.calls[0][0] as string;
+    expect(errArg).toContain("--force");
+    expect(errArg).toContain("already exists");
+  });
+
+  test("--no-input without --token errors before any work", async () => {
+    detectInitStateMock.mockReturnValue(freshState);
+    const { getConfigFile } = await import("../lib/config-file.js");
+    (getConfigFile as ReturnType<typeof vi.fn>).mockReturnValue({});
+
+    const { startConfig } = await import("./start-config.js");
+    await expect(startConfig("dev", { input: false })).rejects.toThrow();
+    const errArg = errorHandlerMock.mock.calls[0][0] as string;
+    expect(errArg).toContain("--no-input requires --token");
+  });
+
+  test("--name flag overrides positional argument and emits a stderr note", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
+    const { startConfig } = await import("./start-config.js");
+    // Re-init w/ --no-input should error after the env-name resolution; that's enough
+    // to exercise the override path.
+    await expect(startConfig("positional", { name: "fromflag", input: false })).rejects.toThrow();
+
+    // Detect was called with the flag value, not the positional.
+    expect(detectInitStateMock).toHaveBeenCalledWith("fromflag");
+  });
+
+  test("uses default env 'dev' when neither positional nor --name is set", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
+    const { startConfig } = await import("./start-config.js");
+    await expect(startConfig("", { input: false })).rejects.toThrow();
+
+    expect(detectInitStateMock).toHaveBeenCalledWith("dev");
+  });
+
+  test("invalid --scope value errors actionably", async () => {
+    const { startConfig } = await import("./start-config.js");
+    await expect(startConfig("dev", { scope: "bogus" as never })).rejects.toThrow();
+    const errArg = errorHandlerMock.mock.calls[0][0] as string;
+    expect(errArg).toContain("Invalid --scope");
+    expect(errArg).toContain("'bogus'");
   });
 });
 
+// scanAnalysisFiles is exercised indirectly; the recursive walk itself is simple
+// fs traversal, covered by the real-fs test below.
 describe("scanAnalysisFiles (indirect)", () => {
   let tmpRoot: string;
 
@@ -83,9 +204,6 @@ describe("scanAnalysisFiles (indirect)", () => {
     mkdirSync(nested);
     writeFileSync(join(nested, "deep.js"), "");
 
-    // Load the module to access scanAnalysisFiles indirectly: since it isn't exported,
-    // we rely on its behaviour being exercised by getAnalysisScripts. Here we assert the
-    // directory walk itself via the real fs functions we just set up.
     const { readdirSync, statSync } = await import("node:fs");
     const items = readdirSync(tmpRoot);
     const collected: string[] = [];

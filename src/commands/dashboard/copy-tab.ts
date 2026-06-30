@@ -4,6 +4,8 @@ import prompts from "prompts";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveScope } from "../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../lib/scope-notice.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
 import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio.js";
 
@@ -101,6 +103,8 @@ async function pickTabFromDashboard(list: { title: string; value: string }[], me
  * @returns
  */
 async function copyTabWidgets(dashID: string, options: IOptions) {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

@@ -8,7 +8,7 @@ import { IEnvironment } from "../lib/config-file.js";
  * @param message - The message to display to the user when prompting them to choose the analysis.
  * @returns The list of analysis chosen by the user.
  */
-async function chooseAnalysisListFromConfig(analysis: IEnvironment["analysisList"], message: string = "Choose the analysis") {
+async function chooseAnalysisListFromConfig(analysis: NonNullable<IEnvironment["analysisList"]>, message: string = "Choose the analysis") {
   const { scripts } = await prompts({
     message,
     name: "scripts",
@@ -16,7 +16,7 @@ async function chooseAnalysisListFromConfig(analysis: IEnvironment["analysisList
     choices: analysis.map((x) => ({ title: `${x.fileName} [${x.name}]`, value: x })),
   });
 
-  return (scripts || []) as IEnvironment["analysisList"];
+  return (scripts || []) as NonNullable<IEnvironment["analysisList"]>;
 }
 
 export { chooseAnalysisListFromConfig };

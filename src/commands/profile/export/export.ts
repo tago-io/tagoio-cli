@@ -6,6 +6,8 @@ import { addOnGitIgnore } from "../../../lib/add-to-gitignore.js";
 import { getEnvironmentConfig } from "../../../lib/config-file.js";
 import { getCurrentFolder } from "../../../lib/get-current-folder.js";
 import { errorHandler, infoMSG, successMSG } from "../../../lib/messages.js";
+import { resolveScope } from "../../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../../lib/scope-notice.js";
 import { confirmPrompt } from "../../../prompt/confirm.js";
 import { pickEnvironment } from "../../../prompt/pick-environment.js";
 import { setupExport } from "./export-setup.js";
@@ -153,6 +155,8 @@ async function collectParameters(options: IExportOptions) {
 }
 
 async function startExport(options: IExportOptions) {
+  printScopeBanner(resolveScope());
+
   if (options.setup) {
     await setupExport(options);
     return;

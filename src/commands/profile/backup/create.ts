@@ -4,6 +4,8 @@ import ora, { type Ora } from "ora";
 
 import { getEnvironmentConfig } from "../../../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../../lib/messages.js";
+import { resolveScope } from "../../../lib/resolve-scope.js";
+import { printScopeBanner } from "../../../lib/scope-notice.js";
 import { handleBackupError } from "./lib.js";
 import { BackupItem, BackupListResponse } from "./types.js";
 
@@ -48,6 +50,8 @@ async function waitForBackupCompletion(profileID: string, baseURL: string, token
 
 /** Triggers a new profile backup and waits for completion. */
 async function createBackup() {
+  printScopeBanner(resolveScope());
+
   const config = getEnvironmentConfig();
   if (!config?.profileToken) {
     errorHandler("Environment not found");

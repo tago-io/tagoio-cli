@@ -5,6 +5,7 @@ import zlib from "node:zlib";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.js";
 
 /**
@@ -78,6 +79,8 @@ async function downloadScriptBase64(account: Account, analysisId: string): Promi
  * @throws An error if the analysis ID is not found or if the environment is not found.
  */
 async function duplicateAnalysis(analysisID: string | void, options: { environment: string; name?: string }) {
+  requireLocalScope("analysis-duplicate");
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");

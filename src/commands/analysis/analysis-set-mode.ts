@@ -3,6 +3,7 @@ import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { chooseFromList } from "../../prompt/choose-from-list.js";
 import { pickFromList } from "../../prompt/pick-from-list.js";
 
@@ -62,6 +63,8 @@ async function chooseAnalysisToUpdateRunOnMode(
  * @param options.filterMode - The filter mode to use when retrieving the analysis list.
  */
 async function analysisSetMode(userInputName: string | void, options: { environment: string; mode: string; filterMode: string }) {
+  requireLocalScope("analysis-mode");
+
   const config = getEnvironmentConfig(options.environment);
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
