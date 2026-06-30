@@ -51,8 +51,6 @@ Installing the TagoIO Command Line Tools is a straightforward process. Follow th
    tagoio login
    ```
 
-6. **Reference (Optional)**: A man page is installed alongside the CLI. Run `man tagoio` for the full command reference. Fish users can additionally run `fish_update_completions` to enable tab-completion (fish auto-extracts flag metadata from the installed man page).
-
 ## Command List
 List of commands of the CLI
 **Usage**:
