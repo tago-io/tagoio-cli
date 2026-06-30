@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
 
-const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, listMock, copyMock } = vi.hoisted(() => ({
+const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, writeStatusMock, listMock, copyMock } = vi.hoisted(() => ({
   getEnvironmentConfigMock: vi.fn(),
   errorHandlerMock: vi.fn<(str: unknown) => never>((str) => {
     throw new Error(String(str));
   }),
   infoMSGMock: vi.fn(),
   successMSGMock: vi.fn(),
+  writeStatusMock: vi.fn(),
   listMock: vi.fn(),
   copyMock: vi.fn(),
 }));
@@ -27,6 +28,7 @@ vi.mock("../../lib/messages.js", () => ({
   errorHandler: errorHandlerMock,
   infoMSG: infoMSGMock,
   successMSG: successMSGMock,
+  writeStatus: writeStatusMock,
   highlightMSG: (s: unknown) => String(s),
 }));
 
@@ -50,6 +52,13 @@ describe("filesCopyCommand", () => {
     expect(listMock).not.toHaveBeenCalled();
   });
 
+  test("reports a clean error when a single-file copy rejects", async () => {
+    copyMock.mockRejectedValue(new Error("a.pdf can't be found"));
+
+    await expect(filesCopyCommand("reports/a.pdf", "backups/a.pdf", {})).rejects.toThrow(/Failed to copy.*can't be found/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+  });
+
   test("copies a folder, remapping each file's prefix", async () => {
     listMock.mockResolvedValue({
       files: [{ filename: "custom-widgets/lc/index.html" }, { filename: "custom-widgets/lc/app.js" }],
@@ -63,6 +72,18 @@ describe("filesCopyCommand", () => {
       { from: "custom-widgets/lc/index.html", to: "backups/lc/index.html" },
       { from: "custom-widgets/lc/app.js", to: "backups/lc/app.js" },
     ]);
+  });
+
+  test("errors out and reports counts when some files fail to copy", async () => {
+    listMock.mockResolvedValue({
+      files: [{ filename: "lc/index.html" }, { filename: "lc/app.js" }],
+      folders: [],
+    });
+    copyMock.mockResolvedValueOnce("ok").mockRejectedValueOnce(new Error("boom"));
+
+    await expect(filesCopyCommand("lc", "backups/lc", {})).rejects.toThrow(/1 file\(s\), 1 failed/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+    expect(writeStatusMock).toHaveBeenCalledWith(expect.stringContaining("boom"));
   });
 
   test("errors on an empty folder (nothing to copy)", async () => {

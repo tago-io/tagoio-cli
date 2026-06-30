@@ -1,7 +1,5 @@
-import { Resources } from "@tago-io/sdk";
-
-import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
-import { errorHandler } from "../../lib/messages.js";
+import { getApiURL } from "../../lib/config-file.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface URLOptions {
   environment?: string;
@@ -16,23 +14,11 @@ interface URLOptions {
  * it can be captured in scripts; everything else stays on stderr.
  */
 async function filesURLCommand(remotePath: string, options: URLOptions) {
-  const config = getEnvironmentConfig(options.environment);
-  if (!config) {
-    errorHandler("Environment not found");
-  }
-
-  if (options.token) {
-    config.profileToken = options.token;
-  }
-  if (!config.profileToken) {
-    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
-  }
-
-  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const { resources, region } = resolveResources(options);
   const profile = await resources.profiles.info("current");
 
   const cleanPath = remotePath.replace(/^\/+/, "");
-  const publicURL = `${getApiURL(config.profileRegion)}/file/${profile.info.id}/${cleanPath}`;
+  const publicURL = `${getApiURL(region)}/file/${profile.info.id}/${cleanPath}`;
 
   const url = options.signed ? await resources.files.getFileURLSigned(publicURL) : publicURL;
 

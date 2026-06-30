@@ -1,8 +1,5 @@
-import { queue } from "async";
-
-import { isFolderPath, listFilesRecursive } from "../../lib/files-paths.js";
+import { isFolderPath, listFilesRecursive, runFileBatch } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
-import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
 import { resolveResources } from "../../lib/resolve-resources.js";
 
@@ -24,7 +21,9 @@ async function filesPermissionCommand(path: string, visibility: string, options:
   const { resources } = resolveResources(options);
 
   if (!isFolderPath(path)) {
-    await resources.files.changePermission([{ file: path, public: isPublic }]);
+    await resources.files.changePermission([{ file: path, public: isPublic }]).catch((error) => {
+      errorHandler(`Failed to set permission on '${path}': ${error?.message ?? error}`);
+    });
     successMSG(`Set ${path} to ${visibility}.`);
     return;
   }
@@ -42,17 +41,12 @@ async function filesPermissionCommand(path: string, visibility: string, options:
     }
   }
 
-  const permQueue = queue<string>(async (file) => {
-    await resources.files.changePermission([{ file, public: isPublic }]);
-    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
-  }, CONCURRENCY);
+  const { succeeded, failed } = await runFileBatch(files, (file) => resources.files.changePermission([{ file, public: isPublic }]));
 
-  for (const file of files) {
-    void permQueue.push(file);
+  if (failed > 0) {
+    errorHandler(`Set ${succeeded} file(s) to ${visibility}, ${failed} failed.`);
   }
-  await permQueue.drain();
-
-  successMSG(`Set ${files.length} file(s) to ${visibility}.`);
+  successMSG(`Set ${succeeded} file(s) to ${visibility}.`);
 }
 
 export { filesPermissionCommand };

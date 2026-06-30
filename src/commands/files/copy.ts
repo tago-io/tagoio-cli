@@ -1,8 +1,5 @@
-import { queue } from "async";
-
-import { isFolderPath, listFilesRecursive, remapPrefix } from "../../lib/files-paths.js";
+import { isFolderPath, listFilesRecursive, remapPrefix, runFileBatch } from "../../lib/files-paths.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
-import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "../../lib/upload-folder.js";
 import { resolveResources } from "../../lib/resolve-resources.js";
 
 interface CopyOptions {
@@ -16,7 +13,9 @@ async function filesCopyCommand(from: string, to: string, options: CopyOptions) 
   infoMSG(`Copying ${from} -> ${to} ...`);
 
   if (!isFolderPath(from)) {
-    await resources.files.copy([{ from, to }]);
+    await resources.files.copy([{ from, to }]).catch((error) => {
+      errorHandler(`Failed to copy '${from}': ${error?.message ?? error}`);
+    });
     successMSG("Copied 1 file.");
     return;
   }
@@ -26,17 +25,12 @@ async function filesCopyCommand(from: string, to: string, options: CopyOptions) 
     errorHandler(`No files found under '${from}'.`);
   }
 
-  const copyQueue = queue<string>(async (filePath) => {
-    await resources.files.copy([{ from: filePath, to: remapPrefix(filePath, from, to) }]);
-    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
-  }, CONCURRENCY);
+  const { succeeded, failed } = await runFileBatch(files, (filePath) => resources.files.copy([{ from: filePath, to: remapPrefix(filePath, from, to) }]));
 
-  for (const filePath of files) {
-    void copyQueue.push(filePath);
+  if (failed > 0) {
+    errorHandler(`Copied ${succeeded} file(s), ${failed} failed.`);
   }
-  await copyQueue.drain();
-
-  successMSG(`Copied ${files.length} file(s).`);
+  successMSG(`Copied ${succeeded} file(s).`);
 }
 
 export { filesCopyCommand };
