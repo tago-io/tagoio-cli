@@ -30,7 +30,7 @@ import { filesRenameCommand } from "./rename.js";
 describe("filesRenameCommand", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    executeMoveMock.mockResolvedValue(1);
+    executeMoveMock.mockResolvedValue({ succeeded: 1, failed: 0, cancelled: false });
   });
 
   afterEach(() => {
@@ -47,7 +47,7 @@ describe("filesRenameCommand", () => {
   });
 
   test("renames a folder, keeping its parent", async () => {
-    executeMoveMock.mockResolvedValue(3);
+    executeMoveMock.mockResolvedValue({ succeeded: 3, failed: 0, cancelled: false });
 
     await filesRenameCommand("custom-widgets/line-chart", "line-chart-v2", { yes: true });
 
@@ -68,10 +68,26 @@ describe("filesRenameCommand", () => {
   });
 
   test("passes --yes through as skipConfirm", async () => {
-    executeMoveMock.mockResolvedValue(2);
+    executeMoveMock.mockResolvedValue({ succeeded: 2, failed: 0, cancelled: false });
 
     await filesRenameCommand("f", "g", { yes: true });
 
     expect(executeMoveMock.mock.calls[0][0].skipConfirm).toBe(true);
+  });
+
+  test("errors out when some files failed to rename", async () => {
+    executeMoveMock.mockResolvedValue({ succeeded: 2, failed: 1, cancelled: false });
+
+    await expect(filesRenameCommand("custom-widgets/lc", "lc-v2", { yes: true })).rejects.toThrow(/1 failed/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+  });
+
+  test("stays silent when the move was cancelled", async () => {
+    executeMoveMock.mockResolvedValue({ succeeded: 0, failed: 0, cancelled: true });
+
+    await filesRenameCommand("custom-widgets/lc", "lc-v2", {});
+
+    expect(successMSGMock).not.toHaveBeenCalled();
+    expect(errorHandlerMock).not.toHaveBeenCalled();
   });
 });

@@ -2,17 +2,20 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
 
-const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, confirmMock, listMock, changePermissionMock } = vi.hoisted(() => ({
-  getEnvironmentConfigMock: vi.fn(),
-  errorHandlerMock: vi.fn<(str: unknown) => never>((str) => {
-    throw new Error(String(str));
+const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, writeStatusMock, confirmMock, listMock, changePermissionMock } = vi.hoisted(
+  () => ({
+    getEnvironmentConfigMock: vi.fn(),
+    errorHandlerMock: vi.fn<(str: unknown) => never>((str) => {
+      throw new Error(String(str));
+    }),
+    infoMSGMock: vi.fn(),
+    successMSGMock: vi.fn(),
+    writeStatusMock: vi.fn(),
+    confirmMock: vi.fn(),
+    listMock: vi.fn(),
+    changePermissionMock: vi.fn(),
   }),
-  infoMSGMock: vi.fn(),
-  successMSGMock: vi.fn(),
-  confirmMock: vi.fn(),
-  listMock: vi.fn(),
-  changePermissionMock: vi.fn(),
-}));
+);
 
 vi.mock("@tago-io/sdk", () => ({
   Resources: function Resources() {
@@ -28,6 +31,7 @@ vi.mock("../../lib/messages.js", () => ({
   errorHandler: errorHandlerMock,
   infoMSG: infoMSGMock,
   successMSG: successMSGMock,
+  writeStatus: writeStatusMock,
   highlightMSG: (s: unknown) => String(s),
 }));
 
@@ -61,6 +65,13 @@ describe("filesPermissionCommand", () => {
     expect(changePermissionMock).toHaveBeenCalledWith([{ file: "reports/a.pdf", public: false }]);
   });
 
+  test("reports a clean error when a single-file permission change rejects", async () => {
+    changePermissionMock.mockRejectedValue(new Error("Sorry, Internal Error"));
+
+    await expect(filesPermissionCommand("reports/a.pdf", "public", {})).rejects.toThrow(/Failed to set permission.*Internal Error/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+  });
+
   test("rejects an argument other than public/private", async () => {
     await expect(filesPermissionCommand("a.pdf", "open", {})).rejects.toThrow(/public|private/i);
     expect(changePermissionMock).not.toHaveBeenCalled();
@@ -84,6 +95,15 @@ describe("filesPermissionCommand", () => {
 
     expect(confirmMock).toHaveBeenCalled();
     expect(changePermissionMock).not.toHaveBeenCalled();
+  });
+
+  test("errors out and reports counts when some files fail", async () => {
+    listMock.mockResolvedValue({ files: [{ filename: "f/a.txt" }, { filename: "f/b.txt" }], folders: [] });
+    changePermissionMock.mockResolvedValueOnce("ok").mockRejectedValueOnce(new Error("boom"));
+
+    await expect(filesPermissionCommand("f", "public", { yes: true })).rejects.toThrow(/1 file\(s\) to public, 1 failed/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+    expect(writeStatusMock).toHaveBeenCalledWith(expect.stringContaining("boom"));
   });
 
   test("errors on an empty folder", async () => {

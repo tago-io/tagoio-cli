@@ -27,11 +27,20 @@ async function filesRenameCommand(path: string, newName: string, options: Rename
   const to = renameDestination(path, newName);
 
   infoMSG(`Renaming ${path} -> ${to} ...`);
-  const moved = await executeMove({ resources, from: path, to, skipConfirm: Boolean(options.yes || options.silent) });
+  const { succeeded, failed, cancelled } = await executeMove({
+    resources,
+    from: path,
+    to,
+    skipConfirm: Boolean(options.yes || options.silent),
+  });
 
-  if (moved > 0) {
-    successMSG(`Renamed ${moved} file(s).`);
+  if (cancelled) {
+    return;
   }
+  if (failed > 0) {
+    errorHandler(`Renamed ${succeeded} file(s), ${failed} failed.`);
+  }
+  successMSG(`Renamed ${succeeded} file(s).`);
 }
 
 export { filesRenameCommand, renameDestination };

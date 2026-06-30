@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
 
-const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, confirmMock, listMock, moveMock } = vi.hoisted(() => ({
+const { getEnvironmentConfigMock, errorHandlerMock, infoMSGMock, successMSGMock, writeStatusMock, confirmMock, listMock, moveMock } = vi.hoisted(() => ({
   getEnvironmentConfigMock: vi.fn(),
   errorHandlerMock: vi.fn<(str: unknown) => never>((str) => {
     throw new Error(String(str));
   }),
   infoMSGMock: vi.fn(),
   successMSGMock: vi.fn(),
+  writeStatusMock: vi.fn(),
   confirmMock: vi.fn(),
   listMock: vi.fn(),
   moveMock: vi.fn(),
@@ -28,6 +29,7 @@ vi.mock("../../lib/messages.js", () => ({
   errorHandler: errorHandlerMock,
   infoMSG: infoMSGMock,
   successMSG: successMSGMock,
+  writeStatus: writeStatusMock,
   highlightMSG: (s: unknown) => String(s),
 }));
 
@@ -55,6 +57,13 @@ describe("filesMoveCommand", () => {
     expect(moveMock).toHaveBeenCalledTimes(1);
     expect(moveMock).toHaveBeenCalledWith([{ from: "reports/a.pdf", to: "backups/a.pdf" }]);
     expect(listMock).not.toHaveBeenCalled();
+  });
+
+  test("reports a clean error when a single-file move rejects", async () => {
+    moveMock.mockRejectedValue(new Error("a.pdf can't be found"));
+
+    await expect(filesMoveCommand("reports/a.pdf", "backups/a.pdf", {})).rejects.toThrow(/Failed to move.*can't be found/);
+    expect(successMSGMock).not.toHaveBeenCalled();
   });
 
   test("moves a folder, remapping each file's prefix", async () => {
@@ -92,6 +101,15 @@ describe("filesMoveCommand", () => {
 
     expect(confirmMock).not.toHaveBeenCalled();
     expect(moveMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("errors out and reports counts when some files fail to move", async () => {
+    listMock.mockResolvedValue({ files: [{ filename: "f/a.txt" }, { filename: "f/b.txt" }], folders: [] });
+    moveMock.mockResolvedValueOnce("ok").mockRejectedValueOnce(new Error("boom"));
+
+    await expect(filesMoveCommand("f", "g", { yes: true })).rejects.toThrow(/1 file\(s\), 1 failed/);
+    expect(successMSGMock).not.toHaveBeenCalled();
+    expect(writeStatusMock).toHaveBeenCalledWith(expect.stringContaining("boom"));
   });
 
   test("errors on an empty folder (nothing to move)", async () => {

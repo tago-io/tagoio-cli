@@ -4,6 +4,8 @@ import { extname, join, relative } from "node:path";
 import type { Resources } from "@tago-io/sdk";
 import { queue } from "async";
 
+import { writeStatus } from "./messages.js";
+
 interface FileTask {
   filePath: string;
   relativePath: string;
@@ -105,8 +107,9 @@ async function uploadOne(params: UploadFilesParams, task: FileTask, result: Uplo
     .then(() => {
       result.created++;
     })
-    .catch(() => {
+    .catch((error) => {
       result.failed++;
+      writeStatus(`Failed to upload file "${filename}": ${error?.message ?? error}`);
     });
 
   params.onProgress?.(result);

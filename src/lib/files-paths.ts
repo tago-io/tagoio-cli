@@ -1,4 +1,8 @@
 import type { Resources } from "@tago-io/sdk";
+import { queue } from "async";
+
+import { writeStatus } from "./messages.js";
+import { CONCURRENCY, DELAY_BETWEEN_REQUESTS_MS } from "./upload-folder.js";
 
 /**
  * Path helpers shared by the folder-capable files-* commands. The SDK operates
@@ -54,4 +58,39 @@ async function listFilesRecursive(resources: Resources, prefix: string): Promise
   return [...here, ...nested.flat()];
 }
 
-export { isFolderPath, listFilesRecursive, remapPrefix };
+interface BatchResult {
+  succeeded: number;
+  failed: number;
+}
+
+/**
+ * Runs `operation` over every file through a throttled queue, counting per-file
+ * success and failure instead of letting a single rejection slip past `drain()`.
+ * Each failure is logged with its reason so a half-failed folder operation is
+ * visible and actionable rather than silently reported as fully done.
+ */
+async function runFileBatch(files: string[], operation: (file: string) => Promise<unknown>): Promise<BatchResult> {
+  const result: BatchResult = { succeeded: 0, failed: 0 };
+
+  const fileQueue = queue<string>(async (file) => {
+    await operation(file)
+      .then(() => {
+        result.succeeded++;
+      })
+      .catch((error) => {
+        result.failed++;
+        writeStatus(`Failed on "${file}": ${error?.message ?? error}`);
+      });
+    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_REQUESTS_MS));
+  }, CONCURRENCY);
+
+  for (const file of files) {
+    void fileQueue.push(file);
+  }
+  await fileQueue.drain();
+
+  return result;
+}
+
+export { isFolderPath, listFilesRecursive, remapPrefix, runFileBatch };
+export type { BatchResult };
