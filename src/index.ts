@@ -74,21 +74,27 @@ function buildProgram(defaultEnv: string): Command {
   program
     .command("init")
     .description("create/update the config file for analysis in your current folder")
-    .argument("[environment]", "name of the environment.", defaultEnv || "dev")
+    .argument("[environment]", "name of the environment", defaultEnv || "dev")
     .option("-t, --token <profile-token>", "profile token of the environment and skip login step")
-    .option("--scope <scope>", "force a specific profile scope: 'local' (./tagoconfig.json) or 'global' (~/.config/tagoio/tagoconfig.json)")
+    .option("--name <name>", "env name (alias for [environment]); flag wins if both are passed")
+    .option("--scope <scope>", "force a specific profile scope: 'local' or 'global'")
+    .option("--api-endpoint <url>", "API endpoint URL (must be paired with --sse-endpoint)")
+    .option("--sse-endpoint <url>", "SSE endpoint URL (must be paired with --api-endpoint)")
+    .option("--no-input", "fail instead of prompting; --token required for authentication")
+    .option("--force", "skip the existing-configuration overwrite confirmation")
     .action(startConfig)
     .addHelpText(
       "after",
       `
-    Note: If you don't store credentials in this command, you must run tagoio login
+    Note: If you don't store credentials with -t, you must run tagoio login.
 
 Example:
     $ tagoio init
     $ tagoio init prod
     $ tagoio init -t eb8a1d42-0f28-4ee7-9862-839920eb1cb0
     $ tagoio init --scope global
-    $ tagoio init prod --scope global`,
+    $ tagoio init --no-input --name dev --scope local --api-endpoint https://api.tago.io --sse-endpoint https://sse.tago.io -t TOKEN
+    $ tagoio init prod --force`,
     );
 
   program
