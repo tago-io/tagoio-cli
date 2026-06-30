@@ -1,10 +1,8 @@
 import { existsSync } from "node:fs";
 import { basename } from "node:path";
 
-import { Resources } from "@tago-io/sdk";
-
-import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG, successMSG } from "../../lib/messages.js";
+import { resolveResources } from "../../lib/resolve-resources.js";
 import { uploadFolder } from "../../lib/upload-folder.js";
 
 interface UploadOptions {
@@ -24,20 +22,8 @@ async function uploadFilesCommand(localPath: string, remotePath: string | undefi
     errorHandler(`Local path not found: ${localPath}`);
   }
 
-  const config = getEnvironmentConfig(options.environment);
-  if (!config) {
-    errorHandler("Environment not found");
-  }
-
-  if (options.token) {
-    config.profileToken = options.token;
-  }
-  if (!config.profileToken) {
-    errorHandler("No profile token found. Pass --token or run 'tagoio login'.");
-  }
-
+  const { resources } = resolveResources(options);
   const destination = remotePath || basename(localPath);
-  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
 
   infoMSG(`Uploading ${localPath} to ${destination} ...`);
   const { created, failed } = await uploadFolder({
