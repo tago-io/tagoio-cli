@@ -278,7 +278,7 @@ device description
 day|week|month|quarter (required for immutable)
 .TP
 \\fB\\-\\-chunk\\-retention\\fR \\fI<number>\\fR
-chunks to retain, 0\\-36 (required for immutable)
+chunks to retain; max by period: day 31, week 26, month/quarter 36 (required for immutable)
 .TP
 \\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
 tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
@@ -345,7 +345,7 @@ network ID
 connector ID
 .TP
 \\fB\\-\\-chunk\\-retention\\fR \\fI<number>\\fR
-chunks to retain, 0\\-36
+chunks to retain; max by period: day 31, week 26, month/quarter 36
 .TP
 \\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
 tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
@@ -522,13 +522,13 @@ send data to the device
 Filter by variable (default: [])
 .TP
 \\fB\\-\\-delete\\fR
-delete data matching the filters (mutable devices only)
+delete data matching the filters (mutable devices only); requires a filter, confirms unless \\-y
 .TP
 \\fB\\-\\-empty\\fR
 delete ALL data on the device (mutable only); confirms unless \\-y
 .TP
 \\fB\\-y\\fR, \\fB\\-\\-yes\\fR
-skip the \\-\\-empty confirmation
+skip the \\-\\-delete/\\-\\-empty confirmation
 .PP
 .nf
 Example:

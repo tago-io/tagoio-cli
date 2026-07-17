@@ -100,6 +100,23 @@ describe("deviceCreate", () => {
     );
   });
 
+  test("chunk-retention above the period max errors with validation code, no SDK call", async () => {
+    const { deviceCreate } = await import("./device-create.js");
+    await expect(
+      deviceCreate("Imm", {
+        type: "immutable",
+        network: "net-1",
+        connector: "con-1",
+        chunkPeriod: "week",
+        chunkRetention: 30,
+        json: true,
+      } as never),
+    ).rejects.toThrow();
+
+    expect(errorHandlerJSONMock).toHaveBeenCalledWith(expect.stringContaining("chunk-retention"), "invalid_chunk_retention");
+    expect(resourcesInstance.devices.create).not.toHaveBeenCalled();
+  });
+
   test("zips tag keys and values by index", async () => {
     resourcesInstance.devices.create.mockResolvedValue({ device_id: "dev-t" });
 

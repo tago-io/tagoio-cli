@@ -75,6 +75,14 @@ describe("deviceEdit", () => {
     expect(resourcesInstance.devices.edit).toHaveBeenCalledWith("dev-1", expect.objectContaining({ active: false }));
   });
 
+  test("--active and --inactive together errors with conflicting_flags, no SDK call", async () => {
+    const { deviceEdit } = await import("./device-edit.js");
+    await expect(deviceEdit("dev-1", { active: true, inactive: true, json: true } as never)).rejects.toThrow();
+
+    expect(errorHandlerJSONMock).toHaveBeenCalledWith(expect.any(String), "conflicting_flags");
+    expect(resourcesInstance.devices.edit).not.toHaveBeenCalled();
+  });
+
   test("default tag behavior replaces the whole tag set", async () => {
     resourcesInstance.devices.edit.mockResolvedValue("updated");
 

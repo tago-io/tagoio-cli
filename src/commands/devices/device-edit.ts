@@ -88,8 +88,11 @@ async function deviceEdit(idArg: string | undefined, options: IOptions) {
   if (options.description !== undefined) {
     patch.description = options.description;
   }
+  if (options.active && options.inactive) {
+    failWith("Conflicting flags: pass only one of --active or --inactive.", "conflicting_flags", Boolean(options.json));
+  }
   if (options.active || options.inactive) {
-    patch.active = Boolean(options.active) && !options.inactive;
+    patch.active = Boolean(options.active);
   }
   if (options.network !== undefined) {
     patch.network = options.network;

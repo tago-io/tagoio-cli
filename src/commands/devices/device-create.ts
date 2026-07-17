@@ -19,6 +19,9 @@ interface IOptions {
   json?: boolean;
 }
 
+/** Max chunk retention allowed by the API per chunk period. */
+const CHUNK_RETENTION_MAX = { day: 31, week: 26, month: 36, quarter: 36 } as const;
+
 function failWith(message: string, code: string, useJSON: boolean): never {
   if (useJSON) {
     errorHandlerJSON(message, code);
@@ -56,6 +59,13 @@ async function deviceCreate(nameArg: string | undefined, options: IOptions) {
       "missing_chunk_config",
       Boolean(options.json),
     );
+  }
+
+  if (options.chunkPeriod && options.chunkRetention !== undefined) {
+    const max = CHUNK_RETENTION_MAX[options.chunkPeriod];
+    if (options.chunkRetention < 0 || options.chunkRetention > max) {
+      failWith(`--chunk-retention for --chunk-period ${options.chunkPeriod} must be between 0 and ${max}.`, "invalid_chunk_retention", Boolean(options.json));
+    }
   }
 
   const tags = buildTags(options.tagkey, options.tagvalue);
