@@ -41,7 +41,7 @@ async function getDevice(idOrToken: string, resources: Resources) {
  */
 function _createDataFilter(options: IOptions): DataQuery {
   const filter: DataQuery = {};
-  if (options.var) {
+  if (options.var?.length) {
     filter.variables = options.var;
   }
   if (options.group) {
@@ -79,16 +79,37 @@ interface IOptions {
 }
 
 /**
- * Deletes data from a device (mutable only). `--empty` clears all data and
- * confirms first unless `-y`/`--silent`; `--delete` removes data matching the
- * query filters. Operates by device id through `resources.devices`.
+ * True when the user set at least one filter that narrows *which* data to
+ * delete. Derives from `_createDataFilter` so any new filter is covered
+ * automatically, then drops `qty`: it carries a commander default (15) and only
+ * caps how many rows a read returns — it does not scope a delete, so a bare
+ * `--delete` would otherwise look "filtered" and wipe the whole device.
+ */
+function hasDeleteFilter(options: IOptions): boolean {
+  const { qty: _qty, ...filter } = _createDataFilter(options) as Record<string, unknown>;
+  return Object.keys(filter).length > 0;
+}
+
+/**
+ * Deletes data from a device (mutable only). Both paths confirm first unless
+ * `-y`/`--silent`. `--empty` clears all data; `--delete` removes data matching
+ * the query filters and requires at least one selection filter, so it can never
+ * become a silent full wipe (use `--empty` for that). Operates by device id
+ * through `resources.devices`.
  */
 async function deleteDeviceData(resources: Resources, deviceID: string, deviceInfo: { name: string }, options: IOptions) {
-  if (options.empty && !options.yes) {
+  if (options.delete && !hasDeleteFilter(options)) {
+    errorHandler("--delete requires at least one filter (--var, --group, --start-date, --end-date or --query). To delete all data, use --empty.");
+  }
+
+  if (!options.yes) {
+    const message = options.empty
+      ? `Permanently delete ALL data from ${deviceInfo.name}? This cannot be undone.`
+      : `Permanently delete data matching the filter from ${deviceInfo.name}? This cannot be undone.`;
     const { confirm } = await prompts({
       type: "confirm",
       name: "confirm",
-      message: `Permanently delete ALL data from ${deviceInfo.name}? This cannot be undone.`,
+      message,
       initial: false,
     });
     if (confirm !== true) {

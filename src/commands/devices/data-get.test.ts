@@ -77,6 +77,11 @@ describe("_createDataFilter", () => {
     const { _createDataFilter } = await import("./data-get.js");
     expect(_createDataFilter({} as never)).toEqual({});
   });
+
+  test("drops an empty --var array (commander default) instead of sending variables:[]", async () => {
+    const { _createDataFilter } = await import("./data-get.js");
+    expect(_createDataFilter({ var: [] } as never)).toEqual({});
+  });
 });
 
 describe("getDeviceData", () => {
@@ -155,16 +160,53 @@ describe("getDeviceData", () => {
     expect(pickDeviceIDFromTagoIOMock).toHaveBeenCalled();
   });
 
-  test("--delete deletes data matching the query filter", async () => {
+  test("--delete deletes data matching the query filter after confirmation", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
     deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
     deviceDeleteDataMock.mockResolvedValue("3 Data Removed");
+    prompts.inject([true]);
 
     const { getDeviceData } = await import("./data-get.js");
     await getDeviceData("a".repeat(36), { delete: true, var: ["temperature"] } as never);
 
     expect(deviceDeleteDataMock).toHaveBeenCalledWith("dev", expect.objectContaining({ variables: ["temperature"] }));
     expect(deviceGetDataMock).not.toHaveBeenCalled();
+  });
+
+  test("--delete -y skips confirmation", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    deviceDeleteDataMock.mockResolvedValue("3 Data Removed");
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { delete: true, var: ["temperature"], yes: true } as never);
+
+    expect(deviceDeleteDataMock).toHaveBeenCalledWith("dev", expect.objectContaining({ variables: ["temperature"] }));
+  });
+
+  test("--delete without confirmation makes no delete call", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+    prompts.inject([false]);
+
+    const { getDeviceData } = await import("./data-get.js");
+    await getDeviceData("a".repeat(36), { delete: true, var: ["temperature"] } as never);
+
+    expect(deviceDeleteDataMock).not.toHaveBeenCalled();
+  });
+
+  // Commander injects defaults for options the user never passed: `--qty` → 15
+  // and `--var` → []. Neither narrows a delete, so a bare `--delete` carrying
+  // only these must still be rejected — otherwise it silently wipes the device.
+  test("--delete with only commander defaults (qty + empty var) is rejected (never a silent full wipe)", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    deviceInfoMock.mockResolvedValue({ id: "dev", name: "Device", type: "mutable" });
+
+    const { getDeviceData } = await import("./data-get.js");
+    await expect(getDeviceData("a".repeat(36), { delete: true, qty: "15", var: [] } as never)).rejects.toThrow(
+      /requires at least one filter/,
+    );
+    expect(deviceDeleteDataMock).not.toHaveBeenCalled();
   });
 
   test("--empty deletes all data after confirmation via emptyDeviceData", async () => {
