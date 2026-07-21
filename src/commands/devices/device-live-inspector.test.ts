@@ -14,7 +14,7 @@ const errorHandlerMock = vi.fn((str: unknown): void => {
 let accountInstance: ReturnType<typeof makeAccount>;
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
+  Resources: function Resources() {
     return accountInstance;
   },
   Device: function Device() {

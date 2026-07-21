@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Account, Resources } from "@tago-io/sdk";
 import kleur from "kleur";
 import { join } from "node:path";
 import prompts from "prompts";
@@ -7,13 +7,13 @@ import { errorHandler } from "../lib/messages.js";
 
 /**
  * Prompts the user to select a file from their TagoIO account.
- * @param account - The TagoIO account object.
+ * @param account - The TagoIO Resources or Account object (both expose files/profiles).
  * @param message - The message to display to the user.
  * @param currentPath - The current path to display to the user.
  * @returns The URL of the selected file, or undefined if the user cancels.
  */
 
-async function pickFileFromTagoIO(account: Account, message: string = "Pick the file", currentPath: string = "deviceBackup/"): Promise<string | undefined> {
+async function pickFileFromTagoIO(account: Resources | Account, message: string = "Pick the file", currentPath: string = "deviceBackup/"): Promise<string | undefined> {
   let file = { isFolder: true, name: "" };
 
   while (file.isFolder) {

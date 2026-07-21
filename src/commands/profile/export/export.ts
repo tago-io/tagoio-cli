@@ -31,6 +31,8 @@ interface IExportOptions {
   setup: string;
   pick?: boolean;
   data?: string[] | true;
+  // Filled from an interactive prompt (not a CLI flag) and threaded into dashboardExport.
+  ignoreCustomWidgets?: boolean;
 }
 
 async function resolveTokens(userConfig: IExport, options: IExportOptions) {
@@ -148,6 +150,10 @@ async function collectParameters(options: IExportOptions) {
 
   userConfig.entities = await chooseEntities(options.entity);
   userConfig.export_tag = await enterExportTag(userConfig.export_tag);
+
+  if (userConfig.entities.includes("dashboards")) {
+    options.ignoreCustomWidgets = await confirmPrompt("Skip custom (iframe) widgets when exporting dashboards?");
+  }
 
   await confirmEnvironments(userConfig);
 

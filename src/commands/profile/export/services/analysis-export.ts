@@ -1,4 +1,4 @@
-import { Account, AnalysisListItem } from "@tago-io/sdk";
+import { Account, AnalysisListItem, RunTypeOptions } from "@tago-io/sdk";
 import prompts from "prompts";
 import zlib from "node:zlib";
 
@@ -110,13 +110,16 @@ async function analysisExport(account: Account, import_account: Account, export_
     ) || { id: null };
 
     const new_analysis = replaceObj(analysis, { ...export_holder.devices, ...export_holder.tokens });
+    // Propagate the source runtime as-is so it is not reset, defaulting to node-legacy when absent.
+    const runtime: RunTypeOptions = new_analysis.runtime ?? "node-legacy";
     if (!target_id) {
-      ({ id: target_id } = await import_account.analysis.create(new_analysis));
+      ({ id: target_id } = await import_account.analysis.create({ ...new_analysis, runtime }));
     } else {
       await import_account.analysis.edit(target_id, {
         name: new_analysis.name,
         tags: new_analysis.tags,
         active: new_analysis.active,
+        runtime,
         variables: new_analysis.variables,
       });
       analysis_info.push({ id: target_id, variables: new_analysis.variables });
@@ -129,7 +132,11 @@ async function analysisExport(account: Account, import_account: Account, export_
     const scriptBuffer = Buffer.from(await scriptResponse.arrayBuffer());
     const script_base64 = zlib.gunzipSync(scriptBuffer).toString("base64");
 
-    await import_account.analysis.uploadScript(target_id, { content: script_base64, language: "node", name: "script.js" });
+    await import_account.analysis.uploadScript(target_id, {
+      content: script_base64,
+      language: runtime,
+      name: "script.js",
+    });
 
     export_holder.analysis[analysis_id] = target_id;
   }

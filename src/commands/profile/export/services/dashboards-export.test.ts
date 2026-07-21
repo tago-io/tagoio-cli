@@ -18,7 +18,7 @@ vi.mock("./export-backup/export-backup.js", () => ({
 
 vi.mock("./widgets-export.js", () => ({
   insertWidgets: vi.fn(),
-  removeAllWidgets: vi.fn(),
+  removeAllWidgets: vi.fn().mockResolvedValue([]),
 }));
 
 describe("dashboardExport", () => {
@@ -39,12 +39,8 @@ describe("dashboardExport", () => {
   });
 
   test("returns the export_holder after processing a single dashboard with matching tag", async () => {
-    account.dashboards.list.mockResolvedValue([
-      { id: "dash-1", label: "Dash", tags: [{ key: "export_id", value: "my-dash" }] },
-    ]);
-    importAccount.dashboards.list.mockResolvedValue([
-      { id: "target-dash", label: "Dash", tags: [{ key: "export_id", value: "my-dash" }] },
-    ]);
+    account.dashboards.list.mockResolvedValue([{ id: "dash-1", label: "Dash", tags: [{ key: "export_id", value: "my-dash" }] }]);
+    importAccount.dashboards.list.mockResolvedValue([{ id: "target-dash", label: "Dash", tags: [{ key: "export_id", value: "my-dash" }] }]);
     account.dashboards.info.mockResolvedValue({
       id: "dash-1",
       label: "Dash",
@@ -62,20 +58,23 @@ describe("dashboardExport", () => {
     importAccount.dashboards.edit.mockResolvedValue(undefined);
 
     const { dashboardExport } = await import("./dashboards-export.js");
+    const { removeAllWidgets, insertWidgets } = await import("./widgets-export.js");
     const holder = makeHolder();
-    const result = await dashboardExport(
-      account as never,
-      importAccount as never,
-      holder,
-      { from: "a", to: "b", entity: [], setup: "" },
-    );
+    const result = await dashboardExport(account as never, importAccount as never, holder, {
+      from: "a",
+      to: "b",
+      entity: [],
+      setup: "",
+      ignoreCustomWidgets: true,
+    });
     expect(result).toBe(holder);
+    // removeAllWidgets receives the flag and its returned kept array is threaded into insertWidgets.
+    expect(removeAllWidgets).toHaveBeenCalledWith(expect.anything(), expect.anything(), true);
+    expect(insertWidgets).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(), true, []);
   });
 
   test("creates a new dashboard when the import list has no match", async () => {
-    account.dashboards.list.mockResolvedValue([
-      { id: "dash-1", label: "Dash", tags: [{ key: "export_id", value: "only-in-source" }] },
-    ]);
+    account.dashboards.list.mockResolvedValue([{ id: "dash-1", label: "Dash", tags: [{ key: "export_id", value: "only-in-source" }] }]);
     importAccount.dashboards.list.mockResolvedValue([]);
     account.dashboards.info.mockResolvedValue({
       id: "dash-1",
@@ -97,12 +96,7 @@ describe("dashboardExport", () => {
     vi.useFakeTimers();
     const { dashboardExport } = await import("./dashboards-export.js");
     const holder = makeHolder();
-    const promise = dashboardExport(
-      account as never,
-      importAccount as never,
-      holder,
-      { from: "a", to: "b", entity: [], setup: "" },
-    );
+    const promise = dashboardExport(account as never, importAccount as never, holder, { from: "a", to: "b", entity: [], setup: "" });
     await vi.runAllTimersAsync();
     const result = await promise;
     vi.useRealTimers();
@@ -112,9 +106,7 @@ describe("dashboardExport", () => {
   });
 
   test("skips dashboards without the export tag", async () => {
-    account.dashboards.list.mockResolvedValue([
-      { id: "dash-1", label: "Dash", tags: [{ key: "other", value: "x" }] },
-    ]);
+    account.dashboards.list.mockResolvedValue([{ id: "dash-1", label: "Dash", tags: [{ key: "other", value: "x" }] }]);
     importAccount.dashboards.list.mockResolvedValue([]);
     account.dashboards.info.mockResolvedValue({
       id: "dash-1",
@@ -126,12 +118,7 @@ describe("dashboardExport", () => {
 
     const { dashboardExport } = await import("./dashboards-export.js");
     const holder = makeHolder();
-    await dashboardExport(
-      account as never,
-      importAccount as never,
-      holder,
-      { from: "a", to: "b", entity: [], setup: "" },
-    );
+    await dashboardExport(account as never, importAccount as never, holder, { from: "a", to: "b", entity: [], setup: "" });
     expect(importAccount.dashboards.create).not.toHaveBeenCalled();
     expect(holder.dashboards).toEqual({});
   });
@@ -164,12 +151,7 @@ describe("dashboardExport", () => {
     vi.useFakeTimers();
     const { dashboardExport } = await import("./dashboards-export.js");
     const holder = makeHolder();
-    const promise = dashboardExport(
-      account as never,
-      importAccount as never,
-      holder,
-      { from: "a", to: "b", entity: [], setup: "", pick: true },
-    );
+    const promise = dashboardExport(account as never, importAccount as never, holder, { from: "a", to: "b", entity: [], setup: "", pick: true });
     await vi.runAllTimersAsync();
     await promise;
     vi.useRealTimers();

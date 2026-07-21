@@ -253,6 +253,178 @@ set as external or tago
 Example:
      $ tagoio analysis\\-duplicate 62151835435d540010b768c4 \\-\\-name "Duplicated Analysis"
 .fi
+.SS device\\-create [name]
+create a new device.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-type\\fR \\fI<type>\\fR
+storage type: mutable or immutable (default: mutable)
+.TP
+\\fB\\-\\-network\\fR \\fI<id>\\fR
+network ID
+.TP
+\\fB\\-\\-connector\\fR \\fI<id>\\fR
+connector ID
+.TP
+\\fB\\-\\-serie\\fR \\fI<serial>\\fR
+serial number (EUI / MQTT client id / IMEI)
+.TP
+\\fB\\-\\-description\\fR \\fI<text>\\fR
+device description
+.TP
+\\fB\\-\\-chunk\\-period\\fR \\fI<period>\\fR
+day|week|month|quarter (required for immutable)
+.TP
+\\fB\\-\\-chunk\\-retention\\fR \\fI<number>\\fR
+chunks to retain; max by period: day 31, week 26, month/quarter 36 (required for immutable)
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-inactive\\fR
+create the device inactive (default: active)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt for missing input
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio device\\-create "Sensor A" \\-\\-network 62336c32ab6e0d0012e06c04 \\-\\-connector 62333bd36977fc001a2990c8
+    $ tagoio device\\-create "Logger" \\-\\-type immutable \\-\\-network <id> \\-\\-connector <id> \\-\\-chunk\\-period month \\-\\-chunk\\-retention 3
+.fi
+.SS device\\-delete [ID/Token]
+permanently delete a device and all its data.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the device ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio device\\-delete 62151835435d540010b768c4
+    $ tagoio device\\-delete 62151835435d540010b768c4 \\-y
+.fi
+.SS device\\-edit [ID/Token]
+edit a device's name, tags, status, network/connector, or retention.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI<name>\\fR
+new device name
+.TP
+\\fB\\-\\-description\\fR \\fI<text>\\fR
+new device description
+.TP
+\\fB\\-\\-active\\fR
+set the device active
+.TP
+\\fB\\-\\-inactive\\fR
+set the device inactive
+.TP
+\\fB\\-\\-network\\fR \\fI<id>\\fR
+network ID
+.TP
+\\fB\\-\\-connector\\fR \\fI<id>\\fR
+connector ID
+.TP
+\\fB\\-\\-chunk\\-retention\\fR \\fI<number>\\fR
+chunks to retain; max by period: day 31, week 26, month/quarter 36
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the device ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio device\\-edit 62151835435d540010b768c4 \\-\\-name "New Name"
+    $ tagoio device\\-edit 62151835435d540010b768c4 \\-k type \\-v sensor \\-\\-merge\\-tags
+.fi
+.SS device\\-token [ID/Token]
+manage device tokens: create, delete, or list.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-create\\fR \\fI<name>\\fR
+create a token with this name (expires never)
+.TP
+\\fB\\-\\-permission\\fR \\fI<permission>\\fR
+token permission: full, write, or read (default: full)
+.TP
+\\fB\\-\\-delete\\fR \\fI<token>\\fR
+delete a token by its value
+.TP
+\\fB\\-\\-list\\fR
+list tokens (default when no other op is given)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the device ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio device\\-token 62151835435d540010b768c4 \\-\\-create "CI Token" \\-\\-permission write
+    $ tagoio device\\-token 62151835435d540010b768c4 \\-\\-list
+.fi
+.SS device\\-param [ID/Token]
+manage device configuration parameters: set, delete, or list.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-set\\fR \\fI<key=value>\\fR
+set/update a param (repeatable) (default: [])
+.TP
+\\fB\\-\\-sent\\fR
+mark \\-\\-set params as sent (default: false)
+.TP
+\\fB\\-\\-delete\\fR \\fI<paramID>\\fR
+delete a param by its id
+.TP
+\\fB\\-\\-list\\fR
+list params (default when no other op is given)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the device ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio device\\-param 62151835435d540010b768c4 \\-\\-set dashboard_url=https://admin.tago.io \\-\\-sent
+    $ tagoio device\\-param 62151835435d540010b768c4 \\-\\-list
+.fi
 .SS device\\-inspector [ID/Token]
 connect to your Device Live Inspector
 .TP
@@ -348,6 +520,15 @@ send data to the device
 .TP
 \\fB\\-v\\fR, \\fB\\-\\-var\\fR \\fI<variable>\\fR
 Filter by variable (default: [])
+.TP
+\\fB\\-\\-delete\\fR
+delete data matching the filters (mutable devices only); requires a filter, confirms unless \\-y
+.TP
+\\fB\\-\\-empty\\fR
+delete ALL data on the device (mutable only); confirms unless \\-y
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the \\-\\-delete/\\-\\-empty confirmation
 .PP
 .nf
 Example:
@@ -356,6 +537,8 @@ Example:
      $ tagoio data 62151835435d540010b768c4 \\-\\-post '{ "variable": "temperature", "value": 32 }'
      $ tagoio data 62151835435d540010b768c4
      $ tagoio data 62151835435d540010b768c4 \\-v temperature \\-qty 1
+     $ tagoio data 62151835435d540010b768c4 \\-\\-delete \\-v temperature
+     $ tagoio data 62151835435d540010b768c4 \\-\\-empty \\-y
 .fi
 .SS device\\-backup [ID/Token]
 backup data from a Device. Store it on TagoIO Cloud by default
@@ -913,6 +1096,7 @@ copy device data with specified variable names (omit names to copy all)
     Entities Export:
     \\- dashboards: Export the dashboard label, blueprint devices, tabs, tags and widgets of the dashboard.
       Note: To export the dashboards while preserving the relationship between Devices/Analysis, ensure they have the export_id tag or any other tag you choose.
+      Note: When exporting dashboards you are asked whether to skip custom (iframe) widgets, which carry source\\-only data (Files URL, parameters and others) and are best reconfigured manually on the target.
     \\- devices: Export the devices configuration. Use \\-\\-data to also copy device data: \\-\\-data copies all variables, \\-\\-data var1 var2 copies only specified variables.
                If you are using device\\-tokens in Environment Variables or tags, you want to include the device in the export command.
     \\- analysis: Export the analysis name, code, tags, mode and timeout settings.

@@ -33,14 +33,11 @@ async function readGzippedScript(filePath: string): Promise<string> {
 }
 
 /** Determines the script language based on the analysis runtime. */
-function getScriptLanguage(runtime?: string): "node" | "python" {
-  if (!runtime) {
-    return "node";
+function getScriptLanguage(runtime?: string): "node-legacy" | "python-legacy" {
+  if (runtime?.toLowerCase().includes("python")) {
+    return "python-legacy";
   }
-  if (runtime.toLowerCase().includes("python")) {
-    return "python";
-  }
-  return "node";
+  return "node-legacy";
 }
 
 /** Uploads script for an analysis if available. */
@@ -59,7 +56,7 @@ async function uploadAnalysisScript(
 
   const scriptContent = await readGzippedScript(scriptPath);
   const language = getScriptLanguage(runtime);
-  const fileName = language === "python" ? "script.py" : "script.js";
+  const fileName = language === "python-legacy" ? "script.py" : "script.js";
   const base64Content = Buffer.from(scriptContent).toString("base64");
 
   await resources.analysis.uploadScript(analysisId, {
