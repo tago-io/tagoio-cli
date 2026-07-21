@@ -68,16 +68,60 @@ describe("analysisExport", () => {
     expect(result.analysis["a1"]).toBe("new-a");
   });
 
+  test("preserves the source runtime when uploading the script", async () => {
+    account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [] }]);
+    importAccount.analysis.list.mockResolvedValue([]);
+    account.analysis.info.mockResolvedValue({
+      id: "a1",
+      name: "A1",
+      tags: [{ key: "export_id", value: "v1" }],
+      runtime: "deno-rt2025",
+      variables: [],
+    });
+    importAccount.analysis.create.mockResolvedValue({ id: "new-a" });
+    account.analysis.downloadScript.mockResolvedValue({ url: "http://script.url" });
+    importAccount.analysis.uploadScript.mockResolvedValue(undefined);
+    const zlib = await import("node:zlib");
+    fetchMock.mockResolvedValue(makeFetchArrayBufferResponse(zlib.gzipSync(Buffer.from("code"))));
+
+    const { analysisExport } = await import("./analysis-export.js");
+    await analysisExport(account as never, importAccount as never, makeHolder());
+
+    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith("new-a", expect.objectContaining({ language: "deno-rt2025" }));
+  });
+
+  test("defaults to node-legacy runtime when the source has none", async () => {
+    account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [] }]);
+    importAccount.analysis.list.mockResolvedValue([]);
+    account.analysis.info.mockResolvedValue({
+      id: "a1",
+      name: "A1",
+      tags: [{ key: "export_id", value: "v1" }],
+      variables: [],
+    });
+    importAccount.analysis.create.mockResolvedValue({ id: "new-a" });
+    account.analysis.downloadScript.mockResolvedValue({ url: "http://script.url" });
+    importAccount.analysis.uploadScript.mockResolvedValue(undefined);
+    const zlib = await import("node:zlib");
+    fetchMock.mockResolvedValue(makeFetchArrayBufferResponse(zlib.gzipSync(Buffer.from("code"))));
+
+    const { analysisExport } = await import("./analysis-export.js");
+    await analysisExport(account as never, importAccount as never, makeHolder());
+
+    // create gets the same defaulted runtime as uploadScript (parity), not a runtime-less object.
+    expect(importAccount.analysis.create).toHaveBeenCalledWith(expect.objectContaining({ runtime: "node-legacy" }));
+    expect(importAccount.analysis.uploadScript).toHaveBeenCalledWith("new-a", expect.objectContaining({ language: "node-legacy" }));
+  });
+
   test("edits an existing analysis when target is found", async () => {
     account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [] }]);
-    importAccount.analysis.list.mockResolvedValue([
-      { id: "tgt-a", tags: [{ key: "export_id", value: "v1" }], variables: [] },
-    ]);
+    importAccount.analysis.list.mockResolvedValue([{ id: "tgt-a", tags: [{ key: "export_id", value: "v1" }], variables: [] }]);
     account.analysis.info.mockResolvedValue({
       id: "a1",
       name: "A1",
       tags: [{ key: "export_id", value: "v1" }],
       active: true,
+      runtime: "deno-rt2025",
       variables: [],
     });
     importAccount.analysis.edit.mockResolvedValue(undefined);
@@ -89,14 +133,12 @@ describe("analysisExport", () => {
     const { analysisExport } = await import("./analysis-export.js");
     const holder = makeHolder();
     const result = await analysisExport(account as never, importAccount as never, holder);
-    expect(importAccount.analysis.edit).toHaveBeenCalled();
+    expect(importAccount.analysis.edit).toHaveBeenCalledWith("tgt-a", expect.objectContaining({ runtime: "deno-rt2025" }));
     expect(result.analysis["a1"]).toBe("tgt-a");
   });
 
   test("prompts the user to resolve duplicate env variable values", async () => {
-    account.analysis.list.mockResolvedValue([
-      { id: "a1", name: "A1", variables: [{ key: "API_URL", value: "src.example" }] },
-    ]);
+    account.analysis.list.mockResolvedValue([{ id: "a1", name: "A1", variables: [{ key: "API_URL", value: "src.example" }] }]);
     importAccount.analysis.list.mockResolvedValue([
       {
         id: "tgt-a",

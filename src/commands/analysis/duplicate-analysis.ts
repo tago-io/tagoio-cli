@@ -40,7 +40,7 @@ async function createNewAnalysis(account: Account, newAnalysisName: string, scri
 
   await account.analysis.uploadScript(new_analysis_id, {
     content: scriptBase64,
-    language: analysis.runtime || "node",
+    language: analysis.runtime || "node-legacy",
     name: "script.js",
   });
 

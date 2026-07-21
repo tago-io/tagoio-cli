@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Resources } from "@tago-io/sdk";
 import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
@@ -20,8 +20,8 @@ type environmentConfigResponse = NonNullable<ReturnType<typeof getEnvironmentCon
 const coloredBucketType = (type: string) => (type === "mutable" ? kleur.green(type) : type === "legacy" ? kleur.red(type) : kleur.blue(type));
 
 async function convertDevice(deviceID: string, settings: BucketSettings, config: environmentConfigResponse) {
-  const account = new Account({ token: config.profileToken, region: config?.profileRegion });
-  const deviceInfo = await account.devices.info(deviceID).catch(errorHandler);
+  const resources = new Resources({ token: config.profileToken, region: config?.profileRegion });
+  const deviceInfo = await resources.devices.info(deviceID).catch(errorHandler);
   if (!deviceInfo) {
     return;
   }
@@ -31,12 +31,12 @@ async function convertDevice(deviceID: string, settings: BucketSettings, config:
     return false;
   }
 
-  await account.devices.emptyDeviceData(deviceID);
-  await account.devices.edit(deviceID, { active: false });
+  await resources.devices.emptyDeviceData(deviceID);
+  await resources.devices.edit(deviceID, { active: false });
 
   const reactiveDevice = async () => {
     if (deviceInfo.active !== false) {
-      return account.devices.edit(deviceID, { active: true });
+      return resources.devices.edit(deviceID, { active: true });
     }
   };
 
@@ -84,8 +84,8 @@ async function startBucketChange(config: environmentConfigResponse, deviceID: st
   successMSG(`Device bucket type changed. device=${kleur.blue(deviceID)} type=${coloredBucketType(settings.type)}${extras ? ` ${extras}` : ""}`);
 }
 
-async function chooseBucketsFromList(account: Account) {
-  const bucketList = await account.devices.list({ fields: ["id", "name", "bucket", "type"] }).catch(errorHandler);
+async function chooseBucketsFromList(resources: Resources) {
+  const bucketList = await resources.devices.list({ fields: ["id", "name", "bucket", "type"] }).catch(errorHandler);
   if (!bucketList || bucketList.length === 0) {
     errorHandler("No buckets found");
   }
@@ -105,10 +105,10 @@ async function changeBucketType(id: string, options: { environment: string }) {
   if (!config || !config.profileToken) {
     errorHandler("Environment not found");
   }
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  const bucketList = id ? [id] : await chooseBucketsFromList(account);
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const bucketList = id ? [id] : await chooseBucketsFromList(resources);
   if (id) {
-    const bucketInfo = await account.buckets.info(id).catch((error: unknown) => {
+    const bucketInfo = await resources.buckets.info(id).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       errorHandler(`Device with ID ${id} not found: ${message}`);
     });

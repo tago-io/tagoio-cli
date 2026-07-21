@@ -9,6 +9,8 @@ import kleur from "kleur";
 import { analysisCommands } from "./commands/analysis/index.js";
 import { dashboardCommands } from "./commands/dashboard/index.js";
 import { deviceCommands } from "./commands/devices/index.js";
+import { entityCommands } from "./commands/entities/index.js";
+import { filesCommands } from "./commands/files/index.js";
 import { listEnvironment } from "./commands/list-env.js";
 import { tagoLogin } from "./commands/login.js";
 import { profileCommands } from "./commands/profile/index.js";
@@ -158,6 +160,8 @@ Example:
   analysisCommands(program);
   deviceCommands(program);
   dashboardCommands(program);
+  entityCommands(program);
+  filesCommands(program);
   profileCommands(program, defaultEnv);
 
   return program;

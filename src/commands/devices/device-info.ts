@@ -1,4 +1,4 @@
-import { Account, Device, DeviceInfo } from "@tago-io/sdk";
+import { Device, DeviceInfo, Resources } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, infoMSG } from "../../lib/messages.js";
@@ -11,11 +11,11 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
     errorHandler("Environment not found");
   }
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
-    idOrToken = await pickDeviceIDFromTagoIO(account);
+    idOrToken = await pickDeviceIDFromTagoIO(resources);
   }
-  let deviceInfo = await account.devices.info(idOrToken).catch(() => null);
+  let deviceInfo = await resources.devices.info(idOrToken).catch(() => null);
   if (!deviceInfo) {
     const device = new Device({ token: idOrToken });
     deviceInfo = await device
@@ -31,10 +31,10 @@ async function deviceInfo(idOrToken: string, options: { environment: string; raw
   }
 
   infoMSG(`Device Found: ${deviceInfo.name} [${deviceInfo.id}].`);
-  const paramList = await account.devices.paramList(idOrToken);
+  const paramList = await resources.devices.paramList(idOrToken);
 
   if (options.tokens) {
-    const tokenList = await account.devices.tokenList(idOrToken, { fields: ["name", "token", "last_authorization", "serie_number"] });
+    const tokenList = await resources.devices.tokenList(idOrToken, { fields: ["name", "token", "last_authorization", "serie_number"] });
     //@ts-expect-error ignore error
     deviceInfo.tokens = tokenList;
   }

@@ -95,6 +95,27 @@ function getProfileRegion(userEnvironment: IEnvironment) {
   return region;
 }
 
+const DEFAULT_API_URL = "https://api.tago.io";
+
+/**
+ * Resolves the API base URL for a profile region. A custom region (Europe,
+ * TagoDeploy, self-hosted) carries its own `api` URL; the default `us-e1`
+ * string maps to the public TagoIO API. The trailing slash is trimmed so
+ * callers can safely append `/file/...`.
+ */
+function getApiURL(region: GenericModuleParams["region"]) {
+  if (region === "us-e1" || region === "eu-w1") {
+    return `https://api.${region}.tago.io`;
+  }
+
+  if (typeof region === "object" && region.api) {
+    const apiURL = region.api;
+    return apiURL.replace(/\/+$/, "");
+  }
+
+  return DEFAULT_API_URL;
+}
+
 function getEnvironmentConfig(environment?: string) {
   const scope = resolveScope();
   const configFile = getConfigFile();
@@ -177,4 +198,5 @@ function setDefault(environment: string) {
   writeFileSync(configPath, JSON.stringify(configFile), { encoding: "utf-8" });
 }
 
-export { getConfigFile, readConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile, setDefault, resolveCLIPath, getProfileRegion, IConfigFile, IEnvironment };
+export { getConfigFile, readConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile };
+export { setDefault, resolveCLIPath, getProfileRegion, getApiURL, type IConfigFile, type IEnvironment };

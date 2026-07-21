@@ -1,12 +1,35 @@
-import { beforeEach, describe, expect, it, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
 
 const getEnvironmentConfigMock = vi.fn();
 const errorHandlerMock = vi.fn((str: unknown) => {
   throw new Error(String(str));
 });
-const spawnMock = vi.fn(() => ({
-  on: vi.fn(),
-}));
+// Spawn mock auto-fires the registered `once("close")` handler on the next
+// microtask, so runAnalysis's `await new Promise(close => …)` resolves and the
+// respawn loop terminates instead of hanging the test. Set `autoCloseSpawned`
+// to `false` when a test wants to drive close timing manually (e.g. to call
+// onRestart before the child resolves and assert a second spawn).
+let autoCloseSpawned = true;
+const spawnedChildren: { kill: ReturnType<typeof vi.fn>; close: () => void }[] = [];
+const spawnMock = vi.fn((_cmd: string, _opts: object) => {
+  let closeFn: ((code: number) => void) | undefined;
+  const child = {
+    on: vi.fn(),
+    once: vi.fn((event: string, fn: (code: number) => void) => {
+      if (event === "close") {
+        closeFn = fn;
+        if (autoCloseSpawned) {
+          queueMicrotask(() => fn(0));
+        }
+      }
+    }),
+    kill: vi.fn(),
+    close: () => closeFn?.(0),
+  };
+  spawnedChildren.push(child);
+  return child;
+});
+const installWatchShortcutsMock = vi.fn((_handlers: unknown, _options: unknown) => () => {});
 const pickAnalysisFromConfigMock = vi.fn();
 const detectRuntimeMock = vi.fn(() => "--node");
 const accountAnalysisInfoMock = vi.fn();
@@ -24,7 +47,7 @@ vi.mock("@tago-io/sdk", () => ({
 }));
 
 vi.mock("node:child_process", () => ({
-  spawn: (...args: unknown[]) => spawnMock(...(args as [])),
+  spawn: (...args: unknown[]) => spawnMock(...(args as [string, object])),
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -49,6 +72,7 @@ vi.mock("../../lib/resolve-scope.js", () => ({
 vi.mock("../../lib/messages.js", () => ({
   errorHandler: errorHandlerMock,
   successMSG: vi.fn(),
+  infoMSG: vi.fn(),
   highlightMSG: (s: string) => s,
 }));
 
@@ -58,6 +82,10 @@ vi.mock("../../lib/search-name.js", () => ({
 
 vi.mock("../../prompt/pick-analysis-from-config.js", () => ({
   pickAnalysisFromConfig: (...args: unknown[]) => pickAnalysisFromConfigMock(...args),
+}));
+
+vi.mock("../../lib/watch-shortcuts.js", () => ({
+  installWatchShortcuts: (...args: unknown[]) => installWatchShortcutsMock(...(args as [unknown, unknown])),
 }));
 
 describe("buildCMD", () => {
@@ -139,9 +167,20 @@ describe("buildCMD", () => {
 });
 
 describe("runAnalysis", () => {
+  let originalIsTTY: boolean | undefined;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    spawnedChildren.length = 0;
+    autoCloseSpawned = true;
+    installWatchShortcutsMock.mockImplementation((_h, _o) => () => {});
     accountAnalysisEditMock.mockResolvedValue(undefined);
+    originalIsTTY = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: false });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: originalIsTTY });
   });
 
   test("errors out when the environment is missing", async () => {
@@ -292,5 +331,170 @@ describe("runAnalysis", () => {
       node: false,
     });
     expect(pickAnalysisFromConfigMock).toHaveBeenCalled();
+  });
+
+  test("pressing onRestart kills the current child and respawns with the same command", async () => {
+    Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: true });
+    autoCloseSpawned = false;
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/tmp",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    let capturedHandlers: { onRestart: () => void; onQuit: () => void } | undefined;
+    installWatchShortcutsMock.mockImplementation((handlers: unknown) => {
+      capturedHandlers = handlers as { onRestart: () => void; onQuit: () => void };
+      return () => {};
+    });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    const promise = runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+      interactive: true,
+    } as never);
+
+    // Yield to let runAnalysis register the close handler on child #1.
+    await new Promise((r) => setImmediate(r));
+    expect(spawnedChildren).toHaveLength(1);
+
+    capturedHandlers?.onRestart();
+    spawnedChildren[0].close();
+
+    // Yield to let the loop spawn child #2.
+    await new Promise((r) => setImmediate(r));
+    expect(spawnedChildren).toHaveLength(2);
+    expect(spawnedChildren[0].kill).toHaveBeenCalledWith("SIGTERM");
+
+    // Quit to terminate the loop.
+    capturedHandlers?.onQuit();
+    spawnedChildren[1].close();
+    await promise;
+
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(spawnMock.mock.calls[0][0]).toEqual(spawnMock.mock.calls[1][0]);
+  });
+
+  test("pressing onQuit exits the loop and flips run_on back to tago exactly once", async () => {
+    Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: true });
+    autoCloseSpawned = false;
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/tmp",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    let capturedHandlers: { onQuit: () => void } | undefined;
+    installWatchShortcutsMock.mockImplementation((handlers: unknown) => {
+      capturedHandlers = handlers as { onQuit: () => void };
+      return () => {};
+    });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    const promise = runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+      interactive: true,
+    } as never);
+
+    await new Promise((r) => setImmediate(r));
+    capturedHandlers?.onQuit();
+    spawnedChildren[0].close();
+    await promise;
+
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(spawnedChildren[0].kill).toHaveBeenCalledWith("SIGTERM");
+    expect(accountAnalysisEditMock).toHaveBeenCalledWith("a1", { run_on: "tago" });
+    const tagoFlips = accountAnalysisEditMock.mock.calls.filter((c) => c[1]?.run_on === "tago");
+    expect(tagoFlips).toHaveLength(1);
+  });
+
+  test("--no-interactive disables shortcuts (installWatchShortcuts called with enabled: false)", async () => {
+    Object.defineProperty(process.stdin, "isTTY", { configurable: true, value: true });
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/tmp",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    await runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+      interactive: false,
+    } as never);
+
+    expect(installWatchShortcutsMock).toHaveBeenCalledTimes(1);
+    const opts = installWatchShortcutsMock.mock.calls[0][1] as { enabled: boolean };
+    expect(opts.enabled).toBe(false);
+  });
+
+  test("quotes the script path so a path containing spaces stays a single shell argument", async () => {
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/Users/maria/My Project",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    await runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+    });
+
+    const command = spawnMock.mock.calls[0][0];
+    // The whole path, spaces included, must sit inside one pair of quotes —
+    // otherwise the shell would split "/Users/maria/My Project/a.js" into two
+    // arguments and the runtime would fail to find the file.
+    expect(command).toContain('"/Users/maria/My Project/a.js"');
+  });
+
+  test("non-TTY stdin disables shortcuts even when --no-interactive is absent", async () => {
+    // beforeEach already sets isTTY = false; this is the explicit case.
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.js" }],
+      analysisPath: "/tmp",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "external", name: "A", runtime: "node" });
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    await runAnalysis("A", {
+      environment: "prod",
+      debug: false,
+      clear: false,
+      tsnd: false,
+      deno: false,
+      node: true,
+    });
+
+    const opts = installWatchShortcutsMock.mock.calls[0][1] as { enabled: boolean };
+    expect(opts.enabled).toBe(false);
   });
 });
