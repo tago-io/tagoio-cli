@@ -151,15 +151,10 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
-    prompts.inject([
-      ["devices", "analysis", "dashboards", "access", "run", "actions", "dictionaries"],
-      "my-tag",
-    ]);
+    prompts.inject([["devices", "analysis", "dashboards", "access", "run", "actions", "dictionaries"], "my-tag"]);
 
     const { startExport } = await import("./export.js");
     await startExport({
@@ -190,9 +185,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     runInfoMock.mockReset();
@@ -207,7 +200,7 @@ describe("startExport end-to-end", () => {
         to: "dev",
         entity: [],
         setup: "",
-      })
+      }),
     ).rejects.toThrow(/RUN/);
   });
 
@@ -224,7 +217,7 @@ describe("startExport end-to-end", () => {
         to: "dev",
         entity: [],
         setup: "",
-      })
+      }),
     ).rejects.toThrow(/same profile/);
   });
 
@@ -232,9 +225,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     const { confirmPrompt } = await import("../../../prompt/confirm.js");
@@ -249,7 +240,7 @@ describe("startExport end-to-end", () => {
         to: "dev",
         entity: [],
         setup: "",
-      })
+      }),
     ).rejects.toThrow(/Cancelled/);
   });
 
@@ -265,7 +256,7 @@ describe("startExport end-to-end", () => {
         to: "dev",
         entity: [],
         setup: "",
-      })
+      }),
     ).rejects.toThrow(/Export profile/);
   });
 
@@ -273,9 +264,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     prompts.inject([["analysis"], "my-tag"]);
@@ -296,9 +285,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     prompts.inject([["dashboards"], "my-tag"]);
@@ -320,9 +307,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     prompts.inject([["access"], "my-tag"]);
@@ -343,9 +328,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     prompts.inject([["actions"], "my-tag"]);
@@ -366,9 +349,7 @@ describe("startExport end-to-end", () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     prompts.inject([["run"], "my-tag"]);
@@ -385,19 +366,47 @@ describe("startExport end-to-end", () => {
     expect(runButtonsExport).toHaveBeenCalled();
   });
 
+  test("prompts to skip custom widgets when dashboards are selected", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["dashboards"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({ from: "prod", to: "dev", entity: [], setup: "" });
+
+    const { confirmPrompt } = await import("../../../prompt/confirm.js");
+    expect(confirmPrompt).toHaveBeenCalledWith("Skip custom (iframe) widgets when exporting dashboards?");
+  });
+
+  test("does not prompt to skip custom widgets when dashboards are not selected", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["devices"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({ from: "prod", to: "dev", entity: [], setup: "" });
+
+    const { confirmPrompt } = await import("../../../prompt/confirm.js");
+    expect(confirmPrompt).not.toHaveBeenCalledWith("Skip custom (iframe) widgets when exporting dashboards?");
+  });
+
   test("resolves tokens via pickEnvironment when from/to are not provided", async () => {
     let call = 0;
     profilesInfoMock.mockImplementation(async () => {
       call += 1;
-      return call === 1
-        ? { info: { name: "Export", id: "p-export" } }
-        : { info: { name: "Import", id: "p-import" } };
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
     });
 
     const { pickEnvironment } = await import("../../../prompt/pick-environment.js");
-    (pickEnvironment as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce("prod")
-      .mockResolvedValueOnce("dev");
+    (pickEnvironment as ReturnType<typeof vi.fn>).mockResolvedValueOnce("prod").mockResolvedValueOnce("dev");
 
     prompts.inject([["devices"], "tag"]);
 

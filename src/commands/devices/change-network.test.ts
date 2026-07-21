@@ -14,7 +14,7 @@ const promptTextToEnterMock = vi.fn();
 let accountInstance: ReturnType<typeof makeAccount>;
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
+  Resources: function Resources() {
     return accountInstance;
   },
 }));
@@ -135,6 +135,8 @@ describe("changeNetworkOrConnector", () => {
     accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
     accountInstance.devices.tokenList.mockResolvedValue([]);
     accountInstance.devices.edit.mockResolvedValue(undefined);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
     promptTextToEnterMock.mockResolvedValueOnce("new-net").mockResolvedValueOnce("new-conn");
 
     const { changeNetworkOrConnector } = await import("./change-network.js");
@@ -159,6 +161,8 @@ describe("changeNetworkOrConnector", () => {
     accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
     accountInstance.devices.tokenList.mockResolvedValue([]);
     accountInstance.devices.edit.mockResolvedValue(undefined);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-n" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "old-c" });
 
     const { changeNetworkOrConnector } = await import("./change-network.js");
     // Only network provided → connector falls back to deviceInfo.connector
@@ -177,6 +181,8 @@ describe("changeNetworkOrConnector", () => {
     accountInstance.devices.tokenDelete.mockResolvedValue(undefined);
     accountInstance.devices.edit.mockResolvedValue(undefined);
     accountInstance.devices.tokenCreate.mockResolvedValue(undefined);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
 
     const { changeNetworkOrConnector } = await import("./change-network.js");
     await changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "new-conn" });
@@ -192,5 +198,103 @@ describe("changeNetworkOrConnector", () => {
       "dev-id",
       expect.objectContaining({ serie_number: undefined, name: "T2", permission: "full" }),
     );
+  });
+
+  test("validates network/connector BEFORE deleting tokens — invalid connector deletes nothing", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([{ token: "t1", name: "T1", serie_number: "SN-1" }]);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockRejectedValue(new Error("Connector can't be found"));
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    await expect(
+      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "bad-conn" }),
+    ).rejects.toThrow(/connector/i);
+
+    expect(accountInstance.devices.tokenDelete).not.toHaveBeenCalled();
+    expect(accountInstance.devices.edit).not.toHaveBeenCalled();
+  });
+
+  test("recreates tokens before surfacing a failed edit (no process.exit before recreate)", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([{ token: "t1", name: "T1", serie_number: "SN-1" }]);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
+    accountInstance.devices.tokenDelete.mockResolvedValue(undefined);
+    accountInstance.devices.edit.mockRejectedValue(new Error("transient API error"));
+    accountInstance.devices.tokenCreate.mockResolvedValue(undefined);
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    await expect(
+      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "new-conn" }),
+    ).rejects.toThrow(/Failed to change network\/connector/);
+
+    // The edit failed, but the deleted token MUST be recreated first so the
+    // device is never left tokenless. The edit error is captured (not exited on)
+    // precisely so this recreate runs before the error is surfaced.
+    expect(accountInstance.devices.tokenCreate).toHaveBeenCalledWith(
+      "dev-id",
+      expect.objectContaining({ name: "T1", serie_number: "SN-1", permission: "full" }),
+    );
+  });
+
+  test("warns with the lost tokens when recreate fails", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([{ token: "t1", name: "MyToken", serie_number: "SN-9" }]);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
+    accountInstance.devices.tokenDelete.mockResolvedValue(undefined);
+    accountInstance.devices.edit.mockResolvedValue(undefined);
+    accountInstance.devices.tokenCreate.mockRejectedValue(new Error("rate limited"));
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    await expect(
+      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "new-conn" }),
+    ).rejects.toThrow(/MyToken/);
+  });
+
+  test("recreate failure on the second token does not report the first (already recreated) as lost", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([
+      { token: "t1", name: "FirstToken", serie_number: "SN-1" },
+      { token: "t2", name: "SecondToken", serie_number: "SN-2" },
+    ]);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
+    accountInstance.devices.tokenDelete.mockResolvedValue(undefined);
+    accountInstance.devices.edit.mockResolvedValue(undefined);
+    // First recreate succeeds, second fails.
+    accountInstance.devices.tokenCreate.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("rate limited"));
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    const promise = changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "new-conn" });
+
+    // Only the token that actually failed must be reported as lost.
+    await expect(promise).rejects.toThrow(/SecondToken/);
+    await expect(promise).rejects.not.toThrow(/FirstToken/);
+    // Both recreate attempts ran (the loop is not short-circuited on the first failure).
+    expect(accountInstance.devices.tokenCreate).toHaveBeenCalledTimes(2);
+  });
+
+  test("propagates the original edit error when recreate succeeds (no masking)", async () => {
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    accountInstance.devices.info.mockResolvedValue({ name: "Dev", network: "old-n", connector: "old-c" });
+    accountInstance.devices.tokenList.mockResolvedValue([{ token: "t1", name: "T1", serie_number: "SN-1" }]);
+    accountInstance.integration.networks.info.mockResolvedValue({ id: "new-net" });
+    accountInstance.integration.connectors.info.mockResolvedValue({ id: "new-conn" });
+    accountInstance.devices.tokenDelete.mockResolvedValue(undefined);
+    accountInstance.devices.edit.mockRejectedValue(new Error("EDIT_BOOM"));
+    accountInstance.devices.tokenCreate.mockResolvedValue(undefined);
+
+    const { changeNetworkOrConnector } = await import("./change-network.js");
+    // The edit error must still surface after the tokens are recreated.
+    await expect(
+      changeNetworkOrConnector("dev-id", { environment: "prod", networkID: "new-net", connectorID: "new-conn" }),
+    ).rejects.toThrow(/EDIT_BOOM/);
+    expect(accountInstance.devices.tokenCreate).toHaveBeenCalledTimes(1);
   });
 });

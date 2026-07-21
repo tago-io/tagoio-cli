@@ -42,7 +42,7 @@
   "author": "TagoIO LLC",
   "license": "ISC",
   "dependencies": {
-    "@tago-io/sdk": "^12.2.2",
+    "@tago-io/sdk": "^12.2.4",
     "async": "^3.2.6",
     "commander": "^14.0.3",
     "dotenv": "^17.4.2",

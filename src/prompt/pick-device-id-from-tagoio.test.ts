@@ -1,3 +1,4 @@
+import { Resources } from "@tago-io/sdk";
 import prompts from "prompts";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -40,5 +41,14 @@ describe("pickDeviceIDFromTagoIO", () => {
     prompts.inject([undefined]);
 
     await expect(pickDeviceIDFromTagoIO(account as never)).rejects.toThrow(/Device not selected/);
+  });
+
+  test("accepts a Resources instance without a cast (type-level)", async () => {
+    const { pickDeviceIDFromTagoIO } = await import("./pick-device-id-from-tagoio.js");
+    // Compile-time guarantee: the new Resources-based device commands reuse this
+    // picker. If the param were still `Account`-only, this assignment would not
+    // type-check. Not executed — the value is never constructed.
+    const _typeCheck: (resources: Resources) => Promise<string> = pickDeviceIDFromTagoIO;
+    expect(typeof _typeCheck).toBe("function");
   });
 });

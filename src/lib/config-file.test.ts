@@ -107,6 +107,33 @@ describe("config-file", () => {
     });
   });
 
+  describe("getApiURL", () => {
+    test("returns the public API URL for the default us-e1 region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL("us-e1")).toBe("https://api.us-e1.tago.io");
+    });
+
+    test("returns the public API URL for the eu-w1 region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL("eu-w1")).toBe("https://api.eu-w1.tago.io");
+    });
+
+    test("returns the region's own API URL for a custom region", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "https://api.eu.tago.io", sse: "https://sse.eu.tago.io" })).toBe("https://api.eu.tago.io");
+    });
+
+    test("trims a trailing slash from the region API URL", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "https://api.eu.tago.io/", sse: "" })).toBe("https://api.eu.tago.io");
+    });
+
+    test("falls back to the public API URL when a custom region has an empty api", async () => {
+      const { getApiURL } = await import("./config-file.js");
+      expect(getApiURL({ api: "", sse: "" })).toBe("https://api.tago.io");
+    });
+  });
+
   describe("getEnvironmentConfig", () => {
     const configFile = {
       default: "prod",
@@ -188,9 +215,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig("missing-env")).toThrow(
-        /Environment 'missing-env' not found in local profile/,
-      );
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(/Environment 'missing-env' not found in local profile/);
     });
 
     test("error message uses 'global profile' when scope is global", async () => {
@@ -202,9 +227,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig("missing-env")).toThrow(
-        /global profile.*\/home\/user\/\.config\/tagoio/,
-      );
+      expect(() => getEnvironmentConfig("missing-env")).toThrow(/global profile.*\/home\/user\/\.config\/tagoio/);
     });
 
     test("error message names the resolved scope when default env is missing from config", async () => {
@@ -216,9 +239,7 @@ describe("config-file", () => {
       });
 
       const { getEnvironmentConfig } = await import("./config-file.js");
-      expect(() => getEnvironmentConfig()).toThrow(
-        /Default Environment 'not-there' not found in local profile/,
-      );
+      expect(() => getEnvironmentConfig()).toThrow(/Default Environment 'not-there' not found in local profile/);
     });
   });
 

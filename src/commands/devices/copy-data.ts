@@ -1,4 +1,4 @@
-import { Account, Device, Utils } from "@tago-io/sdk";
+import { Device, Resources } from "@tago-io/sdk";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, highlightMSG, infoMSG, successMSG } from "../../lib/messages.js";
@@ -6,6 +6,7 @@ import { resolveScope } from "../../lib/resolve-scope.js";
 import { printScopeBanner } from "../../lib/scope-notice.js";
 import { confirmPrompt } from "../../prompt/confirm.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
+import { getDeviceForSending } from "./device-sender.js";
 
 interface IOptions {
   to: string;
@@ -14,15 +15,27 @@ interface IOptions {
   amount: number;
 }
 
-async function startCopy(deviceFrom: Device, deviceTo: Device, options: IOptions) {
+type DeviceRegion = ConstructorParameters<typeof Device>[0]["region"];
+
+/** Resolves a device id from an id (24-char) or a device token. */
+async function resolveDeviceID(idOrToken: string, region: DeviceRegion) {
+  if (idOrToken.length === 24) {
+    return idOrToken;
+  }
+  const info = await new Device({ token: idOrToken, region }).info().catch(errorHandler);
+  return info?.id;
+}
+
+async function startCopy(resources: Resources, deviceTo: Device, fromID: string, options: IOptions) {
   const { amount } = options;
 
-  const dataStream = deviceFrom.getDataStreaming({}, { poolingRecordQty: 2000, poolingTime: 400, neverStop: false });
+  const dataStream = resources.devices.getDeviceDataStreaming(fromID, {}, { poolingRecordQty: 2000, poolingTime: 400, neverStop: false });
 
   let total = 0;
   for await (let data of dataStream) {
     data = data.filter((x) => x.variable !== "payload");
     total += data.length;
+    // Write through the destination device token: profile tokens cannot send data.
     await deviceTo.sendData(data);
     if (total >= amount) {
       break;
@@ -40,42 +53,23 @@ async function copyDeviceData(options: IOptions) {
     errorHandler("Environment not found");
   }
 
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+
   if (!options.from || !options.to) {
-    const account = new Account({ token: config.profileToken, region: config.profileRegion });
-    options.from = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data from:");
-    options.to = await pickDeviceIDFromTagoIO(account, "Choose a device to copy the data to: ");
+    options.from = await pickDeviceIDFromTagoIO(resources, "Choose a device to copy the data from:");
+    options.to = await pickDeviceIDFromTagoIO(resources, "Choose a device to copy the data to: ");
   }
 
-  let deviceFrom: Device | undefined;
-  let deviceTo: Device | undefined;
-  if (options.from?.length === 24 || options.to?.length === 24) {
-    const account = new Account({ token: config.profileToken, region: config.profileRegion });
-
-    if (options.from.length === 24) {
-      deviceFrom = await Utils.getDevice(account, options.from);
-    }
-
-    if (options.to.length === 24) {
-      deviceTo = await Utils.getDevice(account, options.to);
-    }
+  const fromID = await resolveDeviceID(options.from, config.profileRegion);
+  const toID = await resolveDeviceID(options.to, config.profileRegion);
+  if (!fromID || !toID) {
+    return errorHandler("Device not found");
   }
 
-  if (!deviceTo || !deviceFrom) {
-    errorHandler("Device not found");
-  }
-
-  if (!deviceFrom) {
-    deviceFrom = new Device({ token: options.from });
-  }
-
-  if (!deviceTo) {
-    deviceTo = new Device({ token: options.to });
-  }
-
-  const deviceToInfo = await deviceTo.info().catch(errorHandler);
-  const deviceFromInfo = await deviceFrom.info().catch(errorHandler);
+  const deviceFromInfo = await resources.devices.info(fromID).catch(errorHandler);
+  const deviceToInfo = await resources.devices.info(toID).catch(errorHandler);
   if (!deviceToInfo || !deviceFromInfo) {
-    errorHandler("Device not found");
+    return errorHandler("Device not found");
   }
 
   const yesNo = await confirmPrompt(`Copy data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}?`);
@@ -83,8 +77,10 @@ async function copyDeviceData(options: IOptions) {
     return;
   }
 
+  const deviceTo = await getDeviceForSending(resources, toID, config.profileRegion);
+
   infoMSG(`> Copying data from ${highlightMSG(deviceFromInfo.name)} to ${highlightMSG(deviceToInfo.name)}...`);
-  await startCopy(deviceFrom, deviceTo, options);
+  await startCopy(resources, deviceTo, fromID, options);
 }
 
 export { copyDeviceData };

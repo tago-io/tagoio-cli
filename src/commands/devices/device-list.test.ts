@@ -10,7 +10,7 @@ const errorHandlerMock = vi.fn((str: unknown): void => {
 const devicesListMock = vi.fn();
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
+  Resources: function Resources() {
     return {
       devices: { list: (...args: unknown[]) => devicesListMock(...args) },
     };
