@@ -8,26 +8,26 @@ const getEnvironmentConfigMock = vi.fn();
 const errorHandlerMock = vi.fn((str: unknown) => {
   throw new Error(String(str));
 });
-const getDeviceMock = vi.fn();
 const pickDeviceIDFromTagoIOMock = vi.fn();
 const confirmPromptMock = vi.fn();
 
-let accountInstance: ReturnType<typeof makeAccount>;
+let resourcesInstance: ReturnType<typeof makeAccount>;
 
 const deviceInfoMock = vi.fn();
+
 const sendDataMock = vi.fn();
-const getDataStreamingMock = vi.fn();
 
 vi.mock("@tago-io/sdk", () => ({
-  Account: function Account() {
-    return accountInstance;
+  Resources: function Resources() {
+    return resourcesInstance;
   },
   Device: function Device() {
-    return { info: deviceInfoMock, sendData: sendDataMock, getDataStreaming: getDataStreamingMock };
+    return { info: deviceInfoMock };
   },
-  Utils: {
-    getDevice: (...args: unknown[]) => getDeviceMock(...args),
-  },
+}));
+
+vi.mock("./device-sender.js", () => ({
+  getDeviceForSending: vi.fn(async () => ({ sendData: sendDataMock })),
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -63,17 +63,18 @@ vi.mock("../../prompt/confirm.js", () => ({
   confirmPrompt: (...args: unknown[]) => confirmPromptMock(...args),
 }));
 
+const ID_FROM = "a".repeat(24);
+const ID_TO = "b".repeat(24);
+
 describe("copyDeviceData", () => {
   beforeEach(() => {
-    accountInstance = makeAccount();
+    resourcesInstance = makeAccount();
     getEnvironmentConfigMock.mockReset();
     errorHandlerMock.mockClear();
-    getDeviceMock.mockReset();
     pickDeviceIDFromTagoIOMock.mockReset();
     confirmPromptMock.mockReset();
     deviceInfoMock.mockReset();
     sendDataMock.mockReset();
-    getDataStreamingMock.mockReset();
     resetInjectedPrompts();
   });
 
@@ -81,54 +82,51 @@ describe("copyDeviceData", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { copyDeviceData } = await import("./copy-data.js");
-    await expect(
-      copyDeviceData({ from: "a".repeat(24), to: "b".repeat(24), environment: "prod", amount: 10 }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(copyDeviceData({ from: ID_FROM, to: ID_TO, environment: "prod", amount: 10 })).rejects.toThrow(
+      /Environment not found/,
+    );
   });
 
-  test("calls errorHandler when the destination device cannot be resolved", async () => {
+  test("surfaces the error when a device info cannot be resolved", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    getDeviceMock.mockResolvedValue(null);
+    resourcesInstance.devices.info.mockRejectedValue(new Error("404"));
 
     const { copyDeviceData } = await import("./copy-data.js");
-    await expect(
-      copyDeviceData({ from: "a".repeat(24), to: "b".repeat(24), environment: "prod", amount: 10 }),
-    ).rejects.toThrow(/Device not found/);
+    await expect(copyDeviceData({ from: ID_FROM, to: ID_TO, environment: "prod", amount: 10 })).rejects.toThrow(/404/);
   });
 
   test("prompts for device IDs when from/to are not provided", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    pickDeviceIDFromTagoIOMock.mockResolvedValueOnce("from-id-aaaaaaaaaaaaaaaaaaaa"); // 24 chars
-    pickDeviceIDFromTagoIOMock.mockResolvedValueOnce("to-id-aaaaaaaaaaaaaaaaaaaa"); // 26 chars
-    getDeviceMock.mockResolvedValue(null);
+    pickDeviceIDFromTagoIOMock.mockResolvedValueOnce(ID_FROM).mockResolvedValueOnce(ID_TO);
+    resourcesInstance.devices.info.mockResolvedValue({ id: ID_FROM, name: "Dev" });
+    confirmPromptMock.mockResolvedValue(false);
 
     const { copyDeviceData } = await import("./copy-data.js");
-    await expect(
-      copyDeviceData({ from: "", to: "", environment: "prod", amount: 10 }),
-    ).rejects.toThrow(/Device not found/);
+    await copyDeviceData({ from: "", to: "", environment: "prod", amount: 10 });
+
     expect(pickDeviceIDFromTagoIOMock).toHaveBeenCalledTimes(2);
   });
 
   test("returns early when confirmPrompt is false", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
-    const fromDevice = { info: vi.fn().mockResolvedValue({ name: "From" }) };
-    const toDevice = { info: vi.fn().mockResolvedValue({ name: "To" }) };
-    getDeviceMock.mockResolvedValueOnce(fromDevice).mockResolvedValueOnce(toDevice);
+    resourcesInstance.devices.info
+      .mockResolvedValueOnce({ id: ID_FROM, name: "From" })
+      .mockResolvedValueOnce({ id: ID_TO, name: "To" });
     confirmPromptMock.mockResolvedValue(false);
 
     const { copyDeviceData } = await import("./copy-data.js");
-    const result = await copyDeviceData({
-      from: "a".repeat(24),
-      to: "b".repeat(24),
-      environment: "prod",
-      amount: 10,
-    });
+    const result = await copyDeviceData({ from: ID_FROM, to: ID_TO, environment: "prod", amount: 10 });
+
     expect(result).toBeUndefined();
     expect(confirmPromptMock).toHaveBeenCalled();
+    expect(sendDataMock).not.toHaveBeenCalled();
   });
 
-  test("streams and sends data when user confirms", async () => {
+  test("streams from source and sends to destination when user confirms", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig());
+    resourcesInstance.devices.info
+      .mockResolvedValueOnce({ id: ID_FROM, name: "From" })
+      .mockResolvedValueOnce({ id: ID_TO, name: "To" });
     const streamChunks = [
       [
         { variable: "x", value: 1 },
@@ -141,24 +139,15 @@ describe("copyDeviceData", () => {
         yield chunk;
       }
     }
-    const fromDevice = {
-      info: vi.fn().mockResolvedValue({ name: "From" }),
-      getDataStreaming: vi.fn(() => stream()),
-    };
-    const toDevice = {
-      info: vi.fn().mockResolvedValue({ name: "To" }),
-      sendData: vi.fn().mockResolvedValue(undefined),
-    };
-    getDeviceMock.mockResolvedValueOnce(fromDevice).mockResolvedValueOnce(toDevice);
+    resourcesInstance.devices.getDeviceDataStreaming.mockReturnValue(stream());
+    sendDataMock.mockResolvedValue(undefined);
     confirmPromptMock.mockResolvedValue(true);
 
     const { copyDeviceData } = await import("./copy-data.js");
-    await copyDeviceData({
-      from: "a".repeat(24),
-      to: "b".repeat(24),
-      environment: "prod",
-      amount: 1,
-    });
-    expect(toDevice.sendData).toHaveBeenCalled();
+    await copyDeviceData({ from: ID_FROM, to: ID_TO, environment: "prod", amount: 1 });
+
+    expect(resourcesInstance.devices.getDeviceDataStreaming).toHaveBeenCalledWith(ID_FROM, {}, expect.any(Object));
+    // The "payload" variable is filtered out before sending; data is written via the destination device token.
+    expect(sendDataMock).toHaveBeenCalledWith([{ variable: "x", value: 1 }]);
   });
 });

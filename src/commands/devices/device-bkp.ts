@@ -1,4 +1,4 @@
-import { Account, Data, Device, DeviceInfo, DeviceItem, Utils } from "@tago-io/sdk";
+import { Data, Device, DeviceInfo, DeviceItem, Resources, Utils } from "@tago-io/sdk";
 import { readFileSync, writeFileSync } from "node:fs";
 import kleur from "kleur";
 import { DateTime } from "luxon";
@@ -10,6 +10,7 @@ import { printScopeBanner } from "../../lib/scope-notice.js";
 import { pickDeviceIDFromTagoIO } from "../../prompt/pick-device-id-from-tagoio.js";
 import { pickFileFromTagoIO } from "../../prompt/pick-files-from-tagoio.js";
 import { promptTextToEnter } from "../../prompt/text-prompt.js";
+import { getDeviceForSending } from "./device-sender.js";
 
 interface IOptions {
   environment?: string;
@@ -25,13 +26,13 @@ async function getJSON(url: string, authorization: string) {
   return response.json();
 }
 
-async function restoreBKP(account: Account, profileToken: string, device: Device, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
+async function restoreBKP(resources: Resources, profileToken: string, deviceInfo: DeviceInfo | DeviceItem, local: boolean, deviceRegion: ConstructorParameters<typeof Device>[0]["region"]) {
   const { name, id } = deviceInfo;
 
   let dataList: Data[] = [];
 
   if (!local) {
-    const fileName = await pickFileFromTagoIO(account);
+    const fileName = await pickFileFromTagoIO(resources);
     if (!fileName) {
       errorHandler("No file selected");
     }
@@ -44,12 +45,14 @@ async function restoreBKP(account: Account, profileToken: string, device: Device
     dataList = JSON.parse(readFileSync(filePath, "utf8"));
   }
 
-  await account.devices.emptyDeviceData(id);
+  await resources.devices.emptyDeviceData(id);
+  // Restore through a device token: profile tokens cannot write device data.
+  const device = await getDeviceForSending(resources, id, deviceRegion);
   await device.sendDataStreaming(dataList, { poolingRecordQty: 10_000, poolingTime: 1000 });
   successMSG(`> ${name} - ${dataList.length} data points`);
 }
 
-async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
+async function storeBKP(resources: Resources, deviceInfo: DeviceInfo | DeviceItem, local: boolean) {
   const { created_at, name, id } = deviceInfo;
 
   // Start date with luxon at created_at and increase 1 month on a loop until today
@@ -61,8 +64,8 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
   for (let i = 0; i <= months; i++) {
     const month = startDate.plus({ months: i });
     const monthName = month.toFormat("yyyy-MM");
-    const monthData = await device
-      .getData({
+    const monthData = await resources.devices
+      .getDeviceData(id, {
         start_date: month.toISODate() as string,
         end_date: month.plus({ months: 1 }).toISODate() as string,
         qty: 10_000,
@@ -80,7 +83,7 @@ async function storeBKP(account: Account, device: Device, deviceInfo: DeviceInfo
 
   if (!local) {
     const filePath = await promptTextToEnter("Enter the file path to store the backup", `deviceBackup/${id}.json`);
-    await Utils.uploadFile(account, {
+    await Utils.uploadFile(resources, {
       filename: filePath,
       file_base64: Buffer.from(JSON.stringify(dataList, null, 4)).toString("base64"),
       public: true,
@@ -112,12 +115,12 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
     errorHandler("Environment not found");
   }
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
   if (!idOrToken) {
-    idOrToken = await pickDeviceIDFromTagoIO(account);
+    idOrToken = await pickDeviceIDFromTagoIO(resources);
   }
 
-  const deviceInfo = await account.devices
+  const deviceInfo = await resources.devices
     .info(idOrToken)
     .catch(() => {
       const device = new Device({ token: idOrToken, region: config.profileRegion });
@@ -129,18 +132,13 @@ async function bkpDeviceData(idOrToken: string, options: IOptions) {
     return;
   }
 
-  const device = await Utils.getDevice(account, idOrToken).catch(errorHandler);
-  if (!device) {
-    return;
-  }
-
   if (options.restore) {
     infoMSG(`> Restoring data from ${deviceInfo.name}`);
-    return restoreBKP(account, config.profileToken, device, deviceInfo, options.local);
+    return restoreBKP(resources, config.profileToken, deviceInfo, options.local, config.profileRegion);
   }
 
   infoMSG(`> Backing up data from ${deviceInfo.name}`);
-  await storeBKP(account, device, deviceInfo, options.local);
+  await storeBKP(resources, deviceInfo, options.local);
 }
 
 export { bkpDeviceData };

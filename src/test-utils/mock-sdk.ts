@@ -1,8 +1,10 @@
 import { vi, type Mock } from "vitest";
 
-// Some Account resources are nested (e.g. `account.dashboards.widgets.info`).
-// Everything else is a flat `namespace.method`.
-const NESTED_NAMESPACES = new Set(["widgets"]);
+// Some resources are nested one level deeper than `namespace.method`:
+//   `dashboards.widgets.info`, `integration.networks.info`,
+//   `integration.connectors.info`. These names resolve to another method
+//   namespace instead of a bare mock fn.
+const NESTED_NAMESPACES = new Set(["widgets", "networks", "connectors"]);
 
 type AnyRecord = Record<string, unknown>;
 

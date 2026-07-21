@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Resources } from "@tago-io/sdk";
 import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
@@ -13,6 +13,12 @@ interface BucketSettings {
   connector: string;
 }
 
+interface DeviceToken {
+  token: string;
+  name: string;
+  serie_number?: string;
+}
+
 type environmentConfigResponse = NonNullable<ReturnType<typeof getEnvironmentConfig>>;
 
 function _formatUpdateMessage(deviceID: string, serialNumbers: (string | undefined)[], network: string, connector: string) {
@@ -21,27 +27,85 @@ function _formatUpdateMessage(deviceID: string, serialNumbers: (string | undefin
   return `Device network and connector updated. device=${kleur.blue(deviceID)}${serialPart} network=${kleur.cyan(network)} connector=${kleur.cyan(connector)}`;
 }
 
-async function updateDevice(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
+/**
+ * Validates that the target network and connector exist before any destructive
+ * step. The TagoIO API rejects a network/connector change while the device
+ * still has tokens, so the change requires deleting every token first. By
+ * validating up front, an invalid id fails cleanly without ever deleting a
+ * token — covering the common failure (bad connector) instead of relying on a
+ * rollback after the damage is done.
+ */
+async function validateNetworkAndConnector(resources: Resources, network: string, connector: string) {
+  await resources.integration.networks.info(network).catch(() => {
+    errorHandler(`Invalid network: ${network} could not be found.`);
+  });
+  await resources.integration.connectors.info(connector).catch(() => {
+    errorHandler(`Invalid connector: ${connector} could not be found.`);
+  });
+}
 
-  const tokens = await account.devices.tokenList(deviceID, { fields: ["name", "token", "permission", "serie_number"] });
-  const tokenList = tokens.map((token) => token.token);
+/** Describes a token for the manual-recreate hint: name plus serial when present. */
+function describeToken(token: DeviceToken) {
+  return `${token.name}${token.serie_number ? ` (serial ${token.serie_number})` : ""}`;
+}
 
-  if (tokenList) {
-    for (const token of tokenList) {
-      await account.devices.tokenDelete(token);
-    }
-  }
-
-  await account.devices.edit(deviceID, { network: settings.network, connector: settings.connector, active: true });
-
-  const serialNumbers: (string | undefined)[] = [];
+/**
+ * Recreates the previously deleted tokens, preserving each token's name and
+ * serial number. Runs in a `finally` so the device is never left tokenless,
+ * even when the edit fails. Every token is attempted (one failure does not skip
+ * the rest); if any fail to recreate, the error lists ONLY those so the user
+ * doesn't recreate tokens that already came back.
+ */
+async function recreateTokens(resources: Resources, deviceID: string, tokens: DeviceToken[]) {
+  const failed: DeviceToken[] = [];
   for (const token of tokens) {
-    const serieNumber = token.serie_number as string | undefined;
-    serialNumbers.push(serieNumber);
-    await account.devices.tokenCreate(deviceID, { serie_number: serieNumber, name: token.name, permission: "full" });
+    await resources.devices
+      .tokenCreate(deviceID, { serie_number: token.serie_number, name: token.name, permission: "full" })
+      .catch(() => failed.push(token));
   }
 
+  if (failed.length > 0) {
+    const lost = failed.map(describeToken).join(", ");
+    errorHandler(
+      `Failed to recreate device tokens after the network change. Recreate them manually: ${lost}. ` +
+        `Use: tagoio device-token ${deviceID} --create "<name>"`,
+    );
+  }
+}
+
+async function updateDevice(config: environmentConfigResponse, deviceID: string, settings: BucketSettings) {
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+
+  // Validate the target network/connector BEFORE touching tokens. A bad id
+  // fails here, leaving the device's tokens untouched.
+  await validateNetworkAndConnector(resources, settings.network, settings.connector);
+
+  const tokens = (await resources.devices.tokenList(deviceID, {
+    fields: ["name", "token", "permission", "serie_number"],
+  })) as DeviceToken[];
+
+  for (const token of tokens) {
+    await resources.devices.tokenDelete(token.token);
+  }
+
+  // Call edit directly (not via applyDeviceEdit) and capture the error instead
+  // of letting it exit the process: the tokens were just deleted, so they MUST
+  // be recreated before we surface any edit failure. A `finally` would not be
+  // enough here — applyDeviceEdit/errorHandler call process.exit(1), which
+  // skips finally blocks entirely and would leave the device tokenless.
+  const editError = await resources.devices
+    .edit(deviceID, { network: settings.network, connector: settings.connector, active: true })
+    .then(() => undefined)
+    .catch((error: unknown) => (error instanceof Error ? error.message : String(error)));
+
+  // Recreate tokens first, regardless of whether the edit succeeded.
+  await recreateTokens(resources, deviceID, tokens);
+
+  if (editError) {
+    errorHandler(`Failed to change network/connector for device ${deviceID}: ${editError}`);
+  }
+
+  const serialNumbers = tokens.map((token) => token.serie_number);
   successMSG(_formatUpdateMessage(deviceID, serialNumbers, settings.network, settings.connector));
 }
 
@@ -55,13 +119,13 @@ async function changeNetworkOrConnector(id: string, options: { environment: stri
 
   let { networkID, connectorID } = options;
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
-  const deviceID = id || (await pickDeviceIDFromTagoIO(account));
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const deviceID = id || (await pickDeviceIDFromTagoIO(resources));
   if (!deviceID) {
     return;
   }
 
-  const deviceInfo = await account.devices.info(deviceID).catch(errorHandler);
+  const deviceInfo = await resources.devices.info(deviceID).catch(errorHandler);
   if (!deviceInfo) {
     return;
   }

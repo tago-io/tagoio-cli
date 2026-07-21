@@ -1,4 +1,4 @@
-import { Account, DeviceQuery, TagsObj } from "@tago-io/sdk";
+import { DeviceQuery, Resources, TagsObj } from "@tago-io/sdk";
 import kleur from "kleur";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
@@ -77,14 +77,14 @@ async function deviceList(options: IOptions) {
     errorHandler("Environment not found");
   }
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
   const filter: DeviceQuery = { amount: 50, fields: ["id", "name", "active", "last_input"], filter: { tags: [{}] } };
   if (filter.filter && options.name) {
     filter.filter.name = `*${options.name}*`;
   }
 
   repeatableTags(filter, { keys: options.tagkey, values: options.tagvalue });
-  const deviceList = await account.devices.list(filter).catch(errorHandler);
+  const deviceList = await resources.devices.list(filter).catch(errorHandler);
   if (!deviceList) {
     return;
   }

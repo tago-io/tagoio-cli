@@ -1,4 +1,4 @@
-import { Account, Device, DeviceInfo } from "@tago-io/sdk";
+import { Device, DeviceInfo, Resources } from "@tago-io/sdk";
 import { EventSource } from "eventsource";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
@@ -89,12 +89,12 @@ async function inspectorConnection(deviceIdOrToken: string, options: IOptions) {
     errorHandler("Environment not found");
   }
 
-  const account = new Account({ token: config.profileToken, region: config.profileRegion });
+  const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
   if (!deviceIdOrToken) {
-    deviceIdOrToken = await pickDeviceIDFromTagoIO(account);
+    deviceIdOrToken = await pickDeviceIDFromTagoIO(resources);
   }
 
-  let deviceInfo = await account.devices.info(deviceIdOrToken).catch(() => null);
+  let deviceInfo = await resources.devices.info(deviceIdOrToken).catch(() => null);
   if (!deviceInfo) {
     const device = new Device({ token: deviceIdOrToken, region: config.profileRegion });
     deviceInfo = await device
