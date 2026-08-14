@@ -9,6 +9,7 @@ import kleur from "kleur";
 import { actionCommands } from "./commands/actions/index.js";
 import { analysisCommands } from "./commands/analysis/index.js";
 import { dashboardCommands } from "./commands/dashboard/index.js";
+import { dictionaryCommands } from "./commands/dictionaries/index.js";
 import { deviceCommands } from "./commands/devices/index.js";
 import { entityCommands } from "./commands/entities/index.js";
 import { filesCommands } from "./commands/files/index.js";
@@ -164,6 +165,7 @@ Example:
   entityCommands(program);
   filesCommands(program);
   actionCommands(program);
+  dictionaryCommands(program);
   profileCommands(program, defaultEnv);
 
   return program;
