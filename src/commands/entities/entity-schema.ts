@@ -3,6 +3,7 @@ import prompts from "prompts";
 
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, infoMSG, successMSG } from "../../lib/messages.js";
+import { parseJSONFlag } from "../../lib/parse-json-flag.js";
 import { pickEntityIDFromTagoIO } from "../../prompt/pick-entity-id-from-tagoio.js";
 
 interface IOptions {
@@ -58,13 +59,9 @@ function resolveMode(options: IOptions): Mode {
   return set[0] ?? "print";
 }
 
+/** Thin wrapper over the shared helper, keeping this file's `json_parse_failed` code. */
 function parseJSON<T>(raw: string, flagName: string, useJSON: boolean): T {
-  try {
-    return JSON.parse(raw) as T;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return failWith(`Failed to parse ${flagName} JSON: ${message}`, "json_parse_failed", useJSON);
-  }
+  return parseJSONFlag<T>(raw, flagName, undefined, { json: useJSON, code: "json_parse_failed" });
 }
 
 /** Splits `from:to` into [from, to], errors when malformed. */
