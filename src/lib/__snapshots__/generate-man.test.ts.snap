@@ -1546,6 +1546,164 @@ Example:
     $ tagoio dict\\-delete 62151835435d540010b768c4
     $ tagoio dict\\-delete 62151835435d540010b768c4 \\-y
 .fi
+.SS secret\\-list
+get the list of secrets.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-key\\fR \\fI[secretKey]\\fR
+partial key of the secret
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many secrets to fetch (default: 100)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+    A secret's value is never returned by the API, so the listing shows
+    value_length instead. There is no way to read a value back.
+
+Example:
+    $ tagoio secret\\-list
+    $ tagoio secret\\-list \\-\\-key TWILIO
+    $ tagoio secret\\-list \\-k env \\-v prod
+    $ tagoio secret\\-list \\-\\-json
+.fi
+.SS secret\\-info [ID]
+get information about a secret.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the secret ID)
+.PP
+.nf
+Example:
+    $ tagoio secret\\-info 62151835435d540010b768c4
+    $ tagoio secret\\-info 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS secret\\-create [key]
+create a new secret, typing its value at a masked prompt.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+refused here — the value can only be typed at the prompt
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The value is typed at a prompt that masks the input. No flag carries it:
+    a value passed as an argument would be written to shell history, visible
+    to anyone running ps, and captured by CI logs.
+
+    That means this command needs a terminal — it cannot run with \\-\\-silent.
+
+    Note that \\-k / \\-v set a tag, not the secret's value.
+
+    The key is uppercased to match what the API stores, and a key containing
+    anything but letters, digits and underscores is rejected before the call.
+
+    The value must be at least 6 characters — the API refuses shorter ones.
+
+    Keys are unique within a profile. A key already in use is reported before
+    the value is asked for, since the API answers a duplicate with the same
+    opaque error it uses for everything else.
+
+Example:
+    $ tagoio secret\\-create TWILIO_SID
+    $ tagoio secret\\-create SENDGRID_KEY \\-k env \\-v prod
+.fi
+.SS secret\\-edit [ID]
+rotate a secret's value or change its tags.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-rotate\\fR
+prompt for a new value and replace the stored one
+.TP
+\\fB\\-\\-key\\fR \\fI<key>\\fR
+refused here — a secret's key cannot be changed
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the secret ID; cannot be used with \\-\\-rotate)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    \\-\\-rotate prompts for the new value with the input masked, so it needs a
+    terminal. Tag\\-only edits work under \\-\\-silent.
+
+    A secret's key cannot be changed. To rename one, delete it and create it
+    again under the new key.
+
+Example:
+    $ tagoio secret\\-edit 62151835435d540010b768c4 \\-\\-rotate
+    $ tagoio secret\\-edit 62151835435d540010b768c4 \\-k env \\-v staging \\-\\-merge\\-tags
+.fi
+.SS secret\\-delete [ID]
+permanently delete a secret.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the secret ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The value cannot be recovered afterwards — it was never readable — and any
+    Action or Analysis referencing this secret will stop working.
+
+Example:
+    $ tagoio secret\\-delete 62151835435d540010b768c4
+    $ tagoio secret\\-delete 62151835435d540010b768c4 \\-y
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP

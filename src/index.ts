@@ -16,6 +16,7 @@ import { filesCommands } from "./commands/files/index.js";
 import { listEnvironment } from "./commands/list-env.js";
 import { tagoLogin } from "./commands/login.js";
 import { profileCommands } from "./commands/profile/index.js";
+import { secretCommands } from "./commands/secrets/index.js";
 import { setEnvironment } from "./commands/set-env.js";
 import { startConfig } from "./commands/start-config.js";
 import { whoami } from "./commands/whoami.js";
@@ -166,6 +167,7 @@ Example:
   filesCommands(program);
   actionCommands(program);
   dictionaryCommands(program);
+  secretCommands(program);
   profileCommands(program, defaultEnv);
 
   return program;
