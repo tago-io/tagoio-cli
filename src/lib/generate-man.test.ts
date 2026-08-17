@@ -59,6 +59,7 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS dict\\-list");
     expect(roff).toContain(".SS secret\\-list");
     expect(roff).toContain(".SS run\\-user\\-list");
+    expect(roff).toContain(".SS analysis\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
 
     // Two secret-* flags exist only to be refused with an explanation:
@@ -79,6 +80,24 @@ describe("generateManPage", () => {
     // --silent while explaining the refusal.
     const runUserSection = (name: string) => roff.split(`.SS run\\-user\\-${name}`)[1]?.split(".SS ")[0] ?? "";
     expect(runUserSection("create")).toContain("\\fB\\-\\-silent\\fR");
+
+    // The analysis token authenticates as the analysis, so analysis-info hides it
+    // behind an explicit opt-in. Matched as a bold declaration, not prose.
+    const analysisSection = (name: string) => roff.split(`.SS analysis\\-${name}`)[1]?.split(".SS ")[0] ?? "";
+    expect(analysisSection("info")).toContain("\\fB\\-\\-show\\-token\\fR");
+
+    // The API accepts an `interval` field on an analysis, reports success and
+    // silently discards it — scheduling actually lives in Actions. No flag may
+    // exist for it: a declared option that cannot work is worse than none.
+    expect(analysisSection("create")).not.toContain("\\fB\\-\\-interval\\fR");
+    expect(analysisSection("edit")).not.toContain("\\fB\\-\\-interval\\fR");
+
+    // --runtime exists on both, but means different things: on create it is a
+    // plain field, on edit it re-uploads the script under a new language,
+    // because that upload is what sets the runtime — probed, a PUT alone never
+    // takes effect.
+    expect(analysisSection("create")).toContain("\\fB\\-\\-runtime\\fR");
+    expect(analysisSection("edit")).toContain("\\fB\\-\\-runtime\\fR");
 
     // Tags replace by default here, and run users carry access-granting tags,
     // so --merge-tags must stay reachable.

@@ -114,6 +114,232 @@ Example:
     $ tagoio whoami
     $ tagoio whoami \\-\\-json | jq .scope
 .fi
+.SS analysis\\-list
+get the list of analyses.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[name]\\fR
+partial name of the analysis
+.TP
+\\fB\\-\\-active\\fR
+only active analyses
+.TP
+\\fB\\-\\-inactive\\fR
+only inactive analyses
+.TP
+\\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
+filter by tago or external
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many analyses to fetch (default: 100)
+.TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+name, active, run_on, last_run, created_at or updated_at
+.TP
+\\fB\\-\\-order\\fR \\fI<direction>\\fR
+asc or desc (default: asc)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+    An analysis that has never run reports last_run as "never".
+
+    The analysis token is never included here — read it with
+    'analysis\\-info <id> \\-\\-show\\-token'.
+
+Example:
+    $ tagoio analysis\\-list
+    $ tagoio analysis\\-list \\-\\-name Alert
+    $ tagoio analysis\\-list \\-\\-run\\-on external \\-\\-inactive
+    $ tagoio analysis\\-list \\-\\-order\\-by last_run \\-\\-order desc
+.fi
+.SS analysis\\-info [ID]
+get information about an analysis.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-show\\-token\\fR
+include the analysis token in the output — writes a credential to stdout
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the analysis ID)
+.PP
+.nf
+    The analysis token authenticates as the analysis, so it is omitted unless
+    \\-\\-show\\-token asks for it. Only analyses running in external mode have one.
+
+    \\-\\-raw also surfaces timeout, secrets and console, which the API returns but
+    the SDK types do not declare.
+
+Example:
+    $ tagoio analysis\\-info 62151835435d540010b768c4
+    $ tagoio analysis\\-info 62151835435d540010b768c4 \\-\\-json
+    $ tagoio analysis\\-info 62151835435d540010b768c4 \\-\\-show\\-token
+.fi
+.SS analysis\\-create [name]
+create a new analysis.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-description\\fR \\fI<description>\\fR
+what the analysis does
+.TP
+\\fB\\-\\-runtime\\fR \\fI<runtime>\\fR
+node\\-rt2025, python\\-rt2025, deno\\-rt2025, node\\-legacy, python\\-legacy, node, python or other
+.TP
+\\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
+tago or external (default: tago)
+.TP
+\\fB\\-\\-inactive\\fR
+create the analysis deactivated
+.TP
+\\fB\\-\\-var\\fR \\fI<KEY=VALUE>\\fR
+environment variable to set (repeatable) (default: [])
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the name)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Creates the analysis without a script. Upload one afterwards with
+    'analysis\\-deploy'.
+
+    The runtime defaults to node\\-rt2025. The API's own default is node\\-legacy,
+    which would quietly put new analyses on the legacy runtime.
+
+    Variable values are always sent as strings: \\-\\-var RETRIES=3 stores "3".
+
+    Analyses are NOT scheduled here — the interval field the API exposes is
+    silently ignored. Schedule one with an action instead:
+    'action\\-create "<name>" \\-\\-type schedule \\-\\-cron "0 9 * * *" \\-\\-script <id>'.
+
+Example:
+    $ tagoio analysis\\-create "Daily Report"
+    $ tagoio analysis\\-create "Webhook Handler" \\-\\-run\\-on external
+    $ tagoio analysis\\-create "Sync" \\-\\-runtime python\\-rt2025 \\-\\-var API_URL=https://x.com
+.fi
+.SS analysis\\-edit [ID]
+edit an analysis: rename it, change its runtime, variables, state or tags.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-name\\fR \\fI<name>\\fR
+new name
+.TP
+\\fB\\-\\-description\\fR \\fI<description>\\fR
+what the analysis does; pass "" to clear it
+.TP
+\\fB\\-\\-runtime\\fR \\fI<runtime>\\fR
+re\\-uploads the script under a new runtime; see the note below
+.TP
+\\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
+tago or external
+.TP
+\\fB\\-\\-activate\\fR
+mark the analysis active
+.TP
+\\fB\\-\\-deactivate\\fR
+mark the analysis inactive
+.TP
+\\fB\\-\\-var\\fR \\fI<KEY=VALUE>\\fR
+environment variable to set (repeatable, replaces the set) (default: [])
+.TP
+\\fB\\-\\-clear\\-vars\\fR
+remove every environment variable
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the analysis ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Tags and variables REPLACE the existing set by default. Pass \\-\\-merge\\-tags to
+    keep the tags you do not name; there is no equivalent for variables, so
+    pass every one you want to keep.
+
+    \\-\\-runtime works by re\\-uploading the analysis' existing script under the new
+    language, because that upload is what actually sets the runtime — a plain
+    field update reports success and changes nothing. The script itself is
+    preserved byte\\-for\\-byte, and the version number advances.
+
+    That means the analysis needs a script already: on an empty one, \\-\\-runtime
+    fails and points at 'analysis\\-deploy'. To start on a given runtime instead,
+    pass \\-\\-runtime to 'analysis\\-create'.
+
+    Use 'analysis\\-mode' to change run_on across many analyses at once.
+
+Example:
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-name "Renamed"
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-deactivate
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-runtime python\\-rt2025
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-var A=1 \\-\\-var B=2
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-k env \\-v prod \\-\\-merge\\-tags
+.fi
+.SS analysis\\-delete [ID]
+permanently delete an analysis.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the analysis ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The script is deleted with the analysis, and any Action that runs this
+    analysis will stop firing.
+
+Example:
+    $ tagoio analysis\\-delete 62151835435d540010b768c4
+    $ tagoio analysis\\-delete 62151835435d540010b768c4 \\-y
+.fi
 .SS analysis\\-deploy [name]
 deploy your analysis to TagoIO
     Analysis must be registered in your tagoconfig.ts file first
