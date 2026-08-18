@@ -60,6 +60,7 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS secret\\-list");
     expect(roff).toContain(".SS run\\-user\\-list");
     expect(roff).toContain(".SS analysis\\-list");
+    expect(roff).toContain(".SS access\\-management\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
 
     // Two secret-* flags exist only to be refused with an explanation:
@@ -98,6 +99,12 @@ describe("generateManPage", () => {
     // takes effect.
     expect(analysisSection("create")).toContain("\\fB\\-\\-runtime\\fR");
     expect(analysisSection("edit")).toContain("\\fB\\-\\-runtime\\fR");
+
+    // The am-* aliases are the short form people will actually type. A future
+    // alias cleanup that dropped them would break muscle memory silently, so
+    // one is pinned here. The bare "am" is deliberately absent: it belongs to
+    // analysis-mode, and commander throws at startup on a duplicate.
+    expect(roff).toContain("am\\-list");
 
     // Tags replace by default here, and run users carry access-granting tags,
     // so --merge-tags must stay reachable.
