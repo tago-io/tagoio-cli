@@ -1360,6 +1360,192 @@ Example:
     $ tagoio action\\-delete 62151835435d540010b768c4
     $ tagoio action\\-delete 62151835435d540010b768c4 \\-y
 .fi
+.SS dict\\-list
+get the list of dictionaries.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[dictionaryName]\\fR
+partial name of the dictionary
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many dictionaries to fetch (default: 100)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+Example:
+    $ tagoio dict\\-list
+    $ tagoio dict\\-list \\-\\-name Portal
+    $ tagoio dict\\-list \\-\\-json
+.fi
+.SS dict\\-info [ID]
+get information about a dictionary and its languages.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dictionary ID)
+.PP
+.nf
+Example:
+    $ tagoio dict\\-info 62151835435d540010b768c4
+    $ tagoio dict\\-info 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS dict\\-create [name]
+create a new dictionary.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-slug\\fR \\fI<slug>\\fR
+slug used to reference the dictionary: uppercase alphanumerics, max 7 chars, e.g. PORTAL
+.TP
+\\fB\\-\\-fallback\\fR \\fI<locale>\\fR
+language served when a requested one is missing, e.g. en\\-US
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt for missing input
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Name, slug and fallback are all required by the API. Each prompts when
+    omitted, and fails under \\-\\-silent.
+
+    The slug must be uppercase letters and digits only, at most 7 characters.
+
+Example:
+    $ tagoio dict\\-create "Portal Strings" \\-\\-slug PORTAL \\-\\-fallback en\\-US
+.fi
+.SS dict\\-edit [ID]
+edit a dictionary's name, slug, or fallback language.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI<name>\\fR
+new dictionary name
+.TP
+\\fB\\-\\-slug\\fR \\fI<slug>\\fR
+new slug
+.TP
+\\fB\\-\\-fallback\\fR \\fI<locale>\\fR
+new fallback language, e.g. pt\\-BR
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dictionary ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Editing a dictionary does not touch its languages. Use dict\\-lang for that.
+
+Example:
+    $ tagoio dict\\-edit 62151835435d540010b768c4 \\-\\-name "New Name"
+    $ tagoio dict\\-edit 62151835435d540010b768c4 \\-\\-fallback pt\\-BR
+.fi
+.SS dict\\-lang [ID] <locale>
+read, write, or delete one language inside a dictionary.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-slug\\fR
+resolve the first argument as a slug instead of an ID
+.TP
+\\fB\\-\\-fallback\\fR
+fall back to the dictionary's fallback language for missing keys
+.TP
+\\fB\\-\\-file\\fR \\fI<path>\\fR
+JSON file of key/value pairs to write
+.TP
+\\fB\\-\\-set\\fR \\fI<KEY=value>\\fR
+set one key (repeatable) (default: [])
+.TP
+\\fB\\-\\-merge\\fR
+merge into the existing content (default: replace it)
+.TP
+\\fB\\-\\-inactive\\fR
+mark the language inactive (default: active)
+.TP
+\\fB\\-\\-delete\\fR
+delete the language from the dictionary
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the replace/delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dictionary ID)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return content as pretty\\-printed text
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Writing replaces the whole language, because the API overwrites it rather
+    than merging. Pass \\-\\-merge to keep the keys your payload omits:
+
+        tagoio dict\\-lang <id> pt\\-BR \\-\\-set GREETING="Ola" \\-\\-merge
+
+    A replace that would drop keys asks for confirmation first, unless \\-y.
+
+    Translation round\\-trip — export, translate, import:
+
+        tagoio dict\\-lang <id> pt\\-BR \\-\\-json > pt\\-BR.json
+        # edit pt\\-BR.json
+        tagoio dict\\-lang <id> pt\\-BR \\-\\-file pt\\-BR.json
+
+    Reading by ID shows only what the locale itself holds. Pass \\-\\-fallback to
+    fill missing keys from the fallback language. Note that \\-\\-slug always
+    applies the fallback: the API offers no way to disable it on that route, so
+    use the ID form when exporting a translation.
+
+Example:
+    $ tagoio dict\\-lang 62151835435d540010b768c4 pt\\-BR
+    $ tagoio dict\\-lang PORTAL pt\\-BR \\-\\-slug
+    $ tagoio dict\\-lang 62151835435d540010b768c4 pt\\-BR \\-\\-file ./pt\\-BR.json
+    $ tagoio dict\\-lang 62151835435d540010b768c4 pt\\-BR \\-\\-delete
+.fi
+.SS dict\\-delete [ID]
+permanently delete a dictionary and every language in it.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dictionary ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio dict\\-delete 62151835435d540010b768c4
+    $ tagoio dict\\-delete 62151835435d540010b768c4 \\-y
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP
