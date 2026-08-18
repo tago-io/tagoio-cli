@@ -697,6 +697,349 @@ Example:
     $ tagoio access\\-management\\-delete 62151835435d540010b768c4
     $ tagoio am\\-delete 62151835435d540010b768c4 \\-y
 .fi
+.SS sql\\-list
+get the list of TagoSQL queries.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[name]\\fR
+partial name of the query
+.TP
+\\fB\\-\\-active\\fR
+only active queries
+.TP
+\\fB\\-\\-inactive\\fR
+only inactive queries
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many queries to fetch (default: 100)
+.TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+name, active, created_at or updated_at
+.TP
+\\fB\\-\\-order\\fR \\fI<direction>\\fR
+asc or desc (default: asc)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+    A listing returns id, name and tags only — the SQL text, params and cache
+    settings come from 'sql\\-info <id>'.
+
+Example:
+    $ tagoio sql\\-list
+    $ tagoio sql\\-ls \\-\\-name freezer
+    $ tagoio sql\\-ls \\-\\-order\\-by created_at \\-\\-order desc
+.fi
+.SS sql\\-info [ID]
+get information about a TagoSQL query, including its SQL text.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the query ID)
+.PP
+.nf
+    Shows the query text, its positional params, the cache settings and which
+    version is live. The version count matters before deleting: the history goes
+    with the query.
+
+    \\-\\-raw also surfaces cache_version, profile and the versions map, which the
+    API returns but the SDK types do not declare.
+
+Example:
+    $ tagoio sql\\-info 62151835435d540010b768c4
+    $ tagoio sql\\-info 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS sql\\-create [name]
+create a new TagoSQL query.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-query\\fR \\fI<sql>\\fR
+the SQL statement (required)
+.TP
+\\fB\\-\\-query\\-file\\fR \\fI<path>\\fR
+read the SQL from a file instead
+.TP
+\\fB\\-\\-description\\fR \\fI<description>\\fR
+what the query is for
+.TP
+\\fB\\-\\-param\\fR \\fI<$n=value>\\fR
+positional param default (repeatable) (default: [])
+.TP
+\\fB\\-\\-cache\\fR
+enable the result cache
+.TP
+\\fB\\-\\-cache\\-ttl\\fR \\fI<seconds>\\fR
+cache lifetime, 0\\-86400 (0 disables)
+.TP
+\\fB\\-\\-rate\\-limit\\fR \\fI<rpm>\\fR
+per\\-query rate cap, subject to your plan's maximum
+.TP
+\\fB\\-\\-inactive\\fR
+create the query disabled — it cannot be executed
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the name)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Only SELECT statements are allowed, every table needs an alias, and a query
+    must reference at least one table. The API validates the SQL and names the
+    rule broken, so the statement is sent as written rather than checked here.
+
+    Use \\-\\-query\\-file for anything multi\\-line; SQL and shell quoting mix badly.
+
+    Params are positional: \\-\\-param '$1=value'. Discover the tables, columns and
+    functions a query may use with 'sql\\-tables'.
+
+    \\-\\-cache\\-ttl is clamped server\\-side to 0\\-86400 seconds, so the stored value
+    may differ from what you pass; \\-\\-json reports what was stored.
+
+Example:
+    $ tagoio sql\\-create device_names \\-\\-query "SELECT d.id, d.name FROM devices() AS d"
+    $ tagoio sql\\-create freezer_summary \\-\\-query\\-file summary.sql \\-\\-param '$1=device\\-id'
+    $ tagoio sql\\-create hot_devices \\-\\-query\\-file q.sql \\-\\-cache \\-\\-cache\\-ttl 3600
+.fi
+.SS sql\\-edit [ID]
+edit a TagoSQL query: rename it, change its SQL, params or cache settings.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-name\\fR \\fI<name>\\fR
+new name
+.TP
+\\fB\\-\\-query\\fR \\fI<sql>\\fR
+replace the SQL statement
+.TP
+\\fB\\-\\-query\\-file\\fR \\fI<path>\\fR
+replace the SQL from a file
+.TP
+\\fB\\-\\-description\\fR \\fI<description>\\fR
+what the query is for
+.TP
+\\fB\\-\\-param\\fR \\fI<$n=value>\\fR
+replace the param defaults (repeatable) (default: [])
+.TP
+\\fB\\-\\-cache\\fR
+enable the result cache
+.TP
+\\fB\\-\\-no\\-cache\\fR
+disable the result cache
+.TP
+\\fB\\-\\-cache\\-ttl\\fR \\fI<seconds>\\fR
+cache lifetime, 0\\-86400 (0 disables)
+.TP
+\\fB\\-\\-rate\\-limit\\fR \\fI<rpm>\\fR
+per\\-query rate cap, subject to your plan's maximum
+.TP
+\\fB\\-\\-activate\\fR
+mark the query active
+.TP
+\\fB\\-\\-deactivate\\fR
+mark the query inactive — it can no longer be executed
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the query ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The API replaces the whole query rather than patching it, so this command
+    reads the current one and merges your changes over it. Two consequences:
+    an edit made in the admin between the read and the write is overwritten, and
+    changing the SQL takes a new version — 'sql\\-version' recovers the previous
+    one. Editing only metadata, like the name, leaves the version alone.
+
+    \\-\\-param replaces the whole param set rather than merging per key, so pass
+    every param you want to keep.
+
+Example:
+    $ tagoio sql\\-edit 62151835435d540010b768c4 \\-\\-name renamed
+    $ tagoio sql\\-edit 62151835435d540010b768c4 \\-\\-query\\-file updated.sql
+    $ tagoio sql\\-edit 62151835435d540010b768c4 \\-\\-deactivate
+.fi
+.SS sql\\-execute [ID]
+run a TagoSQL query and print its rows.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-param\\fR \\fI<$n=value>\\fR
+override a saved param for this run (repeatable) (default: [])
+.TP
+\\fB\\-\\-test\\fR
+skip the result cache entirely — no read, no write
+.TP
+\\fB\\-\\-after\\-device\\fR \\fI<id>\\fR
+fleet pagination cursor: the last device id of the previous page
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return the result as indented json
+.TP
+\\fB\\-\\-json\\fR
+return the whole result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the query ID)
+.PP
+.nf
+    Rows go to stdout and the timing line to stderr, so 'sql\\-run <id> > out.txt'
+    captures data without the footer.
+
+    Columns render in the order the query selected them, not alphabetically.
+
+    Passing no \\-\\-param uses the defaults saved with the query. An override
+    applies to this run only and does not change what is stored.
+
+    Executing a query reads device data, which counts against your profile's
+    Data Output limit.
+
+    A query created or edited with \\-\\-inactive cannot be executed at all.
+
+Example:
+    $ tagoio sql\\-execute 62151835435d540010b768c4
+    $ tagoio sql\\-run 62151835435d540010b768c4 \\-\\-param '$1=%Freezer%'
+    $ tagoio sql\\-run 62151835435d540010b768c4 \\-\\-json | jq '.rows'
+.fi
+.SS sql\\-delete [ID]
+permanently delete a TagoSQL query.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the query ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Every saved version goes with the query. Re\\-creating it restores the SQL but
+    not the history, so the confirmation names how many versions are at stake.
+
+    To stop a query running without losing it, use
+    'sql\\-edit <id> \\-\\-deactivate' instead.
+
+Example:
+    $ tagoio sql\\-delete 62151835435d540010b768c4
+    $ tagoio sql\\-delete 62151835435d540010b768c4 \\-y
+.fi
+.SS sql\\-tables
+list the tables, columns and functions a TagoSQL query may use.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-filter\\fR \\fI<text>\\fR
+substring match on device or entity name
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many devices/entities to list (default: 20, max 100)
+.TP
+\\fB\\-\\-page\\fR \\fI<number>\\fR
+1\\-based page of devices/entities
+.TP
+\\fB\\-\\-entity\\fR \\fI<id>\\fR
+resolve the columns of one entity you own
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The authoring reference: which tables exist, what columns they expose, which
+    functions are callable, and the ids of your devices and entities ready to
+    paste into a \\-\\-param.
+
+    The entity table reports no columns until you name one, because they depend
+    on that entity's schema — pass \\-\\-entity <id> to resolve them.
+
+Example:
+    $ tagoio sql\\-tables
+    $ tagoio sql\\-tables \\-\\-filter Freezer
+    $ tagoio sql\\-tables \\-\\-entity 62151835435d540010b768c4
+.fi
+.SS sql\\-version [ID]
+read an earlier version of a TagoSQL query.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-rev\\fR \\fI<number>\\fR
+which version to read (required, 1\\-based)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the query ID)
+.PP
+.nf
+    Changing the SQL takes a new version, so an edit that broke something can be
+    traced to the revision that did it. Renaming or retagging does not — the
+    history versions the query text, not its metadata. 'sql\\-info' reports how
+    many exist.
+
+    The flag is \\-\\-rev because \\-\\-version belongs to the CLI itself.
+
+    Read\\-only: there is no rollback. To restore an old version, copy its SQL into
+    'sql\\-edit \\-\\-query', which saves it as a new version rather than rewinding.
+
+Example:
+    $ tagoio sql\\-version 62151835435d540010b768c4 \\-\\-rev 1
+    $ tagoio sql\\-version 62151835435d540010b768c4 \\-\\-rev 8 \\-\\-json
+.fi
 .SS device\\-create [name]
 create a new device.
 .TP
