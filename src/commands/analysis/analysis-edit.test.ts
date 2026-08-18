@@ -274,6 +274,37 @@ describe("analysisEdit", () => {
     expect(resourcesInstance.analysis.uploadScript).not.toHaveBeenCalled();
   });
 
+  /**
+   * Both reads inside this command used to be bare awaits, so an id the API
+   * rejects escaped as an unhandled rejection and printed a Node stack trace
+   * instead of a CLI error. Every other family reports "not found" here.
+   */
+  test("--runtime on an id the API rejects fails as not_found, not an unhandled rejection", async () => {
+    resourcesInstance.analysis.info.mockRejectedValue(new Error("Invalid Analysis ID"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("abc", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(/not_found/);
+
+    expect(resourcesInstance.analysis.downloadScript).not.toHaveBeenCalled();
+    expect(resourcesInstance.analysis.uploadScript).not.toHaveBeenCalled();
+  });
+
+  test("--merge-tags on an id the API rejects fails as not_found, not an unhandled rejection", async () => {
+    resourcesInstance.analysis.info.mockRejectedValue(new Error("Invalid Analysis ID"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("abc", { mergeTags: true, var: [], tagkey: ["env"], tagvalue: ["prod"] } as never)).rejects.toThrow(/not_found/);
+
+    expect(resourcesInstance.analysis.edit).not.toHaveBeenCalled();
+  });
+
+  test("the not_found message carries the API reason and the id", async () => {
+    resourcesInstance.analysis.info.mockRejectedValue(new Error("Invalid Analysis ID"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("abc", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(/abc.*Invalid Analysis ID/);
+  });
+
   test("the no-script message says to deploy one first", async () => {
     resourcesInstance.analysis.downloadScript.mockRejectedValue(new Error("Analysis file can't be found"));
 
