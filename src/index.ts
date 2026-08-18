@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import kleur from "kleur";
 
 import { actionCommands } from "./commands/actions/index.js";
+import { accessManagementCommands } from "./commands/access-management/index.js";
 import { analysisCommands } from "./commands/analysis/index.js";
 import { dashboardCommands } from "./commands/dashboard/index.js";
 import { dictionaryCommands } from "./commands/dictionaries/index.js";
@@ -162,6 +163,7 @@ Example:
     );
 
   analysisCommands(program);
+  accessManagementCommands(program);
   deviceCommands(program);
   dashboardCommands(program);
   entityCommands(program);
