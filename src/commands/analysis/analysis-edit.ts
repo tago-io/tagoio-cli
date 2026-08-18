@@ -52,7 +52,14 @@ interface IOptions {
  * the fetch and gunzip here mirror what `duplicate-analysis` already does.
  */
 async function changeRuntime(resources: Resources, id: string, runtime: string, options: IOptions) {
-  const info = await resources.analysis.info(id);
+  const info = await resources.analysis.info(id).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    failWith(`Analysis with id ${id} not found: ${message}`, "not_found", options.json);
+  });
+
+  if (!info) {
+    return false;
+  }
 
   if (info.runtime === runtime) {
     return false;
@@ -162,7 +169,10 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
     if (options.mergeTags) {
       // Only the merge path reads first — a replace must not pay for a lookup it
       // does not use.
-      const info = await resources.analysis.info(id as string);
+      const info = await resources.analysis.info(id as string).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        failWith(`Analysis with id ${id} not found: ${message}`, "not_found", options.json);
+      });
       patch.tags = mergeTags(info?.tags ?? [], incoming);
     } else {
       patch.tags = incoming;
