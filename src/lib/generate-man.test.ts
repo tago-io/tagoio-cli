@@ -61,6 +61,7 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS run\\-user\\-list");
     expect(roff).toContain(".SS analysis\\-list");
     expect(roff).toContain(".SS access\\-management\\-list");
+    expect(roff).toContain(".SS sql\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
 
     // Two secret-* flags exist only to be refused with an explanation:
@@ -105,6 +106,16 @@ describe("generateManPage", () => {
     // one is pinned here. The bare "am" is deliberately absent: it belongs to
     // analysis-mode, and commander throws at startup on a duplicate.
     expect(roff).toContain("am\\-list");
+
+    // The sql-run alias is the short form for the command the family exists for.
+    // A future alias cleanup that dropped it would break muscle memory silently.
+    expect(roff).toContain("sql\\-run");
+
+    // --test on sql-execute is the only way to run a query without touching the
+    // result cache, which matters when iterating on one. Matched as a bold flag
+    // rather than prose, since the help text also mentions caching.
+    const sqlSection = (name: string) => roff.split(`.SS sql\\-${name}`)[1]?.split(".SS ")[0] ?? "";
+    expect(sqlSection("execute")).toContain("\\fB\\-\\-test\\fR");
 
     // Tags replace by default here, and run users carry access-granting tags,
     // so --merge-tags must stay reachable.
