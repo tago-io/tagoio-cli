@@ -57,7 +57,20 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS device\\-list");
     expect(roff).toContain(".SS action\\-list");
     expect(roff).toContain(".SS dict\\-list");
+    expect(roff).toContain(".SS secret\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
+
+    // Two secret-* flags exist only to be refused with an explanation:
+    // secret-create --silent (the value can only be typed) and secret-edit
+    // --key (a key cannot be renamed). Undeclared, commander answers "unknown
+    // option" and the explanation never reaches the user.
+    //
+    // Both assertions match the bold flag declaration rather than the prose,
+    // because each command's help text mentions its flag while explaining the
+    // refusal — a plain substring check would pass with the option missing.
+    const sectionOf = (name: string) => roff.split(`.SS secret\\-${name}`)[1]?.split(".SS ")[0] ?? "";
+    expect(sectionOf("create")).toContain("\\fB\\-\\-silent\\fR");
+    expect(sectionOf("edit")).toContain("\\fB\\-\\-key\\fR");
 
     // No "Header" placeholder leaked through.
     expect(roff).not.toMatch(/\.SS [^\n]*Header/i);
