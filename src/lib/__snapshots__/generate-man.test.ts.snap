@@ -1704,6 +1704,231 @@ Example:
     $ tagoio secret\\-delete 62151835435d540010b768c4
     $ tagoio secret\\-delete 62151835435d540010b768c4 \\-y
 .fi
+.SS run\\-user\\-list
+get the list of TagoRUN users.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[name]\\fR
+partial name of the run user
+.TP
+\\fB\\-e\\fR, \\fB\\-\\-email\\fR \\fI[email]\\fR
+partial email of the run user
+.TP
+\\fB\\-\\-active\\fR
+only active users
+.TP
+\\fB\\-\\-inactive\\fR
+only inactive users
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many run users to fetch (default: 100)
+.TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+name, active, last_login, created_at or updated_at
+.TP
+\\fB\\-\\-order\\fR \\fI<direction>\\fR
+asc or desc (default: asc)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+    These are the end users of the profile's TagoRUN portal, not the TagoIO
+    account that owns the profile — run 'tagoio whoami' for that.
+
+    A user who has never signed in reports last_login as "never".
+
+    Note that email can be filtered but not ordered by; \\-\\-order\\-by accepts
+    only the five fields listed above.
+
+Example:
+    $ tagoio run\\-user\\-list
+    $ tagoio run\\-user\\-list \\-\\-email @acme.com
+    $ tagoio run\\-user\\-list \\-\\-inactive
+    $ tagoio run\\-user\\-list \\-\\-order\\-by last_login \\-\\-order desc
+    $ tagoio run\\-user\\-list \\-k access \\-v admin
+.fi
+.SS run\\-user\\-info [ID]
+get information about a TagoRUN user.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the run user ID)
+.PP
+.nf
+    \\-\\-raw also surfaces otp, custom_preferences and agreements, which the API
+    returns but the SDK types do not declare.
+
+Example:
+    $ tagoio run\\-user\\-info 62151835435d540010b768c4
+    $ tagoio run\\-user\\-info 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS run\\-user\\-create [email]
+create a new TagoRUN user, typing the password at a masked prompt.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-name\\fR \\fI<name>\\fR
+display name
+.TP
+\\fB\\-\\-timezone\\fR \\fI<timezone>\\fR
+IANA timezone, e.g. America/Sao_Paulo
+.TP
+\\fB\\-\\-company\\fR \\fI<company>\\fR
+company
+.TP
+\\fB\\-\\-phone\\fR \\fI<phone>\\fR
+phone number
+.TP
+\\fB\\-\\-language\\fR \\fI<language>\\fR
+language code, e.g. en
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-inactive\\fR
+create the user deactivated
+.TP
+\\fB\\-\\-silent\\fR
+refused here — the password can only be typed at the prompt
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The password is typed at a prompt that masks the input, then confirmed. No
+    flag carries it: a password passed as an argument would be written to shell
+    history, visible to anyone running ps, and captured by CI logs.
+
+    That means this command needs a terminal — it cannot run with \\-\\-silent.
+
+    Note that \\-k / \\-v set a tag, not the password.
+
+    The email is the user's login identity and must be unique within the
+    profile. A duplicate is reported before the password is asked for.
+
+    \\-\\-timezone defaults to the account's own timezone, since the API requires
+    the field.
+
+    A profile has a limited number of run users; the API reports its own limit
+    when that is reached.
+
+Example:
+    $ tagoio run\\-user\\-create operator@acme.com \\-\\-name "Ada Lovelace"
+    $ tagoio run\\-user\\-create ops@acme.com \\-\\-name Ops \\-k access \\-v admin
+.fi
+.SS run\\-user\\-edit [ID]
+edit a TagoRUN user, reset their password or change their tags.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-name\\fR \\fI<name>\\fR
+display name
+.TP
+\\fB\\-\\-company\\fR \\fI<company>\\fR
+company
+.TP
+\\fB\\-\\-phone\\fR \\fI<phone>\\fR
+phone number
+.TP
+\\fB\\-\\-language\\fR \\fI<language>\\fR
+language code, e.g. en
+.TP
+\\fB\\-\\-timezone\\fR \\fI<timezone>\\fR
+IANA timezone, e.g. America/Sao_Paulo
+.TP
+\\fB\\-\\-activate\\fR
+mark the user active
+.TP
+\\fB\\-\\-deactivate\\fR
+mark the user inactive
+.TP
+\\fB\\-\\-reset\\-password\\fR
+prompt for a new password and replace the stored one
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the run user ID; cannot be used with \\-\\-reset\\-password)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Tags REPLACE the existing set by default. Run users often carry tags that
+    grant portal access, so pass \\-\\-merge\\-tags to keep the ones you do not name.
+
+    \\-\\-reset\\-password prompts for the new password with the input masked, so it
+    needs a terminal. Every other edit works under \\-\\-silent.
+
+    A run user's email is fixed. The API silently ignores the field, so there is
+    no flag for it — to move a user to another address, delete them and create
+    the new one.
+
+Example:
+    $ tagoio run\\-user\\-edit 62151835435d540010b768c4 \\-\\-name "Ada L."
+    $ tagoio run\\-user\\-edit 62151835435d540010b768c4 \\-\\-reset\\-password
+    $ tagoio run\\-user\\-edit 62151835435d540010b768c4 \\-\\-deactivate
+    $ tagoio run\\-user\\-edit 62151835435d540010b768c4 \\-k env \\-v staging \\-\\-merge\\-tags
+.fi
+.SS run\\-user\\-delete [ID]
+permanently delete a TagoRUN user.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the run user ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The user loses access to the portal immediately, and the account cannot be
+    restored: created_at, last_login and the password do not survive, so
+    recreating the email is not a way back.
+
+Example:
+    $ tagoio run\\-user\\-delete 62151835435d540010b768c4
+    $ tagoio run\\-user\\-delete 62151835435d540010b768c4 \\-y
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP
