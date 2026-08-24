@@ -14,6 +14,7 @@ function filesCommands(program: Command) {
   program.command("Files Header");
   program
     .command("files-upload")
+    .alias("fl-up")
     .description("upload a local file or folder to TagoIO Files")
     .argument("<localPath>", "local file or folder to upload")
     .argument("[remotePath]", "destination prefix in Files (defaults to the basename of localPath)")
@@ -33,6 +34,7 @@ Example:
 
   program
     .command("files-url")
+    .alias("fl-url")
     .description("print the URL of a file already in TagoIO Files")
     .argument("<remotePath>", "path of the file in Files (e.g. custom-widgets/line-chart/index.html)")
     .option("--signed", "return a signed URL for a private file")
@@ -53,6 +55,7 @@ Example:
 
   program
     .command("files-list")
+    .alias("fl-ls")
     .description("list files and folders under a path in TagoIO Files")
     .argument("[path]", "path to list (root if omitted)")
     .option("--json", "emit a JSON object on stdout for machine readers")
@@ -71,6 +74,7 @@ Example:
 
   program
     .command("files-move")
+    .alias("fl-mv")
     .description("move a file or folder prefix to a new path")
     .argument("<from>", "source file or folder prefix")
     .argument("<to>", "destination path")
@@ -89,6 +93,7 @@ Example:
 
   program
     .command("files-rename")
+    .alias("fl-rn")
     .description("rename a file or folder in place (keeps its directory)")
     .argument("<path>", "file or folder to rename")
     .argument("<newName>", "new name for the last path segment (no '/')")
@@ -112,6 +117,7 @@ Example:
 
   program
     .command("files-copy")
+    .alias("fl-cp")
     .description("copy a file or folder prefix to a new path")
     .argument("<from>", "source file or folder prefix")
     .argument("<to>", "destination path")
@@ -129,6 +135,7 @@ Example:
 
   program
     .command("files-delete")
+    .alias("fl-dlt")
     .description("delete a file or every file under a folder prefix")
     .argument("<path>", "file or folder prefix to delete")
     .option("-y, --yes", "skip the confirmation prompt (CI/CD)")
@@ -148,6 +155,7 @@ Example:
 
   program
     .command("files-download")
+    .alias("fl-dl")
     .description("download a file or folder prefix to the local disk")
     .argument("<remotePath>", "file or folder prefix in Files")
     .argument("[localDest]", "local destination (defaults to the basename in cwd)")
@@ -167,6 +175,7 @@ Example:
 
   program
     .command("files-permission")
+    .alias("fl-prm")
     .description("make a file or folder public or private")
     .argument("<path>", "file or folder prefix")
     .argument("<visibility>", "'public' or 'private'")
