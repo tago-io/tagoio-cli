@@ -26,7 +26,7 @@ function accessManagementCommands(program: Command) {
 
   program
     .command("access-management-list")
-    .alias("am-list")
+    .alias("am-ls")
     .description("get the list of access policies.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [name]", "partial name of the policy")
@@ -49,15 +49,15 @@ function accessManagementCommands(program: Command) {
 
 Example:
     $ tagoio access-management-list
-    $ tagoio am-list --name "Alert Dispatch"
-    $ tagoio am-list --inactive
-    $ tagoio am-list -k cli_test -v 1
+    $ tagoio am-ls --name "Alert Dispatch"
+    $ tagoio am-ls --inactive
+    $ tagoio am-ls -k cli_test -v 1
        `,
     );
 
   program
     .command("access-management-info")
-    .alias("am-info")
+    .alias("am-nf")
     .description("get information about an access policy, including what it grants.")
     .argument("[ID]", "ID of your access policy")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -74,17 +74,17 @@ Example:
     --json emits them in the exact shape 'access-management-create' accepts, so
     a policy can be copied between profiles:
 
-      $ tagoio am-info <id> --json > policy.json
+      $ tagoio am-nf <id> --json > policy.json
 
 Example:
     $ tagoio access-management-info 62151835435d540010b768c4
-    $ tagoio am-info 62151835435d540010b768c4 --json
+    $ tagoio am-nf 62151835435d540010b768c4 --json
        `,
     );
 
   program
     .command("access-management-create")
-    .alias("am-create")
+    .alias("am-crt")
     .description("create a new access policy.")
     .argument("[name]", "name of the access policy")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -115,19 +115,19 @@ Example:
     targets:     [["analysis","id","<analysis-id>"]]
 
     The easiest way to build one is to copy an existing policy:
-      $ tagoio am-info <id> --json > policy.json
+      $ tagoio am-nf <id> --json > policy.json
 
 Example:
     $ tagoio access-management-create "Device Reader" \\
         --permissions '[{"effect":"allow","action":["access"],"resource":["device"]}]' \\
         --targets '[["analysis","id","62151835435d540010b768c4"]]'
-    $ tagoio am-create "Copied" --permissions-file perms.json --targets-file targets.json
+    $ tagoio am-crt "Copied" --permissions-file perms.json --targets-file targets.json
        `,
     );
 
   program
     .command("access-management-edit")
-    .alias("am-edit")
+    .alias("am-ed")
     .description("edit an access policy: rename it, change what it grants, or its tags.")
     .argument("[ID]", "ID of your access policy")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -159,14 +159,14 @@ Example:
 
 Example:
     $ tagoio access-management-edit 62151835435d540010b768c4 --name "Renamed"
-    $ tagoio am-edit 62151835435d540010b768c4 --deactivate
-    $ tagoio am-edit 62151835435d540010b768c4 --permissions-file perms.json
+    $ tagoio am-ed 62151835435d540010b768c4 --deactivate
+    $ tagoio am-ed 62151835435d540010b768c4 --permissions-file perms.json
        `,
     );
 
   program
     .command("access-management-delete")
-    .alias("am-delete")
+    .alias("am-dlt")
     .description("permanently delete an access policy.")
     .argument("[ID]", "ID of your access policy")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -186,7 +186,7 @@ Example:
 
 Example:
     $ tagoio access-management-delete 62151835435d540010b768c4
-    $ tagoio am-delete 62151835435d540010b768c4 -y
+    $ tagoio am-dlt 62151835435d540010b768c4 -y
        `,
     );
 }
