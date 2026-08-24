@@ -524,9 +524,9 @@ get object the same as stored
 
 Example:
     $ tagoio access\\-management\\-list
-    $ tagoio am\\-list \\-\\-name "Alert Dispatch"
-    $ tagoio am\\-list \\-\\-inactive
-    $ tagoio am\\-list \\-k cli_test \\-v 1
+    $ tagoio am\\-ls \\-\\-name "Alert Dispatch"
+    $ tagoio am\\-ls \\-\\-inactive
+    $ tagoio am\\-ls \\-k cli_test \\-v 1
 .fi
 .SS access\\-management\\-info [ID]
 get information about an access policy, including what it grants.
@@ -550,11 +550,11 @@ do not prompt (requires the policy ID)
     \\-\\-json emits them in the exact shape 'access\\-management\\-create' accepts, so
     a policy can be copied between profiles:
 
-      $ tagoio am\\-info <id> \\-\\-json > policy.json
+      $ tagoio am\\-nf <id> \\-\\-json > policy.json
 
 Example:
     $ tagoio access\\-management\\-info 62151835435d540010b768c4
-    $ tagoio am\\-info 62151835435d540010b768c4 \\-\\-json
+    $ tagoio am\\-nf 62151835435d540010b768c4 \\-\\-json
 .fi
 .SS access\\-management\\-create [name]
 create a new access policy.
@@ -604,13 +604,13 @@ return result as json
     targets:     [["analysis","id","<analysis\\-id>"]]
 
     The easiest way to build one is to copy an existing policy:
-      $ tagoio am\\-info <id> \\-\\-json > policy.json
+      $ tagoio am\\-nf <id> \\-\\-json > policy.json
 
 Example:
     $ tagoio access\\-management\\-create "Device Reader" \\\\
         \\-\\-permissions '[{"effect":"allow","action":["access"],"resource":["device"]}]' \\\\
         \\-\\-targets '[["analysis","id","62151835435d540010b768c4"]]'
-    $ tagoio am\\-create "Copied" \\-\\-permissions\\-file perms.json \\-\\-targets\\-file targets.json
+    $ tagoio am\\-crt "Copied" \\-\\-permissions\\-file perms.json \\-\\-targets\\-file targets.json
 .fi
 .SS access\\-management\\-edit [ID]
 edit an access policy: rename it, change what it grants, or its tags.
@@ -667,8 +667,8 @@ return result as json
 
 Example:
     $ tagoio access\\-management\\-edit 62151835435d540010b768c4 \\-\\-name "Renamed"
-    $ tagoio am\\-edit 62151835435d540010b768c4 \\-\\-deactivate
-    $ tagoio am\\-edit 62151835435d540010b768c4 \\-\\-permissions\\-file perms.json
+    $ tagoio am\\-ed 62151835435d540010b768c4 \\-\\-deactivate
+    $ tagoio am\\-ed 62151835435d540010b768c4 \\-\\-permissions\\-file perms.json
 .fi
 .SS access\\-management\\-delete [ID]
 permanently delete an access policy.
@@ -695,7 +695,7 @@ return result as json
 
 Example:
     $ tagoio access\\-management\\-delete 62151835435d540010b768c4
-    $ tagoio am\\-delete 62151835435d540010b768c4 \\-y
+    $ tagoio am\\-dlt 62151835435d540010b768c4 \\-y
 .fi
 .SS sql\\-list
 get the list of TagoSQL queries.
@@ -742,8 +742,8 @@ get object the same as stored
 
 Example:
     $ tagoio sql\\-list
-    $ tagoio sql\\-ls \\-\\-name freezer
-    $ tagoio sql\\-ls \\-\\-order\\-by created_at \\-\\-order desc
+    $ tagoio sq\\-ls \\-\\-name freezer
+    $ tagoio sq\\-ls \\-\\-order\\-by created_at \\-\\-order desc
 .fi
 .SS sql\\-info [ID]
 get information about a TagoSQL query, including its SQL text.
@@ -944,8 +944,8 @@ do not prompt (requires the query ID)
 
 Example:
     $ tagoio sql\\-execute 62151835435d540010b768c4
-    $ tagoio sql\\-run 62151835435d540010b768c4 \\-\\-param '$1=%Freezer%'
-    $ tagoio sql\\-run 62151835435d540010b768c4 \\-\\-json | jq '.rows'
+    $ tagoio sq\\-run 62151835435d540010b768c4 \\-\\-param '$1=%Freezer%'
+    $ tagoio sq\\-run 62151835435d540010b768c4 \\-\\-json | jq '.rows'
 .fi
 .SS sql\\-delete [ID]
 permanently delete a TagoSQL query.

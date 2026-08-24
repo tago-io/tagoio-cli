@@ -24,7 +24,7 @@ function sqlCommands(program: Command) {
 
   program
     .command("sql-list")
-    .alias("sql-ls")
+    .alias("sq-ls")
     .description("get the list of TagoSQL queries.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [name]", "partial name of the query")
@@ -47,13 +47,14 @@ function sqlCommands(program: Command) {
 
 Example:
     $ tagoio sql-list
-    $ tagoio sql-ls --name freezer
-    $ tagoio sql-ls --order-by created_at --order desc
+    $ tagoio sq-ls --name freezer
+    $ tagoio sq-ls --order-by created_at --order desc
        `,
     );
 
   program
     .command("sql-info")
+    .alias("sq-nf")
     .description("get information about a TagoSQL query, including its SQL text.")
     .argument("[ID]", "ID of your SQL query")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -79,6 +80,7 @@ Example:
 
   program
     .command("sql-create")
+    .alias("sq-crt")
     .description("create a new TagoSQL query.")
     .argument("[name]", "name of the query")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -119,6 +121,7 @@ Example:
 
   program
     .command("sql-edit")
+    .alias("sq-ed")
     .description("edit a TagoSQL query: rename it, change its SQL, params or cache settings.")
     .argument("[ID]", "ID of your SQL query")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -160,7 +163,7 @@ Example:
 
   program
     .command("sql-execute")
-    .alias("sql-run")
+    .alias("sq-run")
     .description("run a TagoSQL query and print its rows.")
     .argument("[ID]", "ID of your SQL query")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -190,13 +193,14 @@ Example:
 
 Example:
     $ tagoio sql-execute 62151835435d540010b768c4
-    $ tagoio sql-run 62151835435d540010b768c4 --param '\$1=%Freezer%'
-    $ tagoio sql-run 62151835435d540010b768c4 --json | jq '.rows'
+    $ tagoio sq-run 62151835435d540010b768c4 --param '\$1=%Freezer%'
+    $ tagoio sq-run 62151835435d540010b768c4 --json | jq '.rows'
        `,
     );
 
   program
     .command("sql-delete")
+    .alias("sq-dlt")
     .description("permanently delete a TagoSQL query.")
     .argument("[ID]", "ID of your SQL query")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -221,6 +225,7 @@ Example:
 
   program
     .command("sql-tables")
+    .alias("sq-tbl")
     .description("list the tables, columns and functions a TagoSQL query may use.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--filter <text>", "substring match on device or entity name")
@@ -248,6 +253,7 @@ Example:
 
   program
     .command("sql-version")
+    .alias("sq-rev")
     .description("read an earlier version of a TagoSQL query.")
     .argument("[ID]", "ID of your SQL query")
     .option("--env, --environment [environment]", "environment from config.js")

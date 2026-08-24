@@ -19,7 +19,7 @@ function secretCommands(program: Command) {
 
   program
     .command("secret-list")
-    .alias("sl")
+    .alias("se-ls")
     .description("get the list of secrets.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --key [secretKey]", "partial key of the secret")
@@ -46,6 +46,7 @@ Example:
 
   program
     .command("secret-info")
+    .alias("se-nf")
     .description("get information about a secret.")
     .argument("[ID]", "ID of your secret")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -65,6 +66,7 @@ Example:
 
   program
     .command("secret-create")
+    .alias("se-crt")
     .description("create a new secret, typing its value at a masked prompt.")
     .argument("[key]", "key of the secret: uppercase letters, digits and underscores, e.g. TWILIO_SID")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -104,6 +106,7 @@ Example:
 
   program
     .command("secret-edit")
+    .alias("se-ed")
     .description("rotate a secret's value or change its tags.")
     .argument("[ID]", "ID of your secret")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -135,6 +138,7 @@ Example:
 
   program
     .command("secret-delete")
+    .alias("se-dlt")
     .description("permanently delete a secret.")
     .argument("[ID]", "ID of your secret")
     .option("--env, --environment [environment]", "environment from config.js")

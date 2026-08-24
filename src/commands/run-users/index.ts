@@ -22,7 +22,7 @@ function runUserCommands(program: Command) {
 
   program
     .command("run-user-list")
-    .alias("rul")
+    .alias("ru-ls")
     .description("get the list of TagoRUN users.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [name]", "partial name of the run user")
@@ -60,6 +60,7 @@ Example:
 
   program
     .command("run-user-info")
+    .alias("ru-nf")
     .description("get information about a TagoRUN user.")
     .argument("[ID]", "ID of your run user")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -81,6 +82,7 @@ Example:
 
   program
     .command("run-user-create")
+    .alias("ru-crt")
     .description("create a new TagoRUN user, typing the password at a masked prompt.")
     .argument("[email]", "email of the run user, which is their login identity")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -126,6 +128,7 @@ Example:
 
   program
     .command("run-user-edit")
+    .alias("ru-ed")
     .description("edit a TagoRUN user, reset their password or change their tags.")
     .argument("[ID]", "ID of your run user")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -166,6 +169,7 @@ Example:
 
   program
     .command("run-user-delete")
+    .alias("ru-dlt")
     .description("permanently delete a TagoRUN user.")
     .argument("[ID]", "ID of your run user")
     .option("--env, --environment [environment]", "environment from config.js")

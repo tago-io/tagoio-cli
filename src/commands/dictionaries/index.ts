@@ -20,7 +20,7 @@ function dictionaryCommands(program: Command) {
 
   program
     .command("dict-list")
-    .alias("dl-list")
+    .alias("dc-ls")
     .description("get the list of dictionaries.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [dictionaryName]", "partial name of the dictionary")
@@ -42,6 +42,7 @@ Example:
 
   program
     .command("dict-info")
+    .alias("dc-nf")
     .description("get information about a dictionary and its languages.")
     .argument("[ID]", "ID of your dictionary")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -61,6 +62,7 @@ Example:
 
   program
     .command("dict-create")
+    .alias("dc-crt")
     .description("create a new dictionary.")
     .argument("[name]", "name of the dictionary")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -84,6 +86,7 @@ Example:
 
   program
     .command("dict-edit")
+    .alias("dc-ed")
     .description("edit a dictionary's name, slug, or fallback language.")
     .argument("[ID]", "ID of your dictionary")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -106,6 +109,7 @@ Example:
 
   program
     .command("dict-lang")
+    .alias("dc-lng")
     .description("read, write, or delete one language inside a dictionary.")
     .argument("[ID]", "ID of your dictionary, or its slug with --slug")
     .argument("<locale>", "language code, e.g. en-US")
@@ -156,6 +160,7 @@ Example:
 
   program
     .command("dict-delete")
+    .alias("dc-dlt")
     .description("permanently delete a dictionary and every language in it.")
     .argument("[ID]", "ID of your dictionary")
     .option("--env, --environment [environment]", "environment from config.js")
