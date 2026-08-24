@@ -65,30 +65,114 @@ List of commands of the CLI
 | Command | Description |
 | ---- | ---- |
 | init [environment] | create/update the config file for analysis in your current folder |
-| login [environment] | login to your account and store profile_token in the .tago/tago-lock |
+| login [environment] | login to your account and store profile_token in the tago-lock. |
 | set-env [environment] | set your default environment from tagoconfig.ts |
 | list-env | list all your environment and show current default |
+| whoami | show the active profile, scope, and config path (offline) |
 | | |
 | **Analysis** | |
-| deploy, analysis-deploy [name] | deploy your analysis to TagoIO (supports `--deno`, `--node` runtime flags) |
-| run, analysis-run [name] | run your TagoIO analysis from your machine (supports `--deno` and `--node` runtime flags) |
+| an-ls, analysis-list | get the list of analyses. |
+| an-nf, analysis-info [ID] | get information about an analysis. |
+| an-crt, analysis-create [name] | create a new analysis. |
+| an-ed, analysis-edit [ID] | edit an analysis: rename it, change its runtime, variables, state or tags. |
+| an-dlt, analysis-delete [ID] | permanently delete an analysis. |
+| deploy, analysis-deploy [name] | deploy your analysis to TagoIO |
+| run, analysis-run [name] | run your TagoIO analysis from your machine. |
 | at, analysis-trigger [name] | send a signal to trigger your analysis TagoIO |
 | ac, analysis-console [name] | connect to your Analysis Console |
 | ad, analysis-duplicate [ID] | duplicate your Analysis |
 | am, analysis-mode [name] | change an analysis or group of analysis to run on tago/external |
 | | |
+| **Access** | |
+| am-ls, access-management-list | get the list of access policies. |
+| am-nf, access-management-info [ID] | get information about an access policy, including what it grants. |
+| am-crt, access-management-create [name] | create a new access policy. |
+| am-ed, access-management-edit [ID] | edit an access policy: rename it, change what it grants, or its tags. |
+| am-dlt, access-management-delete [ID] | permanently delete an access policy. |
+| | |
+| **TagoSQL** | |
+| sq-ls, sql-list | get the list of TagoSQL queries. |
+| sq-nf, sql-info [ID] | get information about a TagoSQL query, including its SQL text. |
+| sq-crt, sql-create [name] | create a new TagoSQL query. |
+| sq-ed, sql-edit [ID] | edit a TagoSQL query: rename it, change its SQL, params or cache settings. |
+| sq-run, sql-execute [ID] | run a TagoSQL query and print its rows. |
+| sq-dlt, sql-delete [ID] | permanently delete a TagoSQL query. |
+| sq-tbl, sql-tables | list the tables, columns and functions a TagoSQL query may use. |
+| sq-rev, sql-version [ID] | read an earlier version of a TagoSQL query. |
+| | |
 | **Devices** | |
+| dv-crt, device-create [name] | create a new device. |
+| dv-dlt, device-delete [ID/Token] | permanently delete a device and all its data. |
+| dv-ed, device-edit [ID/Token] | edit a device's name, tags, status, network/connector, or retention. |
+| dv-tkn, device-token [ID/Token] | manage device tokens: create, delete, or list. |
+| dv-prm, device-param [ID/Token] | manage device configuration parameters: set, delete, or list. |
 | inspect, device-inspector [ID/Token] | connect to your Device Live Inspector |
-| info, device-info [ID/Token] | get information about a device and it's configuration parameters |
-| dl, device-list  | get the list of devices |
-| data [ID/Token] | get data from a device |
-| bkp, device-backup [ID/Token] | backup data from a Device. Store it on the TagoIO Cloud by default |
-| device-type [ID/Token] | change the bucket type to immutable or mutable |
-| |
+| info, device-info [ID/Token] | get information about a device and it's configuration parameters. |
+| dl, device-list | get the list of devices. |
+| data [ID/Token] | get data from a device. |
+| bkp, device-backup [ID/Token] | backup data from a Device. Store it on TagoIO Cloud by default |
+| nc, device-network [ID/Token] | change the device network and/or connector |
+| dv-tp, device-type [ID/Token] | change the bucket type to immutable or mutable |
+| dv-cp, device-copy | copy data from one device to another |
+| | |
+| **Dashboards** | |
+| copy-tab [dashboardID] | copy a tab of a dashboard to another tab |
+| | |
+| **Entities** | |
+| en-ls, entity-list | list entities in the active profile |
+| en-nf, entity-info [id] | show one entity's metadata and schema |
+| en-crt, entity-create [name] | create a new entity (interactive by default; flag-driven via --schema-json) |
+| en-ed, entity-edit [id] | update entity metadata (name) |
+| en-dlt, entity-delete [id] | permanently delete an entity |
+| en-dt, entity-data [id] | read / write / edit / delete / empty / count entity records |
+| en-sch, entity-schema [id] | manage entity schema (fields + indexes) |
+| en-cp, entity-copy | copy data from one entity to another within the same profile |
+| | |
+| **Files** | |
+| fl-up, files-upload <localPath> [remotePath] | upload a local file or folder to TagoIO Files |
+| fl-url, files-url <remotePath> | print the URL of a file already in TagoIO Files |
+| fl-ls, files-list [path] | list files and folders under a path in TagoIO Files |
+| fl-mv, files-move <from> <to> | move a file or folder prefix to a new path |
+| fl-rn, files-rename <path> <newName> | rename a file or folder in place (keeps its directory) |
+| fl-cp, files-copy <from> <to> | copy a file or folder prefix to a new path |
+| fl-dlt, files-delete <path> | delete a file or every file under a folder prefix |
+| fl-dl, files-download <remotePath> [localDest] | download a file or folder prefix to the local disk |
+| fl-prm, files-permission <path> <visibility> | make a file or folder public or private |
+| | |
+| **Actions** | |
+| act-ls, action-list | get the list of actions. |
+| act-nf, action-info [ID] | get information about an action, including its trigger and target. |
+| act-crt, action-create [name] | create a new action. |
+| act-ed, action-edit [ID] | edit an action's name, description, status, tags, trigger, or target. |
+| act-on, action-enable [ID] | activate an action. |
+| act-off, action-disable [ID] | deactivate an action without deleting it. |
+| act-dlt, action-delete [ID] | permanently delete an action. |
+| | |
+| **Dictionaries** | |
+| dc-ls, dict-list | get the list of dictionaries. |
+| dc-nf, dict-info [ID] | get information about a dictionary and its languages. |
+| dc-crt, dict-create [name] | create a new dictionary. |
+| dc-ed, dict-edit [ID] | edit a dictionary's name, slug, or fallback language. |
+| dc-lng, dict-lang [ID] <locale> | read, write, or delete one language inside a dictionary. |
+| dc-dlt, dict-delete [ID] | permanently delete a dictionary and every language in it. |
+| | |
+| **Secrets** | |
+| se-ls, secret-list | get the list of secrets. |
+| se-nf, secret-info [ID] | get information about a secret. |
+| se-crt, secret-create [key] | create a new secret, typing its value at a masked prompt. |
+| se-ed, secret-edit [ID] | rotate a secret's value or change its tags. |
+| se-dlt, secret-delete [ID] | permanently delete a secret. |
+| | |
+| **Run** | |
+| ru-ls, run-user-list | get the list of TagoRUN users. |
+| ru-nf, run-user-info [ID] | get information about a TagoRUN user. |
+| ru-crt, run-user-create [email] | create a new TagoRUN user, typing the password at a masked prompt. |
+| ru-ed, run-user-edit [ID] | edit a TagoRUN user, reset their password or change their tags. |
+| ru-dlt, run-user-delete [ID] | permanently delete a TagoRUN user. |
+| | |
 | **Profiles** | |
-| export, app-export | export an application from one profile to another |
-| |
-| **Backup** | |
+| export, app-export | export application from one profile to another |
+| backup [command] | profile backup management commands |
 | backup create | create a new profile backup |
 | backup list | list all profile backups |
 | backup restore | restore profile from a backup |
