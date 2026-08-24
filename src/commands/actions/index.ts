@@ -20,7 +20,7 @@ function actionCommands(program: Command) {
 
   program
     .command("action-list")
-    .alias("al")
+    .alias("act-ls")
     .description("get the list of actions.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [actionName]", "partial name of the action")
@@ -45,6 +45,7 @@ Example:
 
   program
     .command("action-info")
+    .alias("act-nf")
     .description("get information about an action, including its trigger and target.")
     .argument("[ID]", "ID of your action")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -64,6 +65,7 @@ Example:
 
   program
     .command("action-create")
+    .alias("act-crt")
     .description("create a new action.")
     .argument("[name]", "name of the action")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -146,6 +148,7 @@ Example:
 
   program
     .command("action-edit")
+    .alias("act-ed")
     .description("edit an action's name, description, status, tags, trigger, or target.")
     .argument("[ID]", "ID of your action")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -179,6 +182,7 @@ Example:
 
   program
     .command("action-enable")
+    .alias("act-on")
     .description("activate an action.")
     .argument("[ID]", "ID of your action")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -196,6 +200,7 @@ Example:
 
   program
     .command("action-disable")
+    .alias("act-off")
     .description("deactivate an action without deleting it.")
     .argument("[ID]", "ID of your action")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -213,6 +218,7 @@ Example:
 
   program
     .command("action-delete")
+    .alias("act-dlt")
     .description("permanently delete an action.")
     .argument("[ID]", "ID of your action")
     .option("--env, --environment [environment]", "environment from config.js")
