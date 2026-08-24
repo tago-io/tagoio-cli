@@ -27,6 +27,7 @@ function deviceCommands(program: Command) {
 
   program
     .command("device-create")
+    .alias("dv-crt")
     .description("create a new device.")
     .argument("[name]", "name of the device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -55,6 +56,7 @@ Example:
 
   program
     .command("device-delete")
+    .alias("dv-dlt")
     .description("permanently delete a device and all its data.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -74,6 +76,7 @@ Example:
 
   program
     .command("device-edit")
+    .alias("dv-ed")
     .description("edit a device's name, tags, status, network/connector, or retention.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -102,6 +105,7 @@ Example:
 
   program
     .command("device-token")
+    .alias("dv-tkn")
     .description("manage device tokens: create, delete, or list.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -124,6 +128,7 @@ Example:
 
   program
     .command("device-param")
+    .alias("dv-prm")
     .description("manage device configuration parameters: set, delete, or list.")
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -279,6 +284,7 @@ Example:
 
   program
     .command("device-type")
+    .alias("dv-tp")
     .description(`change the bucket type to immutable or mutable`)
     .argument("[ID/Token]", "ID/Token of your device")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -299,6 +305,7 @@ Example:
 
   program
     .command("device-copy")
+    .alias("dv-cp")
     .description(`copy data from one device to another`)
     .option("--from [token/id]", "token/id of the device where data will be copied from")
     .option("--to [token/id]", "token/id of the device where data will be copied to")
