@@ -20,6 +20,7 @@ describe("accessExport", () => {
     devices: { "dev-src": "dev-tgt" },
     analysis: {},
     dashboards: {},
+    secrets: {},
     tokens: {},
     config: { export_tag: "export_id" },
   });

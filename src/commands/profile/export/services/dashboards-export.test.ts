@@ -34,6 +34,7 @@ describe("dashboardExport", () => {
     devices: {},
     analysis: {},
     dashboards: {},
+    secrets: {},
     tokens: {},
     config: { export_tag: "export_id" },
   });
