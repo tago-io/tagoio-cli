@@ -6,8 +6,9 @@ vi.mock("../../../../lib/messages.js", () => ({
   errorHandler: vi.fn(),
 }));
 
+const replaceObjMock = vi.hoisted(() => vi.fn((obj: unknown) => obj));
 vi.mock("../../../../lib/replace-obj.js", () => ({
-  replaceObj: (obj: unknown) => obj,
+  replaceObj: replaceObjMock,
 }));
 
 vi.mock("./export-backup/export-backup.js", () => ({
@@ -275,6 +276,157 @@ describe("widgets-export", () => {
         { widget_id: "w-display-new", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 },
       ],
     });
+  });
+
+  test("insertWidgets remaps header buttons to the kept iframe even when the iframe comes later in the arrangement", async () => {
+    const widgetInfoMock = vi.fn((_dashId: string, widgetId: string) =>
+      Promise.resolve({
+        id: widgetId,
+        type: widgetId === "w-iframe" ? "iframe" : "display",
+        display: widgetId === "w-display" ? { header_buttons: [{ trigger: "widget", widget: "w-iframe" }] } : {},
+      }),
+    );
+    const widgetCreateMock = vi.fn((_targetId: string, widget: { id: string }) => Promise.resolve({ widget: `${widget.id}-new` }));
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock }, edit: dashboardEditMock },
+    } as never;
+
+    // The display widget referencing the iframe sits BEFORE the iframe in the same tab.
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [
+        { widget_id: "w-display", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 },
+        { widget_id: "w-iframe", tab: "tab-1", x: 4, y: 0, width: 4, height: 4 },
+      ],
+      tabs: [{ key: "tab-1", type: "" }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, secrets: {}, dashboards: {} } as never;
+    const keptIframes = [{ widget_id: "target-iframe", tab: "tab-1", x: 9, y: 9, width: 1, height: 1 }];
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder, true, keptIframes as never);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(widgetCreateMock).toHaveBeenCalledTimes(1);
+    expect(replaceObjMock).toHaveBeenCalledWith(expect.objectContaining({ id: "w-display" }), expect.objectContaining({ "w-iframe": "target-iframe" }));
+    expect(dashboardEditMock).toHaveBeenCalledWith("dash-target", {
+      arrangement: [
+        { widget_id: "w-display-new", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 },
+        { widget_id: "target-iframe", tab: "tab-1", x: 4, y: 0, width: 4, height: 4 },
+      ],
+    });
+  });
+
+  test("insertWidgets rewrites the kept iframe header buttons from the source with remapped widget IDs", async () => {
+    const widgetInfoMock = vi.fn((_dashId: string, widgetId: string) =>
+      Promise.resolve({
+        id: widgetId,
+        type: widgetId === "w-iframe" ? "iframe" : "form",
+        display: widgetId === "w-iframe" ? { header_buttons: [{ trigger: "widget", widget: "w-form" }], url: "source-url" } : {},
+      }),
+    );
+    const widgetCreateMock = vi.fn((_targetId: string, widget: { id: string }) => Promise.resolve({ widget: `${widget.id}-new` }));
+    const keptInfoMock = vi.fn().mockResolvedValue({
+      id: "target-iframe",
+      type: "iframe",
+      display: { header_buttons: [{ trigger: "widget", widget: "stale-form" }], url: "target-url" },
+    });
+    const widgetEditMock = vi.fn().mockResolvedValue("target-iframe");
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock, info: keptInfoMock, edit: widgetEditMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [
+        { widget_id: "w-form", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 },
+        { widget_id: "w-iframe", tab: "tab-1", x: 4, y: 0, width: 4, height: 4 },
+      ],
+      tabs: [{ key: "tab-1", type: "" }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, secrets: {}, dashboards: {} } as never;
+    const keptIframes = [{ widget_id: "target-iframe", tab: "tab-1", x: 4, y: 0, width: 4, height: 4 }];
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder, true, keptIframes as never);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(keptInfoMock).toHaveBeenCalledWith("dash-target", "target-iframe");
+    // The source header buttons go through the replacer with the freshly created form ID.
+    expect(replaceObjMock).toHaveBeenCalledWith([{ trigger: "widget", widget: "w-form" }], expect.objectContaining({ "w-form": "w-form-new" }));
+    // The kept widget keeps its own config (url) and only the header buttons are replaced.
+    expect(widgetEditMock).toHaveBeenCalledWith("dash-target", "target-iframe", {
+      display: { url: "target-url", header_buttons: [{ trigger: "widget", widget: "w-form" }] },
+    });
+  });
+
+  test("insertWidgets leaves kept iframes untouched when the source iframe has no header buttons", async () => {
+    const widgetInfoMock = vi.fn().mockResolvedValue({ id: "w-iframe", type: "iframe", display: {} });
+    const keptInfoMock = vi.fn();
+    const widgetEditMock = vi.fn();
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: vi.fn(), info: keptInfoMock, edit: widgetEditMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [{ widget_id: "w-iframe", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 }],
+      tabs: [{ key: "tab-1", type: "" }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, secrets: {}, dashboards: {} } as never;
+    const keptIframes = [{ widget_id: "target-iframe", tab: "tab-1", x: 0, y: 0, width: 4, height: 4 }];
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder, true, keptIframes as never);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(keptInfoMock).not.toHaveBeenCalled();
+    expect(widgetEditMock).not.toHaveBeenCalled();
+  });
+
+  test("insertWidgets passes the secret ID map to the replacer", async () => {
+    const widgetInfoMock = vi.fn().mockResolvedValue({ id: "w-map", type: "map" });
+    const widgetCreateMock = vi.fn().mockResolvedValue({ widget: "w-map-new" });
+    const dashboardEditMock = vi.fn().mockResolvedValue(undefined);
+
+    const exportAccount = { dashboards: { widgets: { info: widgetInfoMock } } } as never;
+    const importAccount = {
+      dashboards: { widgets: { create: widgetCreateMock }, edit: dashboardEditMock },
+    } as never;
+
+    const dashboard = {
+      id: "dash-1",
+      label: "Dash",
+      arrangement: [{ widget_id: "w-map", tab: "tab-1" }],
+      tabs: [{ key: "tab-1", type: "" }],
+    };
+    const target = { id: "dash-target" };
+    const holder: IExportHolder = { analysis: {}, devices: {}, secrets: { "src-secret": "tgt-secret" }, dashboards: {} } as never;
+
+    const { insertWidgets } = await import("./widgets-export.js");
+    const promise = insertWidgets(exportAccount, importAccount, dashboard as never, target as never, holder, false);
+    await vi.runAllTimersAsync();
+    await promise;
+
+    expect(replaceObjMock).toHaveBeenCalledWith(expect.objectContaining({ id: "w-map" }), expect.objectContaining({ "src-secret": "tgt-secret" }));
   });
 
   test("insertWidgets re-attaches kept iframes that have no source match", async () => {

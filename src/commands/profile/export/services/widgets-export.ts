@@ -39,6 +39,63 @@ function _groupKeptByTab(keptIframes: Arrangement[]) {
   return byTab;
 }
 
+/**
+ * Pairs each source iframe with the Nth kept target iframe of the same tab and registers the pair
+ * in the ID map before any widget is created. Header buttons that open a custom widget are then
+ * remapped regardless of where the iframe sits in the arrangement. Shifts from keptByTab, so the
+ * entries left over are exactly the kept iframes with no source counterpart.
+ */
+function _mapKeptIframes(
+  arrangement: Arrangement[],
+  widgets: WidgetInfo[],
+  keptByTab: Map<string | null | undefined, Arrangement[]>,
+  mappings: { [key: string]: string },
+) {
+  for (const entry of arrangement) {
+    const widget = widgets.find((wdgt) => wdgt.id === entry.widget_id);
+    if (widget?.type !== "iframe" || !widget.id) {
+      continue;
+    }
+    const kept = keptByTab.get(entry.tab)?.shift();
+    if (kept) {
+      mappings[widget.id] = kept.widget_id;
+    }
+  }
+}
+
+const _buildReplacer = (export_holder: IExportHolder, widgetIDMappings: { [key: string]: string }) => ({
+  ...export_holder.analysis,
+  ...export_holder.devices,
+  ...export_holder.secrets,
+  ...widgetIDMappings,
+});
+
+/**
+ * A kept iframe still carries the header buttons from the previous export, pointing at target
+ * widgets that were just deleted and recreated under new IDs. The source iframe holds the intended
+ * wiring, so its header buttons are remapped and written over the kept widget's display.
+ */
+async function _syncKeptHeaderButtons(importAccount: Account, targetID: string, sourceIframes: WidgetInfo[], replacer: { [key: string]: string }) {
+  for (const source of sourceIframes) {
+    const keptID = source.id ? replacer[source.id] : undefined;
+    const headerButtons = source.display?.header_buttons;
+    if (!keptID || !Array.isArray(headerButtons)) {
+      continue;
+    }
+
+    const kept = await importAccount.dashboards.widgets.info(targetID, keptID).catch(() => null);
+    if (!kept) {
+      continue;
+    }
+
+    const display = { ...kept.display, header_buttons: replaceObj(headerButtons, replacer) };
+    await importAccount.dashboards.widgets.edit(targetID, keptID, { display }).catch((error) => {
+      throw `Error on header buttons of widget ${keptID} in import account: ${error}`;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500)); // ? Prevent RPM limit issues
+  }
+}
+
 async function insertWidgets(
   exportAccount: Account,
   importAccount: Account,
@@ -79,6 +136,9 @@ async function insertWidgets(
   const new_arrangement: Arrangement[] = [];
   const widgetIDMappings: { [key: string]: string } = {};
   const keptByTab = _groupKeptByTab(keptIframes);
+  if (ignoreCustomWidgets) {
+    _mapKeptIframes(arrangement, widgets, keptByTab, widgetIDMappings);
+  }
   for (const widget_arrangement of arrangement) {
     const widget = widgets.find((wdgt) => widget_arrangement.widget_id === wdgt.id);
     if (!widget || !widget.id) {
@@ -87,16 +147,16 @@ async function insertWidgets(
 
     // Custom widgets (type "iframe") carry source-only data (Files URL, analysis tokens) that the
     // ID remap cannot resolve. Instead of recreating from source, keep the target's reconfigured
-    // widget and re-attach it with the source geometry (position/size). Matched by tab order.
+    // widget and re-attach it with the source geometry (position/size). Pairs come from _mapKeptIframes.
     if (ignoreCustomWidgets && widget.type === "iframe") {
-      const kept = keptByTab.get(widget_arrangement.tab)?.shift();
-      if (kept) {
-        new_arrangement.push({ ...widget_arrangement, widget_id: kept.widget_id });
+      const keptID = widgetIDMappings[widget.id];
+      if (keptID) {
+        new_arrangement.push({ ...widget_arrangement, widget_id: keptID });
       }
       continue;
     }
 
-    const new_widget = replaceObj(widget, { ...export_holder.analysis, ...export_holder.devices, ...widgetIDMappings });
+    const new_widget = replaceObj(widget, _buildReplacer(export_holder, widgetIDMappings));
     if (new_widget.data) {
       new_widget.data = new_widget.data.map((x: any) => {
         if (x.qty) {
@@ -122,6 +182,11 @@ async function insertWidgets(
   }
 
   await importAccount.dashboards.edit(target.id, { arrangement: new_arrangement });
+
+  if (ignoreCustomWidgets) {
+    const sourceIframes = widgets.filter((widget) => widget.type === "iframe");
+    await _syncKeptHeaderButtons(importAccount, target.id, sourceIframes, _buildReplacer(export_holder, widgetIDMappings));
+  }
 }
 
 /**

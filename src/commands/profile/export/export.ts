@@ -1,4 +1,4 @@
-import { Account } from "@tago-io/sdk";
+import { Account, Resources } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts from "prompts";
 
@@ -14,7 +14,7 @@ import { setupExport } from "./export-setup.js";
 import { accessExport } from "./services/access-export.js";
 import { actionsExport } from "./services/actions-export.js";
 import { analysisExport } from "./services/analysis-export.js";
-import { collectIDs } from "./services/collect-ids.js";
+import { collectIDs, collectSecretIDs } from "./services/collect-ids.js";
 import { dashboardExport } from "./services/dashboards-export.js";
 import { deviceExport } from "./services/devices-export.js";
 import { dictionaryExport } from "./services/dictionary-export.js";
@@ -181,6 +181,7 @@ async function startExport(options: IExportOptions) {
     devices: {},
     analysis: {},
     dashboards: {},
+    secrets: {},
     tokens: { [userConfig.export.token]: userConfig.import.token },
     config: { export_tag: userConfig.export_tag },
   };
@@ -210,6 +211,11 @@ async function startExport(options: IExportOptions) {
           idCollection.push("devices");
           export_holder = await collectIDs(account, import_account, "devices", export_holder);
         }
+        export_holder = await collectSecretIDs(
+          new Resources({ token: userConfig.export.token, region: userConfig.export.region }),
+          new Resources({ token: userConfig.import.token, region: userConfig.import.region }),
+          export_holder,
+        );
         export_holder = await dashboardExport(account, import_account, export_holder, options);
         idCollection.push("dashboards");
         break;

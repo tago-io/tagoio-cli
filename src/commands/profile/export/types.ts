@@ -9,6 +9,7 @@ interface IExportHolder {
   dashboards: { [key: string]: string };
   devices: { [key: string]: string };
   analysis: { [key: string]: string };
+  secrets: { [key: string]: string };
   tokens: { [key: string]: string };
   config: { export_tag: string };
 }
