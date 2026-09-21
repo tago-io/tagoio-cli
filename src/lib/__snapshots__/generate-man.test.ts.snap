@@ -1058,6 +1058,308 @@ Example:
     $ tagoio files\\-permission custom\\-widgets/line\\-chart public \\-\\-yes
     $ tagoio files\\-permission private/report.pdf private
 .fi
+.SS action\\-list
+get the list of actions.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[actionName]\\fR
+partial name of the action
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-active\\fR
+only active actions
+.TP
+\\fB\\-\\-inactive\\fR
+only inactive actions
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+Example:
+    $ tagoio action\\-list
+    $ tagoio action\\-list \\-\\-name Alert
+    $ tagoio action\\-list \\-k type \\-v alarm \\-\\-active
+.fi
+.SS action\\-info [ID]
+get information about an action, including its trigger and target.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the action ID)
+.PP
+.nf
+Example:
+    $ tagoio action\\-info 62151835435d540010b768c4
+    $ tagoio action\\-info 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS action\\-create [name]
+create a new action.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-type\\fR \\fI<type>\\fR
+trigger type: condition, resource, interval, schedule, mqtt_topic, usage_alert, condition_geofence (default: condition)
+.TP
+\\fB\\-\\-description\\fR \\fI<text>\\fR
+action description
+.TP
+\\fB\\-\\-inactive\\fR
+create the action inactive (default: active)
+.TP
+\\fB\\-\\-trigger\\-device\\fR \\fI<id>\\fR
+device ID to watch (\\-\\-type condition)
+.TP
+\\fB\\-\\-trigger\\-variable\\fR \\fI<variable>\\fR
+variable to watch (\\-\\-type condition)
+.TP
+\\fB\\-\\-trigger\\-is\\fR \\fI<operator>\\fR
+comparison: < > = ! >< * (\\-\\-type condition)
+.TP
+\\fB\\-\\-trigger\\-value\\fR \\fI<value>\\fR
+value to compare against (\\-\\-type condition)
+.TP
+\\fB\\-\\-trigger\\-second\\-value\\fR \\fI<value>\\fR
+upper bound for the >< operator
+.TP
+\\fB\\-\\-trigger\\-value\\-type\\fR \\fI<type>\\fR
+string|number|boolean|*; inferred from \\-\\-trigger\\-value when omitted
+.TP
+\\fB\\-\\-trigger\\-unlock\\fR
+mark the trigger as an unlock condition; needs a second firing trigger, so use \\-\\-trigger\\-json
+.TP
+\\fB\\-\\-cron\\fR \\fI<expression>\\fR
+cron expression (\\-\\-type schedule)
+.TP
+\\fB\\-\\-timezone\\fR \\fI<timezone>\\fR
+timezone for the cron (\\-\\-type schedule)
+.TP
+\\fB\\-\\-interval\\fR \\fI<expression>\\fR
+run every interval, e.g. '1 hour' (\\-\\-type interval)
+.TP
+\\fB\\-\\-resource\\fR \\fI<kind>\\fR
+device|bucket|file|analysis|action|am|user|financial|profile (\\-\\-type resource)
+.TP
+\\fB\\-\\-when\\fR \\fI<event>\\fR
+create|update|delete (\\-\\-type resource)
+.TP
+\\fB\\-\\-resource\\-tag\\-key\\fR \\fI<key>\\fR
+tag key the resource must carry (\\-\\-type resource)
+.TP
+\\fB\\-\\-resource\\-tag\\-value\\fR \\fI<value>\\fR
+tag value the resource must carry (\\-\\-type resource)
+.TP
+\\fB\\-\\-topic\\fR \\fI<topic>\\fR
+MQTT topic to watch, e.g. '/device/#' (\\-\\-type mqtt_topic)
+.TP
+\\fB\\-\\-trigger\\-tag\\-key\\fR \\fI<key>\\fR
+tag key the device must carry (\\-\\-type mqtt_topic)
+.TP
+\\fB\\-\\-trigger\\-tag\\-value\\fR \\fI<value>\\fR
+tag value the device must carry (\\-\\-type mqtt_topic)
+.TP
+\\fB\\-\\-service\\fR \\fI<name>\\fR
+service to watch, e.g. input, output (\\-\\-type usage_alert)
+.TP
+\\fB\\-\\-condition\\fR \\fI<operator>\\fR
+= or > (\\-\\-type usage_alert)
+.TP
+\\fB\\-\\-condition\\-value\\fR \\fI<number>\\fR
+threshold (\\-\\-type usage_alert)
+.TP
+\\fB\\-\\-run\\-script\\fR \\fI<analysisID>\\fR
+run an analysis (repeatable) (default: [])
+.TP
+\\fB\\-\\-notification\\fR
+send a notification (needs \\-\\-subject and \\-\\-message)
+.TP
+\\fB\\-\\-email\\fR \\fI<to>\\fR
+send an email (needs \\-\\-subject and \\-\\-message)
+.TP
+\\fB\\-\\-subject\\fR \\fI<text>\\fR
+subject for \\-\\-notification / \\-\\-email
+.TP
+\\fB\\-\\-message\\fR \\fI<text>\\fR
+message body for \\-\\-notification / \\-\\-email
+.TP
+\\fB\\-\\-post\\fR \\fI<url>\\fR
+POST to a URL
+.TP
+\\fB\\-\\-header\\fR \\fI<key=value>\\fR
+header for \\-\\-post (repeatable) (default: [])
+.TP
+\\fB\\-\\-trigger\\-json\\fR \\fI<json>\\fR
+raw trigger array; required for condition_geofence
+.TP
+\\fB\\-\\-action\\-json\\fR \\fI<json>\\fR
+raw action object; covers sms, mqtt, twilio, sendgrid, smtp and sqs targets
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt for missing input
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Note on \\-\\-trigger\\-value\\-type: when omitted, a numeric\\-looking \\-\\-trigger\\-value
+    infers "number" and anything else infers "string". Values like "true" stay
+    strings — pass \\-\\-trigger\\-value\\-type explicitly to override. A mismatched
+    value type produces an action that never fires, with no error.
+
+    Note on unlock: a trigger carrying "unlock" is the condition that re\\-arms the
+    action, not one that fires it, so it always needs a firing trigger alongside.
+    Build the pair with \\-\\-trigger\\-json:
+
+        \\-\\-trigger\\-json '[{"device":"<id>","variable":"temperature","is":">","value":"30","value_type":"number"},
+                         {"device":"<id>","variable":"temperature","is":"<","value":"20","value_type":"number","unlock":true}]'
+
+    Note on multiple devices: a condition trigger can target every device
+    carrying a tag instead of one device id, by passing tag_key/tag_value
+    through \\-\\-trigger\\-json:
+
+        \\-\\-trigger\\-json '[{"variable":"payload","is":"*","value":"*","value_type":"*","tag_key":"foo","tag_value":"bar"}]'
+
+Example:
+    $ tagoio action\\-create "Temp Alert" \\-\\-type condition \\-\\-trigger\\-device 62151835435d540010b768c4 \\\\
+        \\-\\-trigger\\-variable temperature \\-\\-trigger\\-is '>' \\-\\-trigger\\-value 30 \\-\\-run\\-script 6215af1c1d1b2a0011f2e5a1
+    $ tagoio action\\-create "Daily Report" \\-\\-type schedule \\-\\-cron "0 9 * * *" \\-\\-timezone UTC \\\\
+        \\-\\-email team@acme.com \\-\\-subject "Report" \\-\\-message "Attached"
+    $ tagoio action\\-create "MQTT Watch" \\-\\-type mqtt_topic \\-\\-topic "/device/#" \\\\
+        \\-\\-trigger\\-tag\\-key device_type \\-\\-trigger\\-tag\\-value sensor \\-\\-run\\-script 6215af1c1d1b2a0011f2e5a1
+    $ tagoio action\\-create "Queue" \\-\\-type condition \\-\\-trigger\\-json '[{"device":"...","variable":"v","is":"*","value_type":"*"}]' \\\\
+        \\-\\-action\\-json '{"type":"queue\\-sqs","sqs_secret":"...","batch_enabled":true}'
+.fi
+.SS action\\-edit [ID]
+edit an action's name, description, status, tags, trigger, or target.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI<name>\\fR
+new action name
+.TP
+\\fB\\-\\-description\\fR \\fI<text>\\fR
+new action description
+.TP
+\\fB\\-\\-active\\fR
+set the action active
+.TP
+\\fB\\-\\-inactive\\fR
+set the action inactive
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-trigger\\-json\\fR \\fI<json>\\fR
+replace the whole trigger array
+.TP
+\\fB\\-\\-action\\-json\\fR \\fI<json>\\fR
+replace the whole action object
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the action ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Trigger and target are replaced as whole values, because the API overwrites
+    these fields rather than merging them. To change one field, read the current
+    value, edit it, and pass it back:
+
+        tagoio action\\-info <id> \\-\\-json | jq .trigger    # edit, then:
+        tagoio action\\-edit <id> \\-\\-trigger\\-json '<edited>'
+
+Example:
+    $ tagoio action\\-edit 62151835435d540010b768c4 \\-\\-name "New Name"
+    $ tagoio action\\-edit 62151835435d540010b768c4 \\-k env \\-v prod \\-\\-merge\\-tags
+.fi
+.SS action\\-enable [ID]
+activate an action.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the action ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio action\\-enable 62151835435d540010b768c4
+.fi
+.SS action\\-disable [ID]
+deactivate an action without deleting it.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the action ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio action\\-disable 62151835435d540010b768c4
+.fi
+.SS action\\-delete [ID]
+permanently delete an action.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the action ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+Example:
+    $ tagoio action\\-delete 62151835435d540010b768c4
+    $ tagoio action\\-delete 62151835435d540010b768c4 \\-y
+.fi
 .SS app\\-export
 export application from one profile to another
 .TP

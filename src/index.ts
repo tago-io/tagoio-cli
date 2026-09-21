@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import kleur from "kleur";
 
+import { actionCommands } from "./commands/actions/index.js";
 import { analysisCommands } from "./commands/analysis/index.js";
 import { dashboardCommands } from "./commands/dashboard/index.js";
 import { deviceCommands } from "./commands/devices/index.js";
@@ -162,6 +163,7 @@ Example:
   dashboardCommands(program);
   entityCommands(program);
   filesCommands(program);
+  actionCommands(program);
   profileCommands(program, defaultEnv);
 
   return program;

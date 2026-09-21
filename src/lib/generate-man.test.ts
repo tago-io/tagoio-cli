@@ -55,6 +55,7 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS login [environment]");
     expect(roff).toContain(".SS analysis\\-deploy [name]");
     expect(roff).toContain(".SS device\\-list");
+    expect(roff).toContain(".SS action\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
 
     // No "Header" placeholder leaked through.
