@@ -14,6 +14,9 @@ vi.mock("@tago-io/sdk", () => ({
       profiles: { info: (...args: unknown[]) => profilesInfoMock(...args) },
     };
   },
+  Resources: function Resources() {
+    return {};
+  },
 }));
 
 vi.mock("./export-setup.js", () => ({
@@ -66,7 +69,11 @@ const passthrough = (...args: unknown[]) => Promise.resolve(args[2] ?? {});
 vi.mock("./services/access-export.js", () => ({ accessExport: vi.fn(passthrough) }));
 vi.mock("./services/actions-export.js", () => ({ actionsExport: vi.fn(passthrough) }));
 vi.mock("./services/analysis-export.js", () => ({ analysisExport: vi.fn(passthrough) }));
-vi.mock("./services/collect-ids.js", () => ({ collectIDs: vi.fn((_a, _b, _t, holder) => Promise.resolve(holder)) }));
+const collectSecretIDsMock = vi.hoisted(() => vi.fn((_a: unknown, _b: unknown, holder: unknown) => Promise.resolve(holder)));
+vi.mock("./services/collect-ids.js", () => ({
+  collectIDs: vi.fn((_a, _b, _t, holder) => Promise.resolve(holder)),
+  collectSecretIDs: collectSecretIDsMock,
+}));
 vi.mock("./services/dashboards-export.js", () => ({ dashboardExport: vi.fn(passthrough) }));
 vi.mock("./services/devices-export.js", () => ({ deviceExport: vi.fn(passthrough) }));
 vi.mock("./services/dictionary-export.js", () => ({ dictionaryExport: vi.fn(passthrough) }));
@@ -75,6 +82,7 @@ vi.mock("./services/run-buttons-export.js", () => ({ runButtonsExport: vi.fn(pas
 describe("startExport", () => {
   beforeEach(() => {
     setupExportMock.mockReset();
+    collectSecretIDsMock.mockClear();
     resetInjectedPrompts();
   });
 
@@ -301,6 +309,27 @@ describe("startExport end-to-end", () => {
     const { collectIDs } = await import("./services/collect-ids.js");
     expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "analysis", expect.anything());
     expect(collectIDs).toHaveBeenCalledWith(expect.anything(), expect.anything(), "devices", expect.anything());
+    expect(collectSecretIDsMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("running only 'analysis' does not collect secret IDs", async () => {
+    let call = 0;
+    profilesInfoMock.mockImplementation(async () => {
+      call += 1;
+      return call === 1 ? { info: { name: "Export", id: "p-export" } } : { info: { name: "Import", id: "p-import" } };
+    });
+
+    prompts.inject([["analysis"], "my-tag"]);
+
+    const { startExport } = await import("./export.js");
+    await startExport({
+      from: "prod",
+      to: "dev",
+      entity: [],
+      setup: "",
+    });
+
+    expect(collectSecretIDsMock).not.toHaveBeenCalled();
   });
 
   test("running only 'access' collects devices and dashboards IDs first", async () => {
