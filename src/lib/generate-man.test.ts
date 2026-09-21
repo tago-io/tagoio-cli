@@ -101,15 +101,16 @@ describe("generateManPage", () => {
     expect(analysisSection("create")).toContain("\\fB\\-\\-runtime\\fR");
     expect(analysisSection("edit")).toContain("\\fB\\-\\-runtime\\fR");
 
-    // The am-* aliases are the short form people will actually type. A future
-    // alias cleanup that dropped them would break muscle memory silently, so
-    // one is pinned here. The bare "am" is deliberately absent: it belongs to
-    // analysis-mode, and commander throws at startup on a duplicate.
-    expect(roff).toContain("am\\-list");
-
-    // The sql-run alias is the short form for the command the family exists for.
-    // A future alias cleanup that dropped it would break muscle memory silently.
-    expect(roff).toContain("sql\\-run");
+    // These two match the alias as it appears in the commands' help EXAMPLES,
+    // not as a registered alias: the man page never records aliases, since
+    // generate-man.ts reads only cmd.name(). Deleting .alias("am-ls") would
+    // leave both assertions green. What guards the aliases themselves is
+    // alias-registry.test.ts, which asserts on the built program tree.
+    //
+    // They stay here because an example that stops mentioning the short form is
+    // its own kind of regression — that is the line people copy.
+    expect(roff).toContain("am\\-ls");
+    expect(roff).toContain("sq\\-run");
 
     // --test on sql-execute is the only way to run a query without touching the
     // result cache, which matters when iterating on one. Matched as a bold flag

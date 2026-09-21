@@ -30,8 +30,9 @@ function analysisCommands(program: Command) {
   // URL.
   program
     .command("analysis-list")
-    // No alias: "al" already belongs to action-list, and every other short form
-    // in this namespace (am, at, ac, ad) is taken by an existing command.
+    // "an-" rather than a two-letter form: "al" belongs to action-list, and every
+    // short form in this namespace (am, at, ac, ad) is already taken.
+    .alias("an-ls")
     .description("get the list of analyses.")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [name]", "partial name of the analysis")
@@ -65,6 +66,7 @@ Example:
 
   program
     .command("analysis-info")
+    .alias("an-nf")
     .description("get information about an analysis.")
     .argument("[ID]", "ID of your analysis")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -91,6 +93,7 @@ Example:
 
   program
     .command("analysis-create")
+    .alias("an-crt")
     .description("create a new analysis.")
     .argument("[name]", "name of the analysis")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -128,6 +131,7 @@ Example:
 
   program
     .command("analysis-edit")
+    .alias("an-ed")
     .description("edit an analysis: rename it, change its runtime, variables, state or tags.")
     .argument("[ID]", "ID of your analysis")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -174,6 +178,7 @@ Example:
 
   program
     .command("analysis-delete")
+    .alias("an-dlt")
     .description("permanently delete an analysis.")
     .argument("[ID]", "ID of your analysis")
     .option("--env, --environment [environment]", "environment from config.js")

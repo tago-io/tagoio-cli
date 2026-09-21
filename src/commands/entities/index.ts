@@ -31,6 +31,7 @@ function entityCommands(program: Command): Command {
 
   program
     .command("entity-list")
+    .alias("en-ls")
     .description("list entities in the active profile")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("-n, --name [substring]", "filter entities by partial name match")
@@ -56,6 +57,7 @@ Output (--json): array of { id, name, tags, created_at, updated_at }`,
 
   program
     .command("entity-info")
+    .alias("en-nf")
     .description("show one entity's metadata and schema")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -75,6 +77,7 @@ Output (--json): { id, name, schema, index, tags, created_at, updated_at }`,
 
   program
     .command("entity-create")
+    .alias("en-crt")
     .description("create a new entity (interactive by default; flag-driven via --schema-json)")
     .argument("[name]", "entity name; prompts when omitted (unless --silent)")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -107,6 +110,7 @@ Output (--json): { id, name }`,
 
   program
     .command("entity-edit")
+    .alias("en-ed")
     .description("update entity metadata (name)")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -126,6 +130,7 @@ Output (--json): { id, ...patch }`,
 
   program
     .command("entity-delete")
+    .alias("en-dlt")
     .description("permanently delete an entity")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -144,6 +149,7 @@ Output (--json): { id, deleted: true }`,
 
   program
     .command("entity-data")
+    .alias("en-dt")
     .description("read / write / edit / delete / empty / count entity records")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -177,6 +183,7 @@ Output (--json): read=array, post/edit/delete/empty={id, ..., result}, count={id
 
   program
     .command("entity-schema")
+    .alias("en-sch")
     .description("manage entity schema (fields + indexes)")
     .argument("[id]", "entity id; opens a picker when omitted")
     .option("--env, --environment [environment]", "environment from config.js")
@@ -207,6 +214,7 @@ Output (--json): print={id, schema, index}, ops={id, <action>: <name>}`,
 
   program
     .command("entity-copy")
+    .alias("en-cp")
     .description("copy data from one entity to another within the same profile")
     .option("--from <id>", "source entity id (required)")
     .option("--to <id>", "target entity id (required)")
