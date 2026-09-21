@@ -58,6 +58,7 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS action\\-list");
     expect(roff).toContain(".SS dict\\-list");
     expect(roff).toContain(".SS secret\\-list");
+    expect(roff).toContain(".SS run\\-user\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
 
     // Two secret-* flags exist only to be refused with an explanation:
@@ -71,6 +72,17 @@ describe("generateManPage", () => {
     const sectionOf = (name: string) => roff.split(`.SS secret\\-${name}`)[1]?.split(".SS ")[0] ?? "";
     expect(sectionOf("create")).toContain("\\fB\\-\\-silent\\fR");
     expect(sectionOf("edit")).toContain("\\fB\\-\\-key\\fR");
+
+    // Same class of flag on run-user-create: --silent is declared only so the
+    // refusal can explain that the password has to be typed. Matched as a bold
+    // declaration for the same reason as above — the help text mentions
+    // --silent while explaining the refusal.
+    const runUserSection = (name: string) => roff.split(`.SS run\\-user\\-${name}`)[1]?.split(".SS ")[0] ?? "";
+    expect(runUserSection("create")).toContain("\\fB\\-\\-silent\\fR");
+
+    // Tags replace by default here, and run users carry access-granting tags,
+    // so --merge-tags must stay reachable.
+    expect(runUserSection("edit")).toContain("\\fB\\-\\-merge\\-tags\\fR");
 
     // No "Header" placeholder leaked through.
     expect(roff).not.toMatch(/\.SS [^\n]*Header/i);
