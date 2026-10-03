@@ -244,6 +244,23 @@ describe("runAnalysis", () => {
     ).rejects.toThrow(/Cannot specify both/);
   });
 
+  test("refuses a Luau analysis without switching it to external", async () => {
+    getEnvironmentConfigMock.mockReturnValue({
+      profileToken: "tok",
+      profileRegion: "usa-1",
+      analysisList: [{ id: "a1", name: "A", fileName: "a.luau" }],
+      analysisPath: "/tmp",
+    });
+    accountAnalysisInfoMock.mockResolvedValue({ token: "at", run_on: "tago", name: "A", runtime: "luau-rt2026" });
+    detectRuntimeMock.mockReturnValueOnce("--luau");
+
+    const { runAnalysis } = await import("./run-analysis.js");
+    await expect(runAnalysis("A", { environment: "prod", debug: false, clear: false, tsnd: false, deno: false, node: false })).rejects.toThrow(
+      /Luau analyses run only on TagoIO/,
+    );
+    expect(accountAnalysisEditMock).not.toHaveBeenCalled();
+  });
+
   test("spawns the analysis when run_on is external", async () => {
     getEnvironmentConfigMock.mockReturnValue({
       profileToken: "tok",

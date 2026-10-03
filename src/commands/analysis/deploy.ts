@@ -49,6 +49,51 @@ async function getScript(buildedFile: string, scriptName: string) {
   });
 }
 
+/** The tool each runtime builds with, and how to install it when it is missing. */
+const BUILD_TOOLS: Record<string, { tool: string; hint: string; language: RunTypeOptions }> = {
+  "--deno": { tool: "deno", hint: "Install deno from https://deno.land", language: "deno-rt2025" },
+  "--luau": { tool: "darklua", hint: "Install it with: brew install darklua", language: "luau-rt2026" },
+  "--node": { tool: "@tago-io/builder", hint: "Install it with: npm install -g @tago-io/builder", language: "node-rt2025" },
+};
+
+/** The Luau runtime refuses scripts over 64 KiB. */
+const LUAU_SCRIPT_LIMIT = 64 * 1024;
+
+function getBuildTool(runtime: string) {
+  return BUILD_TOOLS[runtime] ?? BUILD_TOOLS["--node"];
+}
+
+/**
+ * The darklua config the Luau bundle uses: the project's `.darklua.json` when it has one, otherwise a default
+ * written to the build folder. Without a config darklua neither bundles nor keeps the code readable.
+ */
+async function getDarkluaConfig(folderPath: string, buildPath: string) {
+  const projectConfig = `${folderPath}/.darklua.json`;
+  if (await fs.stat(projectConfig).catch(() => null)) {
+    return projectConfig;
+  }
+
+  const defaultConfig = `${folderPath}/${buildPath.replace("./", "")}/darklua.tago.json`;
+  await fs.mkdir(defaultConfig.slice(0, defaultConfig.lastIndexOf("/")), { recursive: true });
+  await fs.writeFile(defaultConfig, JSON.stringify({ bundle: { require_mode: "luau" }, rules: [] }));
+  return defaultConfig;
+}
+
+/**
+ * The Luau runtime has no `require` and a script size limit, so a bundle that breaks either never runs.
+ */
+async function checkLuauBundle(buildedFile: string, scriptName: string) {
+  const source = await fs.readFile(buildedFile, { encoding: "utf8" });
+  if (/\brequire\s*[("'`]/.test(source)) {
+    errorHandler(`Bundle for ${scriptName} still calls require. Set bundle.require_mode in .darklua.json.`);
+  }
+
+  const size = Buffer.byteLength(source);
+  if (size > LUAU_SCRIPT_LIMIT) {
+    errorHandler(`Bundle for ${scriptName} is ${size} bytes; the Luau runtime accepts at most ${LUAU_SCRIPT_LIMIT}.`);
+  }
+}
+
 /**
  * Deletes the old builded file if it exists.
  *
@@ -75,7 +120,8 @@ async function buildScript(params: BuildScriptParams) {
   } else {
     analysisFile = `${analysisPath}/${scriptName}`;
   }
-  const buildFile = `${buildPath}/${scriptName.replace(".ts", "")}.tago.js`;
+  const buildFile =
+    runtime === "--luau" ? `${buildPath}/${scriptName.replace(".luau", "")}.tago.luau` : `${buildPath}/${scriptName.replace(".ts", "")}.tago.js`;
   const buildedFile = `${folderPath}/${buildFile.replace("./", "")}`;
 
   await deleteOldFile(buildedFile);
@@ -83,6 +129,10 @@ async function buildScript(params: BuildScriptParams) {
     if (runtime === "--deno") {
       infoMSG("Bundling with deno");
       execSync(`deno bundle ${analysisFile} -o ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+    } else if (runtime === "--luau") {
+      infoMSG("Bundling with darklua");
+      const config = await getDarkluaConfig(folderPath, buildPath);
+      execSync(`darklua process --config ${config} ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
     } else {
       execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
     }
@@ -91,11 +141,14 @@ async function buildScript(params: BuildScriptParams) {
     const status = (err as { status?: number }).status;
     const code = (err as NodeJS.ErrnoException).code;
     if (status === 127 || code === "ENOENT") {
-      const tool = runtime === "--deno" ? "deno" : "@tago-io/builder";
-      const hint = runtime === "--deno" ? "Install deno from https://deno.land" : "Install it with: npm install -g @tago-io/builder";
+      const { tool, hint } = getBuildTool(runtime);
       errorHandler(`Build tool '${tool}' not found. ${hint}`);
     }
     errorHandler(`Build failed for ${scriptName}: ${err.message}`);
+  }
+
+  if (runtime === "--luau") {
+    await checkLuauBundle(buildedFile, scriptName);
   }
 
   const script = await getScript(buildedFile, scriptName);
@@ -111,8 +164,8 @@ async function buildScript(params: BuildScriptParams) {
   await account.analysis
     .uploadScript(analysisID, {
       content: script,
-      name: `${scriptName}.tago.js`,
-      language: analysis.runtime || ((runtime === "--deno" ? "deno-rt2025" : "node-rt2025") as RunTypeOptions),
+      name: runtime === "--luau" ? buildFile.slice(buildFile.lastIndexOf("/") + 1) : `${scriptName}.tago.js`,
+      language: analysis.runtime || getBuildTool(runtime).language,
     })
     .catch((error) => errorHandler(`Script upload failed. script=${scriptName} error=${error}`))
     .then(() => successMSG(`Script uploaded. script=${scriptName} analysis=${analysisID}`));
@@ -127,6 +180,7 @@ interface IDeployOptions {
   silent: boolean;
   deno: boolean;
   node: boolean;
+  luau: boolean;
   /** Deploy every analysis from tagoconfig.json without prompting (for CI/CD). */
   all: boolean;
   /** Profile token for this invocation, bypassing the lock file (for CI/CD). */
@@ -175,9 +229,7 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
         errorHandler(`No analysis found containing name: ${cmdScriptName}`);
       }
 
-      if (!options.silent) {
-        scriptList = await confirmAnalysisFromConfig([analysisFound]);
-      }
+      scriptList = options.silent ? [analysisFound] : await confirmAnalysisFromConfig([analysisFound]);
     }
   }
 
@@ -189,8 +241,11 @@ async function deployAnalysis(cmdScriptName: string, options: IDeployOptions) {
   for (const { id, fileName, path } of scriptList) {
     let { runtime: runtimeParam } = await account.analysis.info(id);
     let runtime;
-    if (options.deno && options.node) {
-      errorHandler("Cannot specify both --deno and --node flags");
+    if ([options.deno, options.node, options.luau].filter(Boolean).length > 1) {
+      errorHandler("Cannot specify more than one of --deno, --node and --luau");
+    } else if (options.luau) {
+      infoMSG("Deploying with luau runtime");
+      runtime = "--luau";
     } else if (options.deno) {
       infoMSG("Deploying with deno runtime");
       runtime = "--deno";

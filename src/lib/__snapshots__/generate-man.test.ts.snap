@@ -208,7 +208,7 @@ environment from config.js
 what the analysis does
 .TP
 \\fB\\-\\-runtime\\fR \\fI<runtime>\\fR
-node\\-rt2025, python\\-rt2025, deno\\-rt2025, node\\-legacy, python\\-legacy, node, python or other
+node\\-rt2025, python\\-rt2025, deno\\-rt2025, luau\\-rt2026, node\\-legacy, python\\-legacy, node, python or other
 .TP
 \\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
 tago or external (default: tago)
@@ -357,6 +357,9 @@ Force build for Deno runtime (default: false)
 \\fB\\-\\-node\\fR
 Force build for Node.js runtime (default: false)
 .TP
+\\fB\\-\\-luau\\fR
+Force build for Luau runtime (bundles with darklua) (default: false)
+.TP
 \\fB\\-\\-all\\fR
 deploy every analysis from tagoconfig.json without prompting (default: false)
 .TP
@@ -368,6 +371,7 @@ Example:
     $ tagoio deploy dashboard\\-handler
     $ tagoio deploy dashboard\\-handler \\-\\-deno
     $ tagoio deploy dashboard\\-handler \\-\\-node
+    $ tagoio deploy uplink\\-handler \\-\\-luau
     $ tagoio deploy \\-\\-all                                       # deploy every analysis from tagoconfig.json
     $ tagoio deploy \\-\\-all \\-\\-env stage                              # deploy all to the stage environment
     $ tagoio deploy \\-\\-all \\-\\-env prod \\-t $TAGOIO_TOKEN \\-\\-silent     # pipeline\\-friendly: no prompts, no lock file needed

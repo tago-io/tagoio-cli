@@ -13,7 +13,7 @@ import { parseAnalysisVariables } from "./analysis-variables.js";
  * it describes the runtimes with code snippets, not the ones an analysis can
  * run on.
  */
-const RUNTIMES = ["node", "python", "node-legacy", "python-legacy", "deno-rt2025", "node-rt2025", "python-rt2025", "other"] as const;
+const RUNTIMES = ["node", "python", "node-legacy", "python-legacy", "deno-rt2025", "node-rt2025", "python-rt2025", "luau-rt2026", "other"] as const;
 
 /**
  * The API defaults to `node-legacy`. Inheriting that silently would put every
