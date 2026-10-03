@@ -16,6 +16,7 @@ const mkdirMock = vi.fn();
 const writeFileMock = vi.fn();
 const unlinkMock = vi.fn();
 const execSyncMock = vi.fn();
+const execFileSyncMock = vi.fn();
 const detectRuntimeMock = vi.fn();
 const chooseAnalysisListFromConfigMock = vi.fn();
 const confirmAnalysisFromConfigMock = vi.fn();
@@ -40,6 +41,7 @@ vi.mock("node:fs", () => ({
 
 vi.mock("node:child_process", () => ({
   execSync: execSyncMock,
+  execFileSync: execFileSyncMock,
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -50,14 +52,17 @@ vi.mock("../../lib/current-runtime.js", () => ({
   detectRuntime: detectRuntimeMock,
 }));
 
+const localScope = {
+  scope: "local" as const,
+  root: "/repo",
+  configPath: "/repo/tagoconfig.json",
+  envFilePath: "/repo/.tagoio/personal.env",
+  configExists: true,
+};
+const requireLocalScopeMock = vi.fn(() => localScope);
+
 vi.mock("../../lib/resolve-scope.js", () => ({
-  requireLocalScope: () => ({
-    scope: "local" as const,
-    root: "/repo",
-    configPath: "/repo/tagoconfig.json",
-    envFilePath: "/repo/.tagoio/personal.env",
-    configExists: true,
-  }),
+  requireLocalScope: () => requireLocalScopeMock(),
 }));
 
 vi.mock("../../lib/scope-notice.js", () => ({
@@ -108,6 +113,7 @@ describe("deployAnalysis", () => {
     writeFileMock.mockReset().mockResolvedValue(undefined);
     unlinkMock.mockReset();
     execSyncMock.mockReset();
+    execFileSyncMock.mockReset();
     detectRuntimeMock.mockReset().mockReturnValue("--node");
     chooseAnalysisListFromConfigMock.mockReset();
     confirmAnalysisFromConfigMock.mockReset();
@@ -213,8 +219,18 @@ describe("deployAnalysis", () => {
       const { deployAnalysis } = await import("./deploy.js");
       await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
 
-      const cmd = execSyncMock.mock.calls[0][0] as string;
-      expect(cmd).toMatch(/^darklua process --config \S+ \S+\/actions\/uplink-handler\.luau \S+\/uplink-handler\.tago\.luau$/);
+      expect(execSyncMock).not.toHaveBeenCalled();
+      expect(execFileSyncMock).toHaveBeenCalledWith(
+        "darklua",
+        [
+          "process",
+          "--config",
+          expect.any(String),
+          expect.stringMatching(/\/actions\/uplink-handler\.luau$/),
+          expect.stringMatching(/\/uplink-handler\.tago\.luau$/),
+        ],
+        expect.objectContaining({ cwd: "/repo" }),
+      );
       expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-9", {
         content: Buffer.from(bundle).toString("base64"),
         name: "uplink-handler.tago.luau",
@@ -229,7 +245,7 @@ describe("deployAnalysis", () => {
       await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
 
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining("darklua.tago.json"), JSON.stringify({ bundle: { require_mode: "luau" }, rules: [] }));
-      expect(execSyncMock.mock.calls[0][0]).toContain("darklua.tago.json");
+      expect(execFileSyncMock.mock.calls[0][1][2]).toContain("darklua.tago.json");
     });
 
     test("uses the project's .darklua.json when it has one", async () => {
@@ -241,7 +257,7 @@ describe("deployAnalysis", () => {
       await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
 
       expect(writeFileMock).not.toHaveBeenCalled();
-      expect(execSyncMock.mock.calls[0][0]).toContain("--config /repo/.darklua.json");
+      expect(execFileSyncMock.mock.calls[0][1][2]).toBe("/repo/.darklua.json");
     });
 
     test("refuses a bundle that still calls require", async () => {
@@ -260,8 +276,20 @@ describe("deployAnalysis", () => {
       expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
     });
 
+    test("passes a project path with spaces to darklua as one argument", async () => {
+      mockBuiltFile(bundle);
+      statMock.mockImplementation((file: string) => Promise.resolve(file.endsWith(".darklua.json") ? { isFile: () => true } : null));
+      unlinkMock.mockResolvedValue(undefined);
+      requireLocalScopeMock.mockReturnValueOnce({ ...localScope, root: "/My Projects/app; rm -rf ~" });
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+      expect(execFileSyncMock.mock.calls[0][1][2]).toBe("/My Projects/app; rm -rf ~/.darklua.json");
+    });
+
     test("points to the darklua install when it is missing", async () => {
-      execSyncMock.mockImplementationOnce(() => {
+      execFileSyncMock.mockImplementationOnce(() => {
         throw Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" });
       });
 

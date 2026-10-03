@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 
 import { Account, RunTypeOptions } from "@tago-io/sdk";
@@ -132,7 +132,8 @@ async function buildScript(params: BuildScriptParams) {
     } else if (runtime === "--luau") {
       infoMSG("Bundling with darklua");
       const config = await getDarkluaConfig(folderPath, buildPath);
-      execSync(`darklua process --config ${config} ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
+      // No shell: the config path is absolute and may hold spaces or shell characters.
+      execFileSync("darklua", ["process", "--config", config, analysisFile, buildFile], { stdio: "inherit", cwd: folderPath });
     } else {
       execSync(`analysis-builder ${analysisFile} ${buildFile}`, { stdio: "inherit", cwd: folderPath });
     }
