@@ -98,7 +98,7 @@ Example:
     .argument("[name]", "name of the analysis")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--description <description>", "what the analysis does")
-    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, node-legacy, python-legacy, node, python or other")
+    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, luau-rt2026, node-legacy, python-legacy, node, python or other")
     .option("--run-on <location>", "tago or external (default: tago)")
     .option("--inactive", "create the analysis deactivated")
     .option("--var <KEY=VALUE>", "environment variable to set (repeatable)", cmdRepeatableValue, [])
@@ -213,6 +213,7 @@ Example:
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
+    .option("--luau", "Force build for Luau runtime (bundles with darklua)", false)
     .option("--all", "deploy every analysis from tagoconfig.json without prompting", false)
     .option("-t, --token <profile-token>", "profile token for this run (bypasses lock file, for CI/CD)")
     .action(deployAnalysis)
@@ -223,6 +224,7 @@ Example:
     $ tagoio deploy dashboard-handler
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy uplink-handler --luau
     $ tagoio deploy --all                                       # deploy every analysis from tagoconfig.json
     $ tagoio deploy --all --env stage                              # deploy all to the stage environment
     $ tagoio deploy --all --env prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed

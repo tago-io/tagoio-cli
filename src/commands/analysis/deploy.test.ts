@@ -12,8 +12,11 @@ const successMSGMock = vi.fn();
 const infoMSGMock = vi.fn();
 const readFileMock = vi.fn();
 const statMock = vi.fn();
+const mkdirMock = vi.fn();
+const writeFileMock = vi.fn();
 const unlinkMock = vi.fn();
 const execSyncMock = vi.fn();
+const execFileSyncMock = vi.fn();
 const detectRuntimeMock = vi.fn();
 const chooseAnalysisListFromConfigMock = vi.fn();
 const confirmAnalysisFromConfigMock = vi.fn();
@@ -31,11 +34,14 @@ vi.mock("node:fs", () => ({
     readFile: readFileMock,
     stat: statMock,
     unlink: unlinkMock,
+    mkdir: mkdirMock,
+    writeFile: writeFileMock,
   },
 }));
 
 vi.mock("node:child_process", () => ({
   execSync: execSyncMock,
+  execFileSync: execFileSyncMock,
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
@@ -46,14 +52,17 @@ vi.mock("../../lib/current-runtime.js", () => ({
   detectRuntime: detectRuntimeMock,
 }));
 
+const localScope = {
+  scope: "local" as const,
+  root: "/repo",
+  configPath: "/repo/tagoconfig.json",
+  envFilePath: "/repo/.tagoio/personal.env",
+  configExists: true,
+};
+const requireLocalScopeMock = vi.fn(() => localScope);
+
 vi.mock("../../lib/resolve-scope.js", () => ({
-  requireLocalScope: () => ({
-    scope: "local" as const,
-    root: "/repo",
-    configPath: "/repo/tagoconfig.json",
-    envFilePath: "/repo/.tagoio/personal.env",
-    configExists: true,
-  }),
+  requireLocalScope: () => requireLocalScopeMock(),
 }));
 
 vi.mock("../../lib/scope-notice.js", () => ({
@@ -84,6 +93,7 @@ describe("deployAnalysis", () => {
     silent: true,
     deno: false,
     node: false,
+    luau: false,
     all: false,
   });
 
@@ -99,8 +109,11 @@ describe("deployAnalysis", () => {
     infoMSGMock.mockClear();
     readFileMock.mockReset();
     statMock.mockReset().mockResolvedValue(null);
+    mkdirMock.mockReset().mockResolvedValue(undefined);
+    writeFileMock.mockReset().mockResolvedValue(undefined);
     unlinkMock.mockReset();
     execSyncMock.mockReset();
+    execFileSyncMock.mockReset();
     detectRuntimeMock.mockReset().mockReturnValue("--node");
     chooseAnalysisListFromConfigMock.mockReset();
     confirmAnalysisFromConfigMock.mockReset();
@@ -136,12 +149,153 @@ describe("deployAnalysis", () => {
     expect(successMSGMock).toHaveBeenCalledWith(expect.stringContaining("Script uploaded."));
   });
 
-  test("rejects when both --deno and --node are specified together", async () => {
+  test("deploys only the named analysis when silent", async () => {
+    const list = [
+      { name: "scriptA", fileName: "a.ts", id: "an-1" },
+      { name: "scriptB", fileName: "b.ts", id: "an-2" },
+    ];
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: list }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(deployAnalysis("scriptB", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(1);
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-2", expect.any(Object));
+  });
+
+  test("deploys only the named analysis when silent", async () => {
+    const list = [
+      { name: "scriptA", fileName: "a.ts", id: "an-1" },
+      { name: "scriptB", fileName: "b.ts", id: "an-2" },
+    ];
+    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: list }));
+    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
+    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+    accountInstance.analysis.edit.mockResolvedValue(undefined);
+    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
+
+    const { deployAnalysis } = await import("./deploy.js");
+    await expect(deployAnalysis("scriptB", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(1);
+    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-2", expect.any(Object));
+  });
+
+  test("rejects when more than one runtime flag is specified", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
 
     const { deployAnalysis } = await import("./deploy.js");
-    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true, node: true })).rejects.toThrow(/Cannot specify both/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true, node: true })).rejects.toThrow(/Cannot specify more than one/);
+    await expect(deployAnalysis("scriptA", { ...defaultOptions(), deno: true, luau: true })).rejects.toThrow(/Cannot specify more than one/);
+  });
+
+  describe("luau", () => {
+    const luauList = [{ name: "uplink", fileName: "uplink-handler.luau", id: "an-9", path: "actions" }];
+    const bundle = 'local __DARKLUA_BUNDLE_MODULES={cache={}}\nAnalysis.use(function(context, scope) print("ok") end)';
+
+    /** utf8 reads return the bundle for the checks; base64 reads return the upload content. */
+    const mockBuiltFile = (source: string) => {
+      readFileMock.mockImplementation((_file: string, { encoding }: { encoding: string }) =>
+        Promise.resolve(encoding === "utf8" ? source : Buffer.from(source).toString("base64")),
+      );
+    };
+
+    beforeEach(() => {
+      getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: luauList }));
+      accountInstance.analysis.info.mockResolvedValue({ runtime: "luau-rt2026" });
+      accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
+      accountInstance.analysis.edit.mockResolvedValue(undefined);
+      detectRuntimeMock.mockReturnValue("--luau");
+    });
+
+    test("bundles with darklua and uploads a .luau file on the Luau runtime", async () => {
+      mockBuiltFile(bundle);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+      expect(execSyncMock).not.toHaveBeenCalled();
+      expect(execFileSyncMock).toHaveBeenCalledWith(
+        "darklua",
+        [
+          "process",
+          "--config",
+          expect.any(String),
+          expect.stringMatching(/\/actions\/uplink-handler\.luau$/),
+          expect.stringMatching(/\/uplink-handler\.tago\.luau$/),
+        ],
+        expect.objectContaining({ cwd: "/repo" }),
+      );
+      expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-9", {
+        content: Buffer.from(bundle).toString("base64"),
+        name: "uplink-handler.tago.luau",
+        language: "luau-rt2026",
+      });
+    });
+
+    test("writes a default bundling config when the project has no .darklua.json", async () => {
+      mockBuiltFile(bundle);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining("darklua.tago.json"), JSON.stringify({ bundle: { require_mode: "luau" }, rules: [] }));
+      expect(execFileSyncMock.mock.calls[0][1][2]).toContain("darklua.tago.json");
+    });
+
+    test("uses the project's .darklua.json when it has one", async () => {
+      mockBuiltFile(bundle);
+      statMock.mockImplementation((file: string) => Promise.resolve(file.endsWith(".darklua.json") ? { isFile: () => true } : null));
+      unlinkMock.mockResolvedValue(undefined);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+      expect(writeFileMock).not.toHaveBeenCalled();
+      expect(execFileSyncMock.mock.calls[0][1][2]).toBe("/repo/.darklua.json");
+    });
+
+    test("refuses a bundle that still calls require", async () => {
+      mockBuiltFile('local scope = require("./lib/scope")');
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/still calls require/);
+      expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+    });
+
+    test("refuses a bundle over the 64 KiB Luau limit", async () => {
+      mockBuiltFile(`-- ${"x".repeat(64 * 1024)}`);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/at most 65536/);
+      expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+    });
+
+    test("passes a project path with spaces to darklua as one argument", async () => {
+      mockBuiltFile(bundle);
+      statMock.mockImplementation((file: string) => Promise.resolve(file.endsWith(".darklua.json") ? { isFile: () => true } : null));
+      unlinkMock.mockResolvedValue(undefined);
+      requireLocalScopeMock.mockReturnValueOnce({ ...localScope, root: "/My Projects/app; rm -rf ~" });
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+
+      expect(execFileSyncMock.mock.calls[0][1][2]).toBe("/My Projects/app; rm -rf ~/.darklua.json");
+    });
+
+    test("points to the darklua install when it is missing", async () => {
+      execFileSyncMock.mockImplementationOnce(() => {
+        throw Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" });
+      });
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/Build tool 'darklua' not found. Install it with: brew install darklua/);
+    });
   });
 
   test("errors when no analysis name matches the search", async () => {
