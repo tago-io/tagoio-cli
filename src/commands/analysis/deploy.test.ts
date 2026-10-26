@@ -268,12 +268,16 @@ describe("deployAnalysis", () => {
       expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
     });
 
-    test("refuses a bundle over the 64 KiB Luau limit", async () => {
-      mockBuiltFile(`-- ${"x".repeat(64 * 1024)}`);
+    test("uploads a bundle of any size and leaves the size limit to the API", async () => {
+      const largeBundle = `-- ${"x".repeat(64 * 1024)}`;
+      mockBuiltFile(largeBundle);
 
       const { deployAnalysis } = await import("./deploy.js");
-      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/at most 65536/);
-      expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+      expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith(
+        "an-9",
+        expect.objectContaining({ content: Buffer.from(largeBundle).toString("base64") }),
+      );
     });
 
     test("passes a project path with spaces to darklua as one argument", async () => {

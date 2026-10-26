@@ -56,9 +56,6 @@ const BUILD_TOOLS: Record<string, { tool: string; hint: string; language: RunTyp
   "--node": { tool: "@tago-io/builder", hint: "Install it with: npm install -g @tago-io/builder", language: "node-rt2025" },
 };
 
-/** The Luau runtime refuses scripts over 64 KiB. */
-const LUAU_SCRIPT_LIMIT = 64 * 1024;
-
 function getBuildTool(runtime: string) {
   return BUILD_TOOLS[runtime] ?? BUILD_TOOLS["--node"];
 }
@@ -80,17 +77,13 @@ async function getDarkluaConfig(folderPath: string, buildPath: string) {
 }
 
 /**
- * The Luau runtime has no `require` and a script size limit, so a bundle that breaks either never runs.
+ * The Luau runtime has no `require`, so a bundle that still calls it never runs.
+ * The script size limit is left to the API, which owns it.
  */
 async function checkLuauBundle(buildedFile: string, scriptName: string) {
   const source = await fs.readFile(buildedFile, { encoding: "utf8" });
   if (/\brequire\s*[("'`]/.test(source)) {
     errorHandler(`Bundle for ${scriptName} still calls require. Set bundle.require_mode in .darklua.json.`);
-  }
-
-  const size = Buffer.byteLength(source);
-  if (size > LUAU_SCRIPT_LIMIT) {
-    errorHandler(`Bundle for ${scriptName} is ${size} bytes; the Luau runtime accepts at most ${LUAU_SCRIPT_LIMIT}.`);
   }
 }
 
