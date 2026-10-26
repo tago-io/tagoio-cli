@@ -1,6 +1,6 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const errorHandlerMock = vi.fn<(str: unknown) => never>(() => {
@@ -184,44 +184,146 @@ describe("startConfig — clig.dev flow", () => {
   });
 });
 
-// scanAnalysisFiles is exercised indirectly; the recursive walk itself is simple
-// fs traversal, covered by the real-fs test below.
-describe("scanAnalysisFiles (indirect)", () => {
+describe("analysis file matching", () => {
   let tmpRoot: string;
+  const originalCwd = process.cwd();
+
+  const touch = (relativeFile: string) => {
+    const fullPath = join(tmpRoot, relativeFile);
+    mkdirSync(dirname(fullPath), { recursive: true });
+    writeFileSync(fullPath, "");
+  };
 
   beforeEach(() => {
     tmpRoot = mkdtempSync(join(tmpdir(), "scan-analysis-"));
   });
 
   afterEach(() => {
+    process.chdir(originalCwd);
     rmSync(tmpRoot, { recursive: true, force: true });
+    vi.restoreAllMocks();
   });
 
-  test("collects .ts and .js files across nested directories", async () => {
-    writeFileSync(join(tmpRoot, "root.ts"), "");
-    writeFileSync(join(tmpRoot, "skip.txt"), "");
-    const nested = join(tmpRoot, "nested");
-    mkdirSync(nested);
-    writeFileSync(join(nested, "deep.js"), "");
+  test("scanAnalysisFiles collects .ts, .js and .luau files across nested directories", async () => {
+    touch("root.ts");
+    touch("skip.txt");
+    touch("nested/deep.js");
+    touch("nested/uplink-handler.luau");
 
-    const { readdirSync, statSync } = await import("node:fs");
-    const items = readdirSync(tmpRoot);
-    const collected: string[] = [];
-    for (const item of items) {
-      const full = join(tmpRoot, item);
-      if (statSync(full).isDirectory()) {
-        for (const sub of readdirSync(full)) {
-          if (sub.endsWith(".js") || sub.endsWith(".ts")) {
-            collected.push(sub);
-          }
-        }
-      } else if (item.endsWith(".ts") || item.endsWith(".js")) {
-        collected.push(item);
-      }
-    }
+    const { scanAnalysisFiles } = await import("./start-config.js");
+    const collected = scanAnalysisFiles(tmpRoot);
 
-    expect(collected).toContain("root.ts");
-    expect(collected).toContain("deep.js");
-    expect(collected).not.toContain("skip.txt");
+    expect(collected).toEqual(
+      expect.arrayContaining([
+        { filename: "root.ts", relativePath: "" },
+        { filename: "deep.js", relativePath: "nested" },
+        { filename: "uplink-handler.luau", relativePath: "nested" },
+      ]),
+    );
+    expect(collected.map((x) => x.filename)).not.toContain("skip.txt");
+  });
+
+  test("scanAnalysisFiles skips build, tests, typings, dependencies and symlinks in a project-root scan", async () => {
+    touch("luau/analysis/uplink.luau");
+    touch("app/analysis/report.ts");
+    touch("app/analysis/report.test.ts");
+    touch("luau/analysis/uplink.spec.luau");
+    touch("app/analysis/report.spec.js");
+    touch("app/types/global.d.ts");
+    touch("node_modules/pkg/index.js");
+    touch(".git/hooks/pre-commit.js");
+    touch("build/app/report.tagoio.js");
+    touch("build/uplink.tago.luau");
+    symlinkSync(join(tmpRoot, "missing.ts"), join(tmpRoot, "broken-link.ts"));
+
+    const { scanAnalysisFiles } = await import("./start-config.js");
+    const collected = scanAnalysisFiles(tmpRoot, join(tmpRoot, "build"));
+
+    expect(collected).toHaveLength(2);
+    expect(collected).toEqual(
+      expect.arrayContaining([
+        { filename: "uplink.luau", relativePath: "luau/analysis" },
+        { filename: "report.ts", relativePath: "app/analysis" },
+      ]),
+    );
+  });
+
+  test("findAnalysisFiles resolves paths from the project root, not the current directory", async () => {
+    touch("luau/analysis/uplink.luau");
+    touch("build/uplink.tago.luau");
+    process.chdir(join(tmpRoot, "luau"));
+
+    const { findAnalysisFiles } = await import("./start-config.js");
+    const collected = findAnalysisFiles({ root: tmpRoot, analysisPath: "./", buildPath: "./build" });
+
+    expect(collected).toEqual([{ filename: "uplink.luau", relativePath: "luau/analysis" }]);
+  });
+
+  test("findAnalysisFiles returns undefined when the analysis folder is missing", async () => {
+    const { findAnalysisFiles } = await import("./start-config.js");
+
+    expect(findAnalysisFiles({ root: tmpRoot, analysisPath: "./src/analysis" })).toBeUndefined();
+  });
+
+  test("getAnalysisScripts saves the chosen file and its folder", async () => {
+    touch("luau/analysis/uplink.luau");
+    const prompts = (await import("prompts")).default;
+    prompts.inject([{ filename: "uplink.luau", relativePath: "luau/analysis" }]);
+
+    const { getAnalysisScripts } = await import("./start-config.js");
+    const result = await getAnalysisScripts([{ id: "an-1", name: "Uplink", fileName: "uplink" }], { root: tmpRoot, analysisPath: "./" });
+
+    expect(result).toEqual([{ id: "an-1", name: "Uplink", fileName: "uplink.luau", path: "luau/analysis" }]);
+  });
+
+  test("getAnalysisScripts clears a stale path when a root-level file is chosen", async () => {
+    touch("uplink.luau");
+    const prompts = (await import("prompts")).default;
+    prompts.inject([{ filename: "uplink.luau", relativePath: "" }]);
+
+    const { getAnalysisScripts } = await import("./start-config.js");
+    const result = await getAnalysisScripts([{ id: "an-1", name: "Uplink", fileName: "old.luau", path: "old" }], {
+      root: tmpRoot,
+      analysisPath: "./",
+    });
+
+    expect(result).toEqual([{ id: "an-1", name: "Uplink", fileName: "uplink.luau", path: undefined }]);
+  });
+
+  test("getAnalysisScripts clears the file and path on Skip", async () => {
+    touch("uplink.luau");
+    const prompts = (await import("prompts")).default;
+    prompts.inject([">skip-selector"]);
+
+    const { getAnalysisScripts } = await import("./start-config.js");
+    const result = await getAnalysisScripts([{ id: "an-1", name: "Uplink", fileName: "uplink.luau", path: "old" }], {
+      root: tmpRoot,
+      analysisPath: "./",
+    });
+
+    expect(result).toEqual([{ id: "an-1", name: "Uplink", fileName: "", path: undefined }]);
+  });
+
+  test("getAnalysisScripts aborts init on Ctrl+C instead of treating it as Skip", async () => {
+    touch("uplink.luau");
+    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error(`__exit:${code ?? 0}`);
+    }) as never);
+    const prompts = (await import("prompts")).default;
+    prompts.inject([new Error("cancelled")]);
+
+    const { getAnalysisScripts } = await import("./start-config.js");
+    const analysisList = [{ id: "an-1", name: "Uplink", fileName: "uplink.luau", path: "old" }];
+
+    await expect(getAnalysisScripts(analysisList, { root: tmpRoot, analysisPath: "./" })).rejects.toThrow("__exit:0");
+    expect(analysisList[0]).toEqual({ id: "an-1", name: "Uplink", fileName: "uplink.luau", path: "old" });
+  });
+
+  test("matchAnywhere filters choices by any part of the title, ignoring case", async () => {
+    const { matchAnywhere } = await import("./start-config.js");
+    const choices = [{ title: "luau/analysis/uplink.luau" }, { title: "app/analysis/report.ts" }];
+
+    await expect(matchAnywhere("UPLINK", choices)).resolves.toEqual([{ title: "luau/analysis/uplink.luau" }]);
+    await expect(matchAnywhere("analysis/", choices)).resolves.toHaveLength(2);
   });
 });
