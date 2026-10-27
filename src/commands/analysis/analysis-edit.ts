@@ -84,7 +84,7 @@ async function changeRuntime(resources: Resources, id: string, runtime: string, 
 
   await resources.analysis
     .uploadScript(id, {
-      name: info.file_name || "script.js",
+      name: uploadFileName(info.file_name, runtime),
       content: Buffer.from(body).toString("base64"),
       language: runtime as RunTypeOptions,
     })
@@ -94,6 +94,17 @@ async function changeRuntime(resources: Resources, id: string, runtime: string, 
     });
 
   return true;
+}
+
+/**
+ * The file name for the re-upload. Probed against a live profile: `info`
+ * returns `file_name: null`, so this falls back to `script.js`, which Node
+ * and Python accept but Luau refuses with "Invalid file_name". A Luau upload
+ * needs the `.luau` extension.
+ */
+function uploadFileName(fileName: string | null | undefined, runtime: string) {
+  const name = fileName || "script.js";
+  return runtime === "luau-rt2026" ? `${name.replace(/\.[^.]*$/, "")}.luau` : name;
 }
 
 function failWith(message: string, code: string, useJSON?: boolean): never {
@@ -189,7 +200,8 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
   // Runs before the patch is evaluated, since --runtime alone is a valid edit
   // that sends no patch at all. It also runs before the PUT on purpose: the API
   // enables an Endpoint only on Luau, so `--runtime luau-rt2026
-  // --enable-endpoint` works only once the runtime has already changed.
+  // --enable-endpoint` works only once the runtime has already changed, and
+  // only when the existing script is valid Luau ("Source is invalid" otherwise).
   const runtimeChanged = options.runtime ? await changeRuntime(resources, id as string, options.runtime, options) : false;
 
   if (Object.keys(patch).length === 0 && !runtimeChanged) {
@@ -202,8 +214,8 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
       // The API's message only. Echoing the patch would put whatever it carries
       // into whatever captured the error. A runtime change already went through
       // by now, so saying so keeps the failure from reading as "nothing changed".
-      const runtimeNote = runtimeChanged ? `. The runtime was already changed to ${options.runtime}` : "";
-      failWith(`Failed to edit analysis ${id}: ${message}${runtimeNote}`, "edit_failed", options.json);
+      const detail = runtimeChanged ? `${message.replace(/\.$/, "")}. The runtime was already changed to ${options.runtime}.` : message;
+      failWith(`Failed to edit analysis ${id}: ${detail}`, "edit_failed", options.json);
     });
   }
 

@@ -237,7 +237,7 @@ describe("analysisCreate", () => {
   });
 
   /**
-   * Probed: the API accepts eight runtimes, not the five `SnippetRuntime` lists.
+   * Probed: the API accepts more runtimes than the five `SnippetRuntime` lists.
    * Its rejection message names all of them, so the offline check is about
    * failing before the round trip rather than about a better message.
    */

@@ -330,7 +330,9 @@ return result as json
     \\-\\-runtime works by re\\-uploading the analysis' existing script under the new
     language, because that upload is what actually sets the runtime — a plain
     field update reports success and changes nothing. The script itself is
-    preserved byte\\-for\\-byte, and the version number advances.
+    preserved byte\\-for\\-byte, and the version number advances. The API checks
+    the script against the new runtime, so switching to Luau works only when
+    the existing script is already valid Luau.
 
     That means the analysis needs a script already: on an empty one, \\-\\-runtime
     fails and points at 'analysis\\-deploy'. To start on a given runtime instead,

@@ -258,6 +258,23 @@ describe("analysisEdit", () => {
     );
   });
 
+  test("the runtime note does not double a period the API message already has", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("Rejected."));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("ana1", { runtime: "python-rt2025", name: "New", var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(
+      /Rejected\. The runtime was already changed to python-rt2025\.$/,
+    );
+  });
+
+  test("a rejected patch without a runtime change carries no runtime note", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("boom"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    const failure = analysisEdit("ana1", { name: "New", var: [], tagkey: [], tagvalue: [] } as never);
+    await expect(failure).rejects.toThrow(/edit_failed: Failed to edit analysis ana1: boom$/);
+  });
+
   test("--runtime bun-rt2026 is accepted and re-uploads under the Bun language", async () => {
     const { analysisEdit } = await import("./analysis-edit.js");
     await analysisEdit("ana1", { runtime: "bun-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
@@ -278,6 +295,24 @@ describe("analysisEdit", () => {
     await analysisEdit("ana1", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never);
 
     expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("existing.js");
+  });
+
+  /** Probed: Luau refuses a re-upload named `*.js` with "Invalid file_name". */
+  test("--runtime luau-rt2026 re-uploads under a .luau file name", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("existing.luau");
+  });
+
+  /** Probed: `info` returns an empty `file_name`, so the fallback must suit Luau too. */
+  test("--runtime luau-rt2026 falls back to script.luau when the file name is empty", async () => {
+    resourcesInstance.analysis.info.mockResolvedValue({ id: "ana1", name: "Alert Dispatch", runtime: "node-rt2025", file_name: null });
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("script.luau");
   });
 
   /** A PUT alone is a no-op, so it must not be sent as one. */
