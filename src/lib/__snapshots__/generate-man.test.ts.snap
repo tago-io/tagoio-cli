@@ -208,13 +208,19 @@ environment from config.js
 what the analysis does
 .TP
 \\fB\\-\\-runtime\\fR \\fI<runtime>\\fR
-node\\-rt2025, python\\-rt2025, deno\\-rt2025, node\\-legacy, python\\-legacy, node, python or other
+node\\-rt2025, python\\-rt2025, deno\\-rt2025, bun\\-rt2026, luau\\-rt2026, node\\-legacy, python\\-legacy, node, python or other
 .TP
 \\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
 tago or external (default: tago)
 .TP
 \\fB\\-\\-inactive\\fR
 create the analysis deactivated
+.TP
+\\fB\\-\\-enable\\-endpoint\\fR
+turn on the analysis' HTTP Endpoint (Luau only)
+.TP
+\\fB\\-\\-endpoint\\-access\\fR \\fI<access>\\fR
+who can call the Endpoint: token (default) or public
 .TP
 \\fB\\-\\-var\\fR \\fI<KEY=VALUE>\\fR
 environment variable to set (repeatable) (default: [])
@@ -244,13 +250,26 @@ return result as json
     silently ignored. Schedule one with an action instead:
     'action\\-create "<name>" \\-\\-type schedule \\-\\-cron "0 9 * * *" \\-\\-script <id>'.
 
+    \\-\\-enable\\-endpoint gives the analysis an HTTP URL at
+    {API URL}/endpoint/{analysis id}. Endpoints run on Luau only; the API
+    refuses them on other runtimes. Access defaults to token. With public,
+    anyone who has the URL can run the code without a token, using the
+    analysis' own permissions.
+
+    A Run user or analysis that calls the Endpoint with its token also needs
+    the call_endpoint action on this analysis, in both access modes:
+      $ tagoio access\\-management\\-create "Call Orders API" \\\\
+          \\-\\-permissions '[{"effect":"allow","action":["call_endpoint"],"resource":["analysis","id","<analysis\\-id>"]}]' \\\\
+          \\-\\-targets '[["run_user","id","<run\\-user\\-id>"]]'
+
 Example:
     $ tagoio analysis\\-create "Daily Report"
     $ tagoio analysis\\-create "Webhook Handler" \\-\\-run\\-on external
     $ tagoio analysis\\-create "Sync" \\-\\-runtime python\\-rt2025 \\-\\-var API_URL=https://x.com
+    $ tagoio analysis\\-create "Orders API" \\-\\-runtime luau\\-rt2026 \\-\\-enable\\-endpoint
 .fi
 .SS analysis\\-edit [ID]
-edit an analysis: rename it, change its runtime, variables, state or tags.
+edit an analysis: rename it, change its runtime, variables, state, endpoint or tags.
 .TP
 \\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
 environment from config.js
@@ -279,6 +298,15 @@ environment variable to set (repeatable, replaces the set) (default: [])
 \\fB\\-\\-clear\\-vars\\fR
 remove every environment variable
 .TP
+\\fB\\-\\-enable\\-endpoint\\fR
+turn on the analysis' HTTP Endpoint (Luau only)
+.TP
+\\fB\\-\\-disable\\-endpoint\\fR
+turn off the analysis' HTTP Endpoint
+.TP
+\\fB\\-\\-endpoint\\-access\\fR \\fI<access>\\fR
+who can call the Endpoint: token or public
+.TP
 \\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
 tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
 .TP
@@ -302,7 +330,9 @@ return result as json
     \\-\\-runtime works by re\\-uploading the analysis' existing script under the new
     language, because that upload is what actually sets the runtime — a plain
     field update reports success and changes nothing. The script itself is
-    preserved byte\\-for\\-byte, and the version number advances.
+    preserved byte\\-for\\-byte, and the version number advances. The API checks
+    the script against the new runtime, so switching to Luau works only when
+    the existing script is already valid Luau.
 
     That means the analysis needs a script already: on an empty one, \\-\\-runtime
     fails and points at 'analysis\\-deploy'. To start on a given runtime instead,
@@ -310,12 +340,20 @@ return result as json
 
     Use 'analysis\\-mode' to change run_on across many analyses at once.
 
+    The Endpoint flags change only what they name: \\-\\-endpoint\\-access alone keeps
+    the Endpoint on or off as it was. Endpoints run on Luau only, and switching
+    the analysis to another runtime turns its Endpoint off. With public access,
+    anyone who has the URL can run the code without a token. Run users and
+    analyses calling it also need the call_endpoint action in an access policy;
+    see 'analysis\\-create \\-\\-help'.
+
 Example:
     $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-name "Renamed"
     $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-deactivate
     $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-runtime python\\-rt2025
     $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-var A=1 \\-\\-var B=2
     $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-k env \\-v prod \\-\\-merge\\-tags
+    $ tagoio analysis\\-edit 62151835435d540010b768c4 \\-\\-enable\\-endpoint \\-\\-endpoint\\-access token
 .fi
 .SS analysis\\-delete [ID]
 permanently delete an analysis.
@@ -357,6 +395,9 @@ Force build for Deno runtime (default: false)
 \\fB\\-\\-node\\fR
 Force build for Node.js runtime (default: false)
 .TP
+\\fB\\-\\-luau\\fR
+Force build for Luau runtime (bundles with darklua) (default: false)
+.TP
 \\fB\\-\\-all\\fR
 deploy every analysis from tagoconfig.json without prompting (default: false)
 .TP
@@ -368,6 +409,7 @@ Example:
     $ tagoio deploy dashboard\\-handler
     $ tagoio deploy dashboard\\-handler \\-\\-deno
     $ tagoio deploy dashboard\\-handler \\-\\-node
+    $ tagoio deploy uplink\\-handler \\-\\-luau
     $ tagoio deploy \\-\\-all                                       # deploy every analysis from tagoconfig.json
     $ tagoio deploy \\-\\-all \\-\\-env stage                              # deploy all to the stage environment
     $ tagoio deploy \\-\\-all \\-\\-env prod \\-t $TAGOIO_TOKEN \\-\\-silent     # pipeline\\-friendly: no prompts, no lock file needed

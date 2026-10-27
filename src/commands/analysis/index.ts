@@ -98,9 +98,11 @@ Example:
     .argument("[name]", "name of the analysis")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--description <description>", "what the analysis does")
-    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, node-legacy, python-legacy, node, python or other")
+    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, bun-rt2026, luau-rt2026, node-legacy, python-legacy, node, python or other")
     .option("--run-on <location>", "tago or external (default: tago)")
     .option("--inactive", "create the analysis deactivated")
+    .option("--enable-endpoint", "turn on the analysis' HTTP Endpoint (Luau only)")
+    .option("--endpoint-access <access>", "who can call the Endpoint: token (default) or public")
     .option("--var <KEY=VALUE>", "environment variable to set (repeatable)", cmdRepeatableValue, [])
     .option("-k, --tagkey [key]", "tag key to set (pairs with --tagvalue by index)", cmdRepeatableValue, [])
     .option("-v, --tagvalue [value]", "tag value to set", cmdRepeatableValue, [])
@@ -122,17 +124,30 @@ Example:
     silently ignored. Schedule one with an action instead:
     'action-create "<name>" --type schedule --cron "0 9 * * *" --script <id>'.
 
+    --enable-endpoint gives the analysis an HTTP URL at
+    {API URL}/endpoint/{analysis id}. Endpoints run on Luau only; the API
+    refuses them on other runtimes. Access defaults to token. With public,
+    anyone who has the URL can run the code without a token, using the
+    analysis' own permissions.
+
+    A Run user or analysis that calls the Endpoint with its token also needs
+    the call_endpoint action on this analysis, in both access modes:
+      $ tagoio access-management-create "Call Orders API" \\
+          --permissions '[{"effect":"allow","action":["call_endpoint"],"resource":["analysis","id","<analysis-id>"]}]' \\
+          --targets '[["run_user","id","<run-user-id>"]]'
+
 Example:
     $ tagoio analysis-create "Daily Report"
     $ tagoio analysis-create "Webhook Handler" --run-on external
     $ tagoio analysis-create "Sync" --runtime python-rt2025 --var API_URL=https://x.com
+    $ tagoio analysis-create "Orders API" --runtime luau-rt2026 --enable-endpoint
        `,
     );
 
   program
     .command("analysis-edit")
     .alias("an-ed")
-    .description("edit an analysis: rename it, change its runtime, variables, state or tags.")
+    .description("edit an analysis: rename it, change its runtime, variables, state, endpoint or tags.")
     .argument("[ID]", "ID of your analysis")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--name <name>", "new name")
@@ -143,6 +158,9 @@ Example:
     .option("--deactivate", "mark the analysis inactive")
     .option("--var <KEY=VALUE>", "environment variable to set (repeatable, replaces the set)", cmdRepeatableValue, [])
     .option("--clear-vars", "remove every environment variable")
+    .option("--enable-endpoint", "turn on the analysis' HTTP Endpoint (Luau only)")
+    .option("--disable-endpoint", "turn off the analysis' HTTP Endpoint")
+    .option("--endpoint-access <access>", "who can call the Endpoint: token or public")
     .option("-k, --tagkey [key]", "tag key to set (pairs with --tagvalue by index)", cmdRepeatableValue, [])
     .option("-v, --tagvalue [value]", "tag value to set", cmdRepeatableValue, [])
     .option("--merge-tags", "merge given tags into existing ones (default: replace the tag set)")
@@ -159,7 +177,9 @@ Example:
     --runtime works by re-uploading the analysis' existing script under the new
     language, because that upload is what actually sets the runtime — a plain
     field update reports success and changes nothing. The script itself is
-    preserved byte-for-byte, and the version number advances.
+    preserved byte-for-byte, and the version number advances. The API checks
+    the script against the new runtime, so switching to Luau works only when
+    the existing script is already valid Luau.
 
     That means the analysis needs a script already: on an empty one, --runtime
     fails and points at 'analysis-deploy'. To start on a given runtime instead,
@@ -167,12 +187,20 @@ Example:
 
     Use 'analysis-mode' to change run_on across many analyses at once.
 
+    The Endpoint flags change only what they name: --endpoint-access alone keeps
+    the Endpoint on or off as it was. Endpoints run on Luau only, and switching
+    the analysis to another runtime turns its Endpoint off. With public access,
+    anyone who has the URL can run the code without a token. Run users and
+    analyses calling it also need the call_endpoint action in an access policy;
+    see 'analysis-create --help'.
+
 Example:
     $ tagoio analysis-edit 62151835435d540010b768c4 --name "Renamed"
     $ tagoio analysis-edit 62151835435d540010b768c4 --deactivate
     $ tagoio analysis-edit 62151835435d540010b768c4 --runtime python-rt2025
     $ tagoio analysis-edit 62151835435d540010b768c4 --var A=1 --var B=2
     $ tagoio analysis-edit 62151835435d540010b768c4 -k env -v prod --merge-tags
+    $ tagoio analysis-edit 62151835435d540010b768c4 --enable-endpoint --endpoint-access token
        `,
     );
 
@@ -213,6 +241,7 @@ Example:
     .option("-s, --silent", "will not prompt to confirm the deploy")
     .option("--deno", "Force build for Deno runtime", false)
     .option("--node", "Force build for Node.js runtime", false)
+    .option("--luau", "Force build for Luau runtime (bundles with darklua)", false)
     .option("--all", "deploy every analysis from tagoconfig.json without prompting", false)
     .option("-t, --token <profile-token>", "profile token for this run (bypasses lock file, for CI/CD)")
     .action(deployAnalysis)
@@ -223,6 +252,7 @@ Example:
     $ tagoio deploy dashboard-handler
     $ tagoio deploy dashboard-handler --deno
     $ tagoio deploy dashboard-handler --node
+    $ tagoio deploy uplink-handler --luau
     $ tagoio deploy --all                                       # deploy every analysis from tagoconfig.json
     $ tagoio deploy --all --env stage                              # deploy all to the stage environment
     $ tagoio deploy --all --env prod -t $TAGOIO_TOKEN --silent     # pipeline-friendly: no prompts, no lock file needed

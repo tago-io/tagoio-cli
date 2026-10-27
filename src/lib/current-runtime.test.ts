@@ -7,6 +7,10 @@ describe("detectRuntime", () => {
     expect(detectRuntime("deno-rt2025")).toBe("--deno");
   });
 
+  test("returns --luau when the SDK runtime string contains 'luau'", () => {
+    expect(detectRuntime("luau-rt2026")).toBe("--luau");
+  });
+
   test("returns --node for any non-deno runtime string", () => {
     expect(detectRuntime("node-rt2025")).toBe("--node");
   });

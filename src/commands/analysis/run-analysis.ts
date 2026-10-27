@@ -160,6 +160,11 @@ async function runAnalysis(scriptName: string | undefined, options: RunAnalysisO
     runtime = detectRuntime(runtimeParam || "");
   }
 
+  // Luau has no local runtime; switching the analysis to external would only stop it running on TagoIO.
+  if (runtime === "--luau") {
+    errorHandler("Luau analyses run only on TagoIO. Deploy them with: tagoio deploy <name> --luau");
+  }
+
   const cmd = _buildCMD(options, runtime);
 
   if (run_on === "tago") {

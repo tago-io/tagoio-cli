@@ -7,6 +7,7 @@ import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.j
 import { buildTagPairs, mergeTags } from "../devices/device-edit.js";
 import { assertRunOn } from "./analysis-list.js";
 import { RUNTIMES } from "./analysis-create.js";
+import { type AnalysisEndpoint, type EndpointOptions, parseAnalysisEndpoint } from "./analysis-endpoint.js";
 import { type AnalysisVariable, parseAnalysisVariables } from "./analysis-variables.js";
 
 /**
@@ -21,9 +22,10 @@ import { type AnalysisVariable, parseAnalysisVariables } from "./analysis-variab
 type AnalysisEditPatch = Partial<Omit<AnalysisInfo, "active" | "variables">> & {
   active?: boolean;
   variables?: AnalysisVariable[];
+  endpoint?: AnalysisEndpoint;
 };
 
-interface IOptions {
+interface IOptions extends EndpointOptions {
   environment?: string;
   name?: string;
   description?: string;
@@ -82,7 +84,7 @@ async function changeRuntime(resources: Resources, id: string, runtime: string, 
 
   await resources.analysis
     .uploadScript(id, {
-      name: info.file_name || "script.js",
+      name: uploadFileName(info.file_name, runtime),
       content: Buffer.from(body).toString("base64"),
       language: runtime as RunTypeOptions,
     })
@@ -92,6 +94,17 @@ async function changeRuntime(resources: Resources, id: string, runtime: string, 
     });
 
   return true;
+}
+
+/**
+ * The file name for the re-upload. Probed against a live profile: `info`
+ * returns `file_name: null`, so this falls back to `script.js`, which Node
+ * and Python accept but Luau refuses with "Invalid file_name". A Luau upload
+ * needs the `.luau` extension.
+ */
+function uploadFileName(fileName: string | null | undefined, runtime: string) {
+  const name = fileName || "script.js";
+  return runtime === "luau-rt2026" ? `${name.replace(/\.[^.]*$/, "")}.luau` : name;
 }
 
 function failWith(message: string, code: string, useJSON?: boolean): never {
@@ -123,6 +136,7 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
 
   // Parsed before any API call so a malformed pair costs no round trip.
   const variables = parseAnalysisVariables(options.var ?? [], options);
+  const endpoint = parseAnalysisEndpoint(options);
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
 
@@ -164,6 +178,10 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
     patch.variables = variables;
   }
 
+  if (endpoint) {
+    patch.endpoint = endpoint;
+  }
+
   if (options.tagkey?.length) {
     const incoming = buildTagPairs(options.tagkey, options.tagvalue);
     if (options.mergeTags) {
@@ -180,19 +198,24 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
   }
 
   // Runs before the patch is evaluated, since --runtime alone is a valid edit
-  // that sends no patch at all.
+  // that sends no patch at all. It also runs before the PUT on purpose: the API
+  // enables an Endpoint only on Luau, so `--runtime luau-rt2026
+  // --enable-endpoint` works only once the runtime has already changed, and
+  // only when the existing script is valid Luau ("Source is invalid" otherwise).
   const runtimeChanged = options.runtime ? await changeRuntime(resources, id as string, options.runtime, options) : false;
 
   if (Object.keys(patch).length === 0 && !runtimeChanged) {
-    failWith("Nothing to update — pass a field to change, --runtime, --clear-vars, or tags.", "no_changes", options.json);
+    failWith("Nothing to update — pass a field to change, --runtime, --clear-vars, an Endpoint flag, or tags.", "no_changes", options.json);
   }
 
   if (Object.keys(patch).length > 0) {
     await resources.analysis.edit(id as string, patch as Partial<AnalysisInfo>).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       // The API's message only. Echoing the patch would put whatever it carries
-      // into whatever captured the error.
-      failWith(`Failed to edit analysis ${id}: ${message}`, "edit_failed", options.json);
+      // into whatever captured the error. A runtime change already went through
+      // by now, so saying so keeps the failure from reading as "nothing changed".
+      const detail = runtimeChanged ? `${message.replace(/\.$/, "")}. The runtime was already changed to ${options.runtime}.` : message;
+      failWith(`Failed to edit analysis ${id}: ${detail}`, "edit_failed", options.json);
     });
   }
 

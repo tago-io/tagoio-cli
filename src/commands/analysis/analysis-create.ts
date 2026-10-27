@@ -3,6 +3,7 @@ import { type AnalysisCreateInfo, Resources } from "@tago-io/sdk";
 import { getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, requireOrFail, successMSG } from "../../lib/messages.js";
 import { buildTags } from "../devices/device-create.js";
+import { type EndpointOptions, parseAnalysisEndpoint } from "./analysis-endpoint.js";
 import { assertRunOn } from "./analysis-list.js";
 import { parseAnalysisVariables } from "./analysis-variables.js";
 
@@ -11,9 +12,21 @@ import { parseAnalysisVariables } from "./analysis-variables.js";
  *
  * Deliberately wider than the SDK's `SnippetRuntime`, which lists only five —
  * it describes the runtimes with code snippets, not the ones an analysis can
- * run on.
+ * run on. Also wider than the SDK's `RunTypeOptions`, which lacks `bun-rt2026`
+ * as of 12.3.6; the cast on `runtime` below covers that.
  */
-const RUNTIMES = ["node", "python", "node-legacy", "python-legacy", "deno-rt2025", "node-rt2025", "python-rt2025", "other"] as const;
+const RUNTIMES = [
+  "node",
+  "python",
+  "node-legacy",
+  "python-legacy",
+  "bun-rt2026",
+  "deno-rt2025",
+  "node-rt2025",
+  "python-rt2025",
+  "luau-rt2026",
+  "other",
+] as const;
 
 /**
  * The API defaults to `node-legacy`. Inheriting that silently would put every
@@ -22,7 +35,7 @@ const RUNTIMES = ["node", "python", "node-legacy", "python-legacy", "deno-rt2025
  */
 const DEFAULT_RUNTIME = "node-rt2025";
 
-interface IOptions {
+interface IOptions extends EndpointOptions {
   environment?: string;
   description?: string;
   runtime?: string;
@@ -56,6 +69,7 @@ async function analysisCreate(nameArg: string | undefined, options: IOptions) {
 
   // Parsed before the API call so a malformed pair costs no round trip.
   const variables = parseAnalysisVariables(options.var ?? [], options);
+  const endpoint = parseAnalysisEndpoint(options);
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
 
@@ -86,6 +100,7 @@ async function analysisCreate(nameArg: string | undefined, options: IOptions) {
     active,
     ...(options.description ? { description: options.description } : {}),
     ...(variables ? { variables } : {}),
+    ...(endpoint ? { endpoint } : {}),
     ...(buildTags(options.tagkey, options.tagvalue) ? { tags: buildTags(options.tagkey, options.tagvalue) } : {}),
   } as unknown as AnalysisCreateInfo;
 
@@ -104,11 +119,15 @@ async function analysisCreate(nameArg: string | undefined, options: IOptions) {
   const tokenPresent = Boolean(created.token);
 
   if (options.json) {
-    process.stdout.write(`${JSON.stringify({ id: created.id, name, runtime, run_on: runOn, active, token_present: tokenPresent })}\n`);
+    const ack = { id: created.id, name, runtime, run_on: runOn, active, ...(endpoint ? { endpoint } : {}), token_present: tokenPresent };
+    process.stdout.write(`${JSON.stringify(ack)}\n`);
     return;
   }
 
   successMSG(`Analysis created: ${name} [${created.id}] (${runtime}, ${runOn}).`);
+  if (endpoint?.active) {
+    successMSG(`Endpoint on (${endpoint.access ?? "token"}).`);
+  }
   if (tokenPresent) {
     successMSG(`It has an analysis token — read it with: tagoio analysis-info ${created.id} --show-token`);
   }

@@ -221,6 +221,67 @@ describe("analysisEdit", () => {
     expect(resourcesInstance.analysis.uploadScript).toHaveBeenCalledWith("ana1", expect.objectContaining({ language: "python-rt2025" }));
   });
 
+  test("--endpoint-access alone patches only the endpoint access", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { endpointAccess: "public", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { access: "public" } });
+  });
+
+  test("--disable-endpoint patches the endpoint off", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { disableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { active: false } });
+  });
+
+  /**
+   * Probed: the API enables an Endpoint only on Luau. Switching to Luau and
+   * enabling in one command works only because the runtime upload lands first.
+   */
+  test("--runtime luau-rt2026 --enable-endpoint re-uploads before sending the endpoint patch", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", enableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { active: true } });
+    const uploadOrder = resourcesInstance.analysis.uploadScript.mock.invocationCallOrder[0];
+    const editOrder = resourcesInstance.analysis.edit.mock.invocationCallOrder[0];
+    expect(uploadOrder).toBeLessThan(editOrder);
+  });
+
+  test("a rejected patch after a runtime change says the runtime already changed", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("Endpoints run on Sandbox runtimes only"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("ana1", { runtime: "python-rt2025", enableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(
+      /Sandbox runtimes only\. The runtime was already changed to python-rt2025/,
+    );
+  });
+
+  test("the runtime note does not double a period the API message already has", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("Rejected."));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("ana1", { runtime: "python-rt2025", name: "New", var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(
+      /Rejected\. The runtime was already changed to python-rt2025\.$/,
+    );
+  });
+
+  test("a rejected patch without a runtime change carries no runtime note", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("boom"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    const failure = analysisEdit("ana1", { name: "New", var: [], tagkey: [], tagvalue: [] } as never);
+    await expect(failure).rejects.toThrow(/edit_failed: Failed to edit analysis ana1: boom$/);
+  });
+
+  test("--runtime bun-rt2026 is accepted and re-uploads under the Bun language", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "bun-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript).toHaveBeenCalledWith("ana1", expect.objectContaining({ language: "bun-rt2026" }));
+  });
+
   test("--runtime preserves the script body byte-for-byte", async () => {
     const { analysisEdit } = await import("./analysis-edit.js");
     await analysisEdit("ana1", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never);
@@ -234,6 +295,24 @@ describe("analysisEdit", () => {
     await analysisEdit("ana1", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never);
 
     expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("existing.js");
+  });
+
+  /** Probed: Luau refuses a re-upload named `*.js` with "Invalid file_name". */
+  test("--runtime luau-rt2026 re-uploads under a .luau file name", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("existing.luau");
+  });
+
+  /** Probed: `info` returns an empty `file_name`, so the fallback must suit Luau too. */
+  test("--runtime luau-rt2026 falls back to script.luau when the file name is empty", async () => {
+    resourcesInstance.analysis.info.mockResolvedValue({ id: "ana1", name: "Alert Dispatch", runtime: "node-rt2025", file_name: null });
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript.mock.calls[0][1].name).toBe("script.luau");
   });
 
   /** A PUT alone is a no-op, so it must not be sent as one. */
