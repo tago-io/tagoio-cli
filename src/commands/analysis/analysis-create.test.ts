@@ -193,6 +193,13 @@ describe("analysisCreate", () => {
     expect(resourcesInstance.analysis.create.mock.calls[0][0].runtime).toBe("python-rt2025");
   });
 
+  test.each(["bun-rt2026", "luau-rt2026"])("--runtime %s is accepted and sent as-is", async (runtime) => {
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("My Analysis", { runtime, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.create.mock.calls[0][0].runtime).toBe(runtime);
+  });
+
   /**
    * Probed: the API accepts eight runtimes, not the five `SnippetRuntime` lists.
    * Its rejection message names all of them, so the offline check is about

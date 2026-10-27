@@ -11,9 +11,21 @@ import { parseAnalysisVariables } from "./analysis-variables.js";
  *
  * Deliberately wider than the SDK's `SnippetRuntime`, which lists only five —
  * it describes the runtimes with code snippets, not the ones an analysis can
- * run on.
+ * run on. Also wider than the SDK's `RunTypeOptions`, which lacks `bun-rt2026`
+ * as of 12.3.6; the cast on `runtime` below covers that.
  */
-const RUNTIMES = ["node", "python", "node-legacy", "python-legacy", "deno-rt2025", "node-rt2025", "python-rt2025", "luau-rt2026", "other"] as const;
+const RUNTIMES = [
+  "node",
+  "python",
+  "node-legacy",
+  "python-legacy",
+  "bun-rt2026",
+  "deno-rt2025",
+  "node-rt2025",
+  "python-rt2025",
+  "luau-rt2026",
+  "other",
+] as const;
 
 /**
  * The API defaults to `node-legacy`. Inheriting that silently would put every

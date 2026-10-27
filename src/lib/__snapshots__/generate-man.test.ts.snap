@@ -208,7 +208,7 @@ environment from config.js
 what the analysis does
 .TP
 \\fB\\-\\-runtime\\fR \\fI<runtime>\\fR
-node\\-rt2025, python\\-rt2025, deno\\-rt2025, luau\\-rt2026, node\\-legacy, python\\-legacy, node, python or other
+node\\-rt2025, python\\-rt2025, deno\\-rt2025, bun\\-rt2026, luau\\-rt2026, node\\-legacy, python\\-legacy, node, python or other
 .TP
 \\fB\\-\\-run\\-on\\fR \\fI<location>\\fR
 tago or external (default: tago)

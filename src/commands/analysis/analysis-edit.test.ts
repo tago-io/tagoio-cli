@@ -221,6 +221,13 @@ describe("analysisEdit", () => {
     expect(resourcesInstance.analysis.uploadScript).toHaveBeenCalledWith("ana1", expect.objectContaining({ language: "python-rt2025" }));
   });
 
+  test("--runtime bun-rt2026 is accepted and re-uploads under the Bun language", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "bun-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.uploadScript).toHaveBeenCalledWith("ana1", expect.objectContaining({ language: "bun-rt2026" }));
+  });
+
   test("--runtime preserves the script body byte-for-byte", async () => {
     const { analysisEdit } = await import("./analysis-edit.js");
     await analysisEdit("ana1", { runtime: "python-rt2025", var: [], tagkey: [], tagvalue: [] } as never);

@@ -98,7 +98,7 @@ Example:
     .argument("[name]", "name of the analysis")
     .option("--env, --environment [environment]", "environment from config.js")
     .option("--description <description>", "what the analysis does")
-    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, luau-rt2026, node-legacy, python-legacy, node, python or other")
+    .option("--runtime <runtime>", "node-rt2025, python-rt2025, deno-rt2025, bun-rt2026, luau-rt2026, node-legacy, python-legacy, node, python or other")
     .option("--run-on <location>", "tago or external (default: tago)")
     .option("--inactive", "create the analysis deactivated")
     .option("--var <KEY=VALUE>", "environment variable to set (repeatable)", cmdRepeatableValue, [])
