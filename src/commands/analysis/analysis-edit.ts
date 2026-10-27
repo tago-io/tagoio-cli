@@ -7,6 +7,7 @@ import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.j
 import { buildTagPairs, mergeTags } from "../devices/device-edit.js";
 import { assertRunOn } from "./analysis-list.js";
 import { RUNTIMES } from "./analysis-create.js";
+import { type AnalysisEndpoint, type EndpointOptions, parseAnalysisEndpoint } from "./analysis-endpoint.js";
 import { type AnalysisVariable, parseAnalysisVariables } from "./analysis-variables.js";
 
 /**
@@ -21,9 +22,10 @@ import { type AnalysisVariable, parseAnalysisVariables } from "./analysis-variab
 type AnalysisEditPatch = Partial<Omit<AnalysisInfo, "active" | "variables">> & {
   active?: boolean;
   variables?: AnalysisVariable[];
+  endpoint?: AnalysisEndpoint;
 };
 
-interface IOptions {
+interface IOptions extends EndpointOptions {
   environment?: string;
   name?: string;
   description?: string;
@@ -123,6 +125,7 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
 
   // Parsed before any API call so a malformed pair costs no round trip.
   const variables = parseAnalysisVariables(options.var ?? [], options);
+  const endpoint = parseAnalysisEndpoint(options);
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
 
@@ -164,6 +167,10 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
     patch.variables = variables;
   }
 
+  if (endpoint) {
+    patch.endpoint = endpoint;
+  }
+
   if (options.tagkey?.length) {
     const incoming = buildTagPairs(options.tagkey, options.tagvalue);
     if (options.mergeTags) {
@@ -180,19 +187,23 @@ async function analysisEdit(idArg: string | undefined, options: IOptions) {
   }
 
   // Runs before the patch is evaluated, since --runtime alone is a valid edit
-  // that sends no patch at all.
+  // that sends no patch at all. It also runs before the PUT on purpose: the API
+  // enables an Endpoint only on Luau, so `--runtime luau-rt2026
+  // --enable-endpoint` works only once the runtime has already changed.
   const runtimeChanged = options.runtime ? await changeRuntime(resources, id as string, options.runtime, options) : false;
 
   if (Object.keys(patch).length === 0 && !runtimeChanged) {
-    failWith("Nothing to update — pass a field to change, --runtime, --clear-vars, or tags.", "no_changes", options.json);
+    failWith("Nothing to update — pass a field to change, --runtime, --clear-vars, an Endpoint flag, or tags.", "no_changes", options.json);
   }
 
   if (Object.keys(patch).length > 0) {
     await resources.analysis.edit(id as string, patch as Partial<AnalysisInfo>).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       // The API's message only. Echoing the patch would put whatever it carries
-      // into whatever captured the error.
-      failWith(`Failed to edit analysis ${id}: ${message}`, "edit_failed", options.json);
+      // into whatever captured the error. A runtime change already went through
+      // by now, so saying so keeps the failure from reading as "nothing changed".
+      const runtimeNote = runtimeChanged ? `. The runtime was already changed to ${options.runtime}` : "";
+      failWith(`Failed to edit analysis ${id}: ${message}${runtimeNote}`, "edit_failed", options.json);
     });
   }
 

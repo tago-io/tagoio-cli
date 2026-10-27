@@ -174,6 +174,15 @@ describe("analysisInfo", () => {
     expect(stdoutSpy).not.toHaveBeenCalled();
   });
 
+  test("the human view shows the Endpoint state and access", async () => {
+    resourcesInstance.analysis.info.mockResolvedValue({ ...info, runtime: "luau-rt2026", endpoint: { active: true, access: "public" } });
+    const { writeStatus } = await import("../../lib/messages.js");
+    const { analysisInfo } = await import("./analysis-info.js");
+    await analysisInfo("ana1", {} as never);
+
+    expect(vi.mocked(writeStatus).mock.calls.map(([line]) => line)).toContainEqual(expect.stringMatching(/endpoint\s+on \(public\)/));
+  });
+
   test("last_run: never renders as never", async () => {
     const { analysisInfo } = await import("./analysis-info.js");
     await analysisInfo("ana1", { json: true } as never);

@@ -74,7 +74,7 @@ List of commands of the CLI
 | an-ls, analysis-list | get the list of analyses. |
 | an-nf, analysis-info [ID] | get information about an analysis. |
 | an-crt, analysis-create [name] | create a new analysis. |
-| an-ed, analysis-edit [ID] | edit an analysis: rename it, change its runtime, variables, state or tags. |
+| an-ed, analysis-edit [ID] | edit an analysis: rename it, change its runtime, variables, state, endpoint or tags. |
 | an-dlt, analysis-delete [ID] | permanently delete an analysis. |
 | deploy, analysis-deploy [name] | deploy your analysis to TagoIO |
 | run, analysis-run [name] | run your TagoIO analysis from your machine. |

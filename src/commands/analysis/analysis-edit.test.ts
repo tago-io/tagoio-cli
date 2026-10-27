@@ -221,6 +221,43 @@ describe("analysisEdit", () => {
     expect(resourcesInstance.analysis.uploadScript).toHaveBeenCalledWith("ana1", expect.objectContaining({ language: "python-rt2025" }));
   });
 
+  test("--endpoint-access alone patches only the endpoint access", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { endpointAccess: "public", var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { access: "public" } });
+  });
+
+  test("--disable-endpoint patches the endpoint off", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { disableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { active: false } });
+  });
+
+  /**
+   * Probed: the API enables an Endpoint only on Luau. Switching to Luau and
+   * enabling in one command works only because the runtime upload lands first.
+   */
+  test("--runtime luau-rt2026 --enable-endpoint re-uploads before sending the endpoint patch", async () => {
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await analysisEdit("ana1", { runtime: "luau-rt2026", enableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.edit).toHaveBeenCalledWith("ana1", { endpoint: { active: true } });
+    const uploadOrder = resourcesInstance.analysis.uploadScript.mock.invocationCallOrder[0];
+    const editOrder = resourcesInstance.analysis.edit.mock.invocationCallOrder[0];
+    expect(uploadOrder).toBeLessThan(editOrder);
+  });
+
+  test("a rejected patch after a runtime change says the runtime already changed", async () => {
+    resourcesInstance.analysis.edit.mockRejectedValue(new Error("Endpoints run on Sandbox runtimes only"));
+
+    const { analysisEdit } = await import("./analysis-edit.js");
+    await expect(analysisEdit("ana1", { runtime: "python-rt2025", enableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never)).rejects.toThrow(
+      /Sandbox runtimes only\. The runtime was already changed to python-rt2025/,
+    );
+  });
+
   test("--runtime bun-rt2026 is accepted and re-uploads under the Bun language", async () => {
     const { analysisEdit } = await import("./analysis-edit.js");
     await analysisEdit("ana1", { runtime: "bun-rt2026", var: [], tagkey: [], tagvalue: [] } as never);
