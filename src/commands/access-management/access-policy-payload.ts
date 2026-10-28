@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
-
 import type { Permissions } from "@tago-io/sdk";
 
 import { errorHandler, errorHandlerJSON } from "../../lib/messages.js";
+import { readJSONFlagSource } from "../../lib/json-flag-source.js";
 import { parseJSONFlag } from "../../lib/parse-json-flag.js";
 
 /**
@@ -34,34 +33,6 @@ function failWith(message: string, code: string, useJSON?: boolean): never {
 }
 
 /**
- * @description Resolves a flag that may arrive inline or from a file.
- *
- * The `existsSync` guard is deliberate: `entity-create.ts` reads a user-supplied
- * path with a bare `readFileSync`, so a wrong path escapes as an unhandled Node
- * ENOENT with a stack trace instead of a CLI error. `language-content.ts` guards
- * first, and this follows that.
- */
-function readRaw(inline: string | undefined, file: string | undefined, flag: string, options: PayloadOptions) {
-  if (inline !== undefined && file !== undefined) {
-    failWith(`${flag} and ${flag}-file cannot be used together.`, "conflicting_flags", options.json);
-  }
-
-  if (inline !== undefined) {
-    return { raw: inline, label: flag };
-  }
-
-  if (file === undefined) {
-    return undefined;
-  }
-
-  if (!existsSync(file)) {
-    failWith(`File not found: ${file}`, "file_not_found", options.json);
-  }
-
-  return { raw: readFileSync(file, "utf8"), label: file };
-}
-
-/**
  * @description Parses the permission set for a policy.
  *
  * `effect` is checked locally — it is a two-value enum and cannot go stale.
@@ -72,7 +43,7 @@ function readRaw(inline: string | undefined, file: string | undefined, flag: str
  * analysis family, where eight stable values were worth freezing.
  */
 function resolvePermissions(options: PayloadOptions): Permissions[] | undefined {
-  const source = readRaw(options.permissions, options.permissionsFile, "--permissions", options);
+  const source = readJSONFlagSource(options.permissions, options.permissionsFile, "--permissions", options);
   if (!source) {
     return undefined;
   }
@@ -109,7 +80,7 @@ function resolvePermissions(options: PayloadOptions): Permissions[] | undefined 
  * something, and it is not "no targets".
  */
 function resolveTargets(options: PayloadOptions): AccessTarget[] | undefined {
-  const source = readRaw(options.targets, options.targetsFile, "--targets", options);
+  const source = readJSONFlagSource(options.targets, options.targetsFile, "--targets", options);
   if (!source) {
     return undefined;
   }
