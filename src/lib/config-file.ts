@@ -10,11 +10,20 @@ import { readToken } from "./token.js";
 interface IEnvironment {
   /** Local-scope only. Omitted from global tagoconfig.json (analysis development requires a project directory). */
   analysisList?: { name: string; fileName: string; id: string; path?: string }[];
+  /** Local-scope only. One entry per custom widget placement; a folder placed on several widgets has one entry each. */
+  widgetList?: IWidgetEntry[];
   id: string;
   profileName: string;
   email: string;
   tagoSSEURL?: string;
   tagoAPIURL?: string;
+}
+
+interface IWidgetEntry {
+  /** The widget's folder under `widgetPath`, holding its `App.tsx`. */
+  folder: string;
+  dashboard_id: string;
+  widget_id: string;
 }
 
 interface IConfigFileEnvs {
@@ -25,6 +34,8 @@ interface IConfigFile {
   profileRegion?: GenericModuleParams["region"];
   analysisPath: string;
   buildPath: string;
+  /** Where the custom widget folders live. Defaults to `./widgets`. */
+  widgetPath?: string;
   default: string;
 }
 
@@ -123,7 +134,7 @@ function getEnvironmentConfig(environment?: string) {
     return;
   }
 
-  const defaultPaths = { analysisPath: configFile.analysisPath, buildPath: configFile.buildPath };
+  const defaultPaths = { analysisPath: configFile.analysisPath, buildPath: configFile.buildPath, widgetPath: configFile.widgetPath };
 
   if (environment) {
     const userEnvironment = configFile[environment];
@@ -199,4 +210,4 @@ function setDefault(environment: string) {
 }
 
 export { getConfigFile, readConfigFile, getEnvironmentConfig, writeConfigFileEnv, writeToConfigFile };
-export { setDefault, resolveCLIPath, getProfileRegion, getApiURL, type IConfigFile, type IEnvironment };
+export { setDefault, resolveCLIPath, getProfileRegion, getApiURL, type IConfigFile, type IEnvironment, type IWidgetEntry };

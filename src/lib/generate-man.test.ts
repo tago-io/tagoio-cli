@@ -63,6 +63,8 @@ describe("generateManPage", () => {
     expect(roff).toContain(".SS access\\-management\\-list");
     expect(roff).toContain(".SS sql\\-list");
     expect(roff).toContain(".SS copy\\-tab [dashboardID]");
+    expect(roff).toContain(".SS dashboard\\-list");
+    expect(roff).toContain(".SS widget\\-deploy [folder]");
 
     // Two secret-* flags exist only to be refused with an explanation:
     // secret-create --silent (the value can only be typed) and secret-edit

@@ -34,7 +34,9 @@ when no --env flag is given. Persisted by tagoio set-env.`,
 
   // FILES bodies
   fileTagoconfig: `Project-level configuration. Created and updated by
-tagoio init.`,
+tagoio init. Each environment's widgetList maps custom widget folders to the
+widgets tagoio widget-deploy uploads them to; tagoio widget-link fills it from
+the widgets already in the profile.`,
   fileLockfile: `Per-environment profile token written by tagoio login.
 One file per environment, kept in the current project directory.`,
   filePersonalEnv: `Persists the user's default environment selection

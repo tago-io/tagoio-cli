@@ -70,6 +70,15 @@ vi.mock("../prompt/text-prompt.js", () => ({
   promptTextToEnter: vi.fn(),
 }));
 
+vi.mock("@tago-io/sdk", () => ({
+  Account: function Account() {
+    return {
+      profiles: { info: async () => ({ info: { id: "6a91f697b1ccff000c3eb271", name: "Third" } }) },
+      info: async () => ({ email: "dev@example.com" }),
+    };
+  },
+}));
+
 const localScope = {
   scope: "local" as const,
   root: "/repo",
@@ -133,6 +142,27 @@ describe("startConfig — clig.dev flow", () => {
     // it to skip the confirm and proceed; getConfigFile returns undefined, so the
     // "Creating project structure" stage fails via failStep (which aborts).
     await expect(startConfig("dev", { token: "tok-1", force: true })).rejects.toThrow(/__failStep:Creating project structure/);
+  });
+
+  /**
+   * writeConfigFileEnv replaces the whole env block and init has no widget
+   * prompt, so a re-init that dropped widgetList would silently erase every
+   * custom widget mapping.
+   */
+  test("re-init keeps the environment's widgetList", async () => {
+    detectInitStateMock.mockReturnValue(reInitState);
+    const widgetList = [{ folder: "users-summary", dashboard_id: "6a68b4f5e4b1e5000b5ab1ef", widget_id: "6ad1084c174a0b000cb231a4" }];
+    const { getConfigFile, writeConfigFileEnv } = await import("../lib/config-file.js");
+    (getConfigFile as ReturnType<typeof vi.fn>).mockReturnValue({
+      analysisPath: "./src",
+      buildPath: "./build",
+      dev: { id: "x", analysisList: [], widgetList },
+    });
+
+    const { startConfig } = await import("./start-config.js");
+    await startConfig("dev", { token: "tok-1", input: false, force: true });
+
+    expect((writeConfigFileEnv as ReturnType<typeof vi.fn>).mock.calls[0][1].widgetList).toEqual(widgetList);
   });
 
   test("--no-input + existing env without --force errors with the --force hint", async () => {

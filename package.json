@@ -47,6 +47,7 @@
     "commander": "^15.0.0",
     "dotenv": "^17.4.2",
     "envfile": "^7.1.0",
+    "esbuild": "^0.28.2",
     "eventsource": "^5.1.2",
     "kleur": "^4.1.5",
     "luxon": "^3.7.2",

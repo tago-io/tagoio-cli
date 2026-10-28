@@ -419,6 +419,12 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
       });
       newEnv.analysisList = analysisList;
     }
+    // init has no widget prompt, and writeConfigFileEnv replaces the whole env
+    // block, so the custom widget mapping is carried over as stored.
+    const widgetList = configFile[envName]?.widgetList;
+    if (widgetList) {
+      newEnv.widgetList = widgetList;
+    }
   }
   startStep("Setting up environment");
   writeToConfigFile(configFile);
