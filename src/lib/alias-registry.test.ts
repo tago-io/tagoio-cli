@@ -10,7 +10,7 @@ import { buildPopulatedProgram } from "./generate-man.js";
  *
  * The scheme is a family prefix plus a 2-3 character verb: ls, nf, crt, ed,
  * dlt, cp, dt, sch, on, off, lng, tbl, rev, run, tkn, prm, tp, up, dl, url,
- * mv, rn. It saves about seven characters per command, which is what makes an
+ * mv, rn, dp, pl. It saves about seven characters per command, which is what makes an
  * alias worth typing at all.
  *
  * The twelve single-word aliases at the end predate the scheme and ship in the
@@ -57,6 +57,22 @@ const EXPECTED_ALIASES: ReadonlyArray<readonly [string, string]> = [
   ["access-management-create", "am-crt"],
   ["access-management-edit", "am-ed"],
   ["access-management-delete", "am-dlt"],
+  // Dashboards
+  ["dashboard-list", "db-ls"],
+  ["dashboard-info", "db-nf"],
+  ["dashboard-create", "db-crt"],
+  ["dashboard-edit", "db-ed"],
+  ["dashboard-delete", "db-dlt"],
+  // Custom widgets. "dp" deploys and "pl" pulls a widget's source.
+  ["widget-list", "wg-ls"],
+  ["widget-info", "wg-nf"],
+  ["widget-create", "wg-crt"],
+  ["widget-edit", "wg-ed"],
+  ["widget-move", "wg-mv"],
+  ["widget-delete", "wg-dlt"],
+  ["widget-link", "wg-ln"],
+  ["widget-deploy", "wg-dp"],
+  ["widget-pull", "wg-pl"],
   // TagoSQL
   ["sql-list", "sq-ls"],
   ["sql-info", "sq-nf"],

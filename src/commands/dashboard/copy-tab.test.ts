@@ -78,9 +78,7 @@ describe("copyTabWidgets", () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ profileToken: "" }));
 
     const { copyTabWidgets } = await import("./copy-tab.js");
-    await expect(
-      copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 }),
-    ).rejects.toThrow(/Environment not found/);
+    await expect(copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 })).rejects.toThrow(/Environment not found/);
   });
 
   test("rejects copying from and to the same tab", async () => {
@@ -88,9 +86,7 @@ describe("copyTabWidgets", () => {
     accountInstance.dashboards.info.mockResolvedValue(dashInfo);
 
     const { copyTabWidgets } = await import("./copy-tab.js");
-    await expect(
-      copyTabWidgets("dash-id", { from: "tab-a", to: "tab-a", environment: "prod", amount: 1 }),
-    ).rejects.toThrow(/same tab/);
+    await expect(copyTabWidgets("dash-id", { from: "tab-a", to: "tab-a", environment: "prod", amount: 1 })).rejects.toThrow(/same tab/);
   });
 
   test("returns early without editing when the user declines confirmation", async () => {
@@ -121,10 +117,7 @@ describe("copyTabWidgets", () => {
 
     expect(accountInstance.dashboards.widgets.delete).toHaveBeenCalledWith("dash-id", "w-2");
     expect(accountInstance.dashboards.widgets.create).toHaveBeenCalled();
-    expect(accountInstance.dashboards.edit).toHaveBeenCalledWith(
-      "dash-id",
-      expect.objectContaining({ arrangement: expect.any(Array) }),
-    );
+    expect(accountInstance.dashboards.edit).toHaveBeenCalledWith("dash-id", expect.objectContaining({ arrangement: expect.any(Array) }));
   });
 
   test("prompts for source and target tabs when they are not provided", async () => {
@@ -165,9 +158,7 @@ describe("copyTabWidgets", () => {
     prompts.inject([undefined]);
 
     const { copyTabWidgets } = await import("./copy-tab.js");
-    await expect(
-      copyTabWidgets("dash-id", { from: "", to: "tab-b", environment: "prod", amount: 1 } as never),
-    ).rejects.toThrow(/Tab not selected/);
+    await expect(copyTabWidgets("dash-id", { from: "", to: "tab-b", environment: "prod", amount: 1 } as never)).rejects.toThrow(/Tab not selected/);
   });
 
   test("errors when zero widgets are copied (prevents silent-success false [OK])", async () => {
@@ -177,8 +168,6 @@ describe("copyTabWidgets", () => {
     accountInstance.dashboards.edit.mockResolvedValue(undefined);
 
     const { copyTabWidgets } = await import("./copy-tab.js");
-    await expect(copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 })).rejects.toThrow(
-      /No widgets were copied/,
-    );
+    await expect(copyTabWidgets("dash-id", { from: "tab-a", to: "tab-b", environment: "prod", amount: 1 })).rejects.toThrow(/No widgets were copied/);
   });
 });

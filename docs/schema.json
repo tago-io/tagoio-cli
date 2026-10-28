@@ -28,6 +28,28 @@
                   "required": ["fileName", "id"]
               }
           },
+          "widgetList": {
+              "description": "Custom widgets to deploy: one entry per widget a folder is placed on",
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "folder": {
+                          "description": "widget folder under widgetPath, holding its App.tsx",
+                          "type": "string"
+                      },
+                      "dashboard_id": {
+                          "description": "id of the dashboard holding the custom widget",
+                          "type": "string"
+                      },
+                      "widget_id": {
+                          "description": "id of the custom widget",
+                          "type": "string"
+                      }
+                  },
+                  "required": ["folder", "dashboard_id", "widget_id"]
+              }
+          },
           "id": {
               "description": "ID of the profile",
               "type": "string"
@@ -62,6 +84,11 @@
       },
       "buildPath": {
           "description": "Path from the root of the project to the build folder",
+          "type": "string",
+          "format": "uri-reference"
+      },
+      "widgetPath": {
+          "description": "Path from the root of the project to the custom widget folders (default ./widgets)",
           "type": "string",
           "format": "uri-reference"
       },
