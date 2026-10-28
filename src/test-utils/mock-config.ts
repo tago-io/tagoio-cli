@@ -4,8 +4,10 @@ interface EnvironmentConfig {
   profileToken: string;
   profileRegion: GenericModuleParams["region"];
   analysisList: { name: string; fileName: string; id: string; path?: string }[];
+  widgetList?: { folder: string; dashboard_id: string; widget_id: string }[];
   analysisPath: string;
   buildPath: string;
+  widgetPath?: string;
   id: string;
   profileName: string;
   email: string;
