@@ -52,8 +52,6 @@ const RESOURCE_TYPE: Record<FilterKind, string> = { device: "device", user: "use
 const ORDER_BY: Record<FilterKind, string> = { device: "created_at,asc", user: "created_at,asc", entity: "desc" };
 const DEFAULT_AMOUNT = 1000;
 
-const GROUP_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
-
 function failWith(message: string, code: string, useJSON?: boolean): never {
   if (useJSON) {
     errorHandlerJSON(message, code);
@@ -61,9 +59,12 @@ function failWith(message: string, code: string, useJSON?: boolean): never {
   errorHandler(`${code}: ${message}`);
 }
 
-/** A 21-character ID, the shape the Admin gives each group it creates. */
+/**
+ * A 21-character ID, the shape the Admin gives each group it creates. Its
+ * alphabet is base64url's, and 21 characters take 126 of the 128 random bits.
+ */
 function newGroupID(): string {
-  return [...randomBytes(21)].map((byte) => GROUP_ID_ALPHABET[byte % GROUP_ID_ALPHABET.length]).join("");
+  return randomBytes(16).toString("base64url").slice(0, 21);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
