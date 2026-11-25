@@ -1,6 +1,7 @@
 import type { Resources, WidgetInfo } from "@tago-io/sdk";
 import prompts from "prompts";
 
+import { listDashboardWidgets, type TransportContext } from "../../lib/custom-widget-transport.js";
 import { errorHandler, errorHandlerJSON } from "../../lib/messages.js";
 import { pickDashboardIDFromTagoIO } from "../../prompt/pick-dashboard-id-from-tagoio.js";
 
@@ -42,21 +43,23 @@ async function resolveDashboardID(resources: Resources, options: LookupOptions):
 /**
  * @description Lists a dashboard's placed widgets with their position.
  *
- * The API has no widget listing, so this reads the arrangement and then each
- * widget, one call at a time to stay well inside the per-minute request limit.
- * A widget that fails to read still gets a row, so a broken entry is visible
- * rather than silently missing.
+ * Positions come from the arrangement, labels and types from one widget
+ * listing request, joined on the widget ID. A placement the listing lacks
+ * still gets a row, so a broken entry is visible rather than silently missing.
  */
-async function loadDashboardWidgets(resources: Resources, dashboardID: string, options: LookupOptions): Promise<WidgetRow[]> {
+async function loadDashboardWidgets(resources: Resources, transport: TransportContext, dashboardID: string, options: LookupOptions): Promise<WidgetRow[]> {
   const dashboard = await resources.dashboards.info(dashboardID).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     failWith(`Dashboard with id ${dashboardID} not found: ${message}`, "not_found", options.json);
   });
+  const widgets = await listDashboardWidgets(transport, dashboardID).catch((error: unknown) => {
+    failWith(error instanceof Error ? error.message : String(error), "list_failed", options.json);
+  });
+  const byID = new Map(widgets.map((widget) => [widget.id, widget]));
 
-  const rows: WidgetRow[] = [];
-  for (const placement of dashboard?.arrangement ?? []) {
-    const widget = await resources.dashboards.widgets.info(dashboardID, placement.widget_id).catch(() => null);
-    rows.push({
+  return (dashboard?.arrangement ?? []).map((placement) => {
+    const widget = byID.get(placement.widget_id);
+    return {
       id: placement.widget_id,
       label: widget?.label ?? "(unreadable)",
       type: widget?.type ?? "(unreadable)",
@@ -65,13 +68,18 @@ async function loadDashboardWidgets(resources: Resources, dashboardID: string, o
       y: placement.y,
       width: placement.width,
       height: placement.height,
-    });
-  }
-  return rows;
+    };
+  });
 }
 
 /** The widget from the argument, or a prompt over the dashboard's custom widgets unless `--silent`. */
-async function resolveWidgetID(resources: Resources, dashboardID: string, widgetArg: string | undefined, options: LookupOptions): Promise<string> {
+async function resolveWidgetID(
+  resources: Resources,
+  transport: TransportContext,
+  dashboardID: string,
+  widgetArg: string | undefined,
+  options: LookupOptions,
+): Promise<string> {
   if (widgetArg) {
     return widgetArg;
   }
@@ -79,7 +87,7 @@ async function resolveWidgetID(resources: Resources, dashboardID: string, widget
     failWith("Missing required input: widget ID", "missing_input", options.json);
   }
 
-  const iframes = (await loadDashboardWidgets(resources, dashboardID, options)).filter((row) => row.type === "iframe");
+  const iframes = (await loadDashboardWidgets(resources, transport, dashboardID, options)).filter((row) => row.type === "iframe");
   if (!iframes.length) {
     failWith(`Dashboard ${dashboardID} has no custom widgets.`, "not_found", options.json);
   }

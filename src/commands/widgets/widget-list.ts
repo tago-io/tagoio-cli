@@ -1,7 +1,7 @@
 import { Resources } from "@tago-io/sdk";
 import kleur from "kleur";
 
-import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, successMSG } from "../../lib/messages.js";
 import { loadDashboardWidgets, resolveDashboardID } from "./widget-lookup.js";
 
@@ -27,9 +27,10 @@ async function widgetList(dashboardArg: string | undefined, options: IOptions) {
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const transport = { apiURL: getApiURL(config.profileRegion), token: config.profileToken };
   const dashboardID = await resolveDashboardID(resources, { ...options, dashboard: dashboardArg });
 
-  const rows = (await loadDashboardWidgets(resources, dashboardID, options)).filter((row) => !options.type || row.type === options.type);
+  const rows = (await loadDashboardWidgets(resources, transport, dashboardID, options)).filter((row) => !options.type || row.type === options.type);
 
   if (options.stringify) {
     process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);

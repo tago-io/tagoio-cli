@@ -1,7 +1,7 @@
 import { Resources } from "@tago-io/sdk";
 import prompts from "prompts";
 
-import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, infoMSG, successMSG } from "../../lib/messages.js";
 import { resolveScope } from "../../lib/resolve-scope.js";
 import { removeWidgetEntries, resolveEnvironmentName } from "./widget-config.js";
@@ -37,8 +37,9 @@ async function widgetDelete(widgetArg: string | undefined, options: IOptions) {
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const transport = { apiURL: getApiURL(config.profileRegion), token: config.profileToken };
   const dashboardID = await resolveDashboardID(resources, options);
-  const widgetID = await resolveWidgetID(resources, dashboardID, widgetArg, options);
+  const widgetID = await resolveWidgetID(resources, transport, dashboardID, widgetArg, options);
 
   // Only custom widgets: this family never deletes a chart or form by mistake.
   const widget = await fetchCustomWidget(resources, dashboardID, widgetID, options);

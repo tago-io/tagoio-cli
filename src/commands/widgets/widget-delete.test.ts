@@ -16,6 +16,7 @@ vi.mock("@tago-io/sdk", () => ({
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
+  getApiURL: () => "https://api.us-e1.tago.io",
   getEnvironmentConfig: getEnvironmentConfigMock,
 }));
 

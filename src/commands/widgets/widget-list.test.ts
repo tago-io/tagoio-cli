@@ -4,6 +4,7 @@ import { makeEnvironmentConfig } from "../../test-utils/mock-config.js";
 import { makeAccount } from "../../test-utils/mock-sdk.js";
 
 const getEnvironmentConfigMock = vi.fn();
+const listDashboardWidgetsMock = vi.fn();
 
 let resourcesInstance: ReturnType<typeof makeAccount>;
 
@@ -14,7 +15,12 @@ vi.mock("@tago-io/sdk", () => ({
 }));
 
 vi.mock("../../lib/config-file.js", () => ({
+  getApiURL: () => "https://api.us-e1.tago.io",
   getEnvironmentConfig: getEnvironmentConfigMock,
+}));
+
+vi.mock("../../lib/custom-widget-transport.js", () => ({
+  listDashboardWidgets: listDashboardWidgetsMock,
 }));
 
 vi.mock("../../lib/messages.js", () => ({
@@ -45,12 +51,11 @@ describe("widgetList", () => {
         { widget_id: "w3", x: 2, y: 6, width: 2, height: 2, tab: "main" },
       ],
     });
-    resourcesInstance.dashboards.widgets.info.mockImplementation(async (_d: string, id: string) => {
-      if (id === "w3") {
-        throw new Error("Widget Not Found");
-      }
-      return { label: id === "w1" ? "Users" : "Total", type: id === "w1" ? "iframe" : "display" };
-    });
+    // w3 is placed but missing from the listing.
+    listDashboardWidgetsMock.mockReset().mockResolvedValue([
+      { id: "w1", label: "Users", type: "iframe" },
+      { id: "w2", label: "Total", type: "display" },
+    ]);
     stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
@@ -67,6 +72,9 @@ describe("widgetList", () => {
       { id: "w2", label: "Total", type: "display", tab: null, x: 0, y: 6, width: 2, height: 2 },
       { id: "w3", label: "(unreadable)", type: "(unreadable)", tab: "main", x: 2, y: 6, width: 2, height: 2 },
     ]);
+    expect(listDashboardWidgetsMock).toHaveBeenCalledTimes(1);
+    expect(listDashboardWidgetsMock).toHaveBeenCalledWith({ apiURL: "https://api.us-e1.tago.io", token: expect.any(String) }, "d1");
+    expect(resourcesInstance.dashboards.widgets.info).not.toHaveBeenCalled();
   });
 
   test("--type keeps only that type", async () => {
