@@ -5,6 +5,7 @@ import { errorHandler, errorHandlerJSON, infoMSG, writeStatus } from "../../lib/
 import { pickAnalysisFromTagoIO } from "../../prompt/pick-analysis-from-tagoio.js";
 import { mapLastTriggered } from "../actions/action-list.js";
 import { mapDate, mapTags } from "../devices/device-list.js";
+import { type AnalysisEndpoint, formatEndpoint } from "./analysis-endpoint.js";
 
 interface IOptions {
   environment?: string;
@@ -83,6 +84,7 @@ async function analysisInfo(idArg: string | undefined, options: IOptions) {
     active: info.active,
     run_on: info.run_on,
     runtime: info.runtime,
+    endpoint: formatEndpoint((info as typeof info & { endpoint?: AnalysisEndpoint }).endpoint),
     file_name: info.file_name,
     version: info.version,
     description: info.description,

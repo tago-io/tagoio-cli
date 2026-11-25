@@ -193,8 +193,51 @@ describe("analysisCreate", () => {
     expect(resourcesInstance.analysis.create.mock.calls[0][0].runtime).toBe("python-rt2025");
   });
 
+  test("--enable-endpoint and --endpoint-access are sent as the endpoint field", async () => {
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("Orders API", {
+      runtime: "luau-rt2026",
+      enableEndpoint: true,
+      endpointAccess: "public",
+      var: [],
+      tagkey: [],
+      tagvalue: [],
+    } as never);
+
+    expect(resourcesInstance.analysis.create.mock.calls[0][0].endpoint).toEqual({ active: true, access: "public" });
+  });
+
+  test("--json echoes the endpoint that was sent", async () => {
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("Orders API", { runtime: "luau-rt2026", enableEndpoint: true, json: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(JSON.parse(String(stdoutSpy.mock.calls[0][0])).endpoint).toEqual({ active: true });
+  });
+
+  test("the human view says when the endpoint was turned on", async () => {
+    const { successMSG } = await import("../../lib/messages.js");
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("Orders API", { runtime: "luau-rt2026", enableEndpoint: true, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(vi.mocked(successMSG)).toHaveBeenCalledWith("Endpoint on (token).");
+  });
+
+  test("without endpoint flags the payload has no endpoint key", async () => {
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("My Analysis", { var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.create.mock.calls[0][0]).not.toHaveProperty("endpoint");
+  });
+
+  test.each(["bun-rt2026", "luau-rt2026"])("--runtime %s is accepted and sent as-is", async (runtime) => {
+    const { analysisCreate } = await import("./analysis-create.js");
+    await analysisCreate("My Analysis", { runtime, var: [], tagkey: [], tagvalue: [] } as never);
+
+    expect(resourcesInstance.analysis.create.mock.calls[0][0].runtime).toBe(runtime);
+  });
+
   /**
-   * Probed: the API accepts eight runtimes, not the five `SnippetRuntime` lists.
+   * Probed: the API accepts more runtimes than the five `SnippetRuntime` lists.
    * Its rejection message names all of them, so the offline check is about
    * failing before the round trip rather than about a better message.
    */

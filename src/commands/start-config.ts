@@ -1,5 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { join, posix, relative, resolve, sep } from "node:path";
 import { Account, AnalysisInfo, AnalysisListItem, GenericModuleParams } from "@tago-io/sdk";
 import kleur from "kleur";
 import prompts, { Choice } from "prompts";
@@ -43,26 +43,60 @@ interface AnalysisFile {
   relativePath: string;
 }
 
-const analysisPath = "./src/analysis";
+const analysisExtensions = [".ts", ".js", ".luau"];
+const skipChoice = ">skip-selector";
 
-/** Recursively scans a directory for `.ts`/`.js` analysis files. */
-function scanAnalysisFiles(dirPath: string, basePath: string = dirPath): AnalysisFile[] {
+type ConfiguredAnalysis = NonNullable<IEnvironment["analysisList"]>[number];
+
+interface AnalysisPaths {
+  /** Folder holding tagoconfig.json; `analysisPath` and `buildPath` resolve against it, as in deploy/run. */
+  root: string;
+  analysisPath: string;
+  buildPath?: string;
+}
+
+const excludedFilePattern = /(\.(test|spec)\.(ts|js|luau)|\.d\.ts)$/;
+
+const isAnalysisFile = (name: string) => analysisExtensions.some((ext) => name.endsWith(ext)) && !excludedFilePattern.test(name);
+
+/** Saved to the shared tagoconfig.json, so always uses `/` regardless of OS. */
+const toConfigPath = (path: string) => path.split(sep).join("/");
+
+/**
+ * Recursively scans a directory for `.ts`/`.js`/`.luau` analysis files.
+ * Skips `node_modules`, dot-entries, symlinks, test/spec and `.d.ts` files, and `buildDir` (absolute path)
+ * so the project root can be scanned.
+ */
+export function scanAnalysisFiles(dirPath: string, buildDir?: string, basePath: string = dirPath): AnalysisFile[] {
   const files: AnalysisFile[] = [];
-  const items = readdirSync(dirPath);
 
-  for (const item of items) {
-    const fullPath = join(dirPath, item);
-    const stat = statSync(fullPath);
+  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name.startsWith(".")) {
+      continue;
+    }
+    const fullPath = join(dirPath, entry.name);
+    if (resolve(fullPath) === buildDir) {
+      continue;
+    }
 
-    if (stat.isDirectory()) {
-      files.push(...scanAnalysisFiles(fullPath, basePath));
-    } else if (item.endsWith(".ts") || item.endsWith(".js")) {
-      const relativePath = dirPath === basePath ? "" : dirPath.replace(basePath + "/", "").replace(analysisPath + "/", "");
-      files.push({ filename: item, relativePath });
+    if (entry.isDirectory()) {
+      files.push(...scanAnalysisFiles(fullPath, buildDir, basePath));
+    } else if (entry.isFile() && isAnalysisFile(entry.name)) {
+      files.push({ filename: entry.name, relativePath: toConfigPath(relative(basePath, dirPath)) });
     }
   }
 
   return files;
+}
+
+/** Lists candidate analysis files, or returns undefined when the analysis folder doesn't exist. */
+export function findAnalysisFiles({ root, analysisPath, buildPath }: AnalysisPaths) {
+  const analysisDir = resolve(root, analysisPath);
+  if (!analysisPath || !existsSync(analysisDir)) {
+    infoMSG(`Analysis folder not found at "${analysisPath || "(empty)"}"; skipping file matching.`);
+    return;
+  }
+  return scanAnalysisFiles(analysisDir, resolve(root, buildPath || "./build"));
 }
 
 async function chooseAnalysis(analysisOptions: any[]) {
@@ -77,7 +111,7 @@ async function chooseAnalysis(analysisOptions: any[]) {
 }
 
 async function getAnalysisList(account: Account, oldList: NonNullable<IEnvironment["analysisList"]> = []) {
-  const analysisList = await account.analysis.list({ amount: 35, fields: ["id", "name", "tags"] }).catch(errorHandler);
+  const analysisList = await account.analysis.list({ amount: 100, fields: ["id", "name", "tags"] }).catch(errorHandler);
   if (!analysisList) {
     return [];
   }
@@ -101,43 +135,47 @@ async function getAnalysisList(account: Account, oldList: NonNullable<IEnvironme
   })) as NonNullable<IEnvironment["analysisList"]>;
 }
 
-async function getAnalysisScripts(analysisList: NonNullable<IEnvironment["analysisList"]>, analysisPathInput: string) {
-  const cleaned = analysisPathInput.replace("./", "");
-  if (!cleaned || !existsSync(cleaned)) {
-    infoMSG(`Analysis folder not found at "${cleaned || "(empty)"}"; skipping file matching.`);
-    return analysisList;
-  }
-  let files: Choice[] = scanAnalysisFiles(cleaned).map((x) => ({ title: x.filename, value: x.filename, description: x.relativePath }));
+const sortByNameSimilarity = (files: AnalysisFile[], name: string) =>
+  [...files].sort((a, b) => stringComparison.cosine.distance(name, a.filename) - stringComparison.cosine.distance(name, b.filename));
 
-  for (const analysis of analysisList) {
-    files = files.sort((a, b) =>
-      stringComparison.cosine.distance(analysis.name, a.title) > stringComparison.cosine.distance(analysis.name, b.title) ? 1 : -1,
-    );
+export const matchAnywhere = (input: string, choices: Choice[]) =>
+  Promise.resolve(choices.filter((choice) => choice.title.toLowerCase().includes(input.toLowerCase())));
 
-    const editFile = files.find((x) => x.title === analysis.fileName);
-    const { response } = await prompts({
+const cancelInit = () => {
+  infoMSG("Cancelled. tagoconfig.json was not changed.");
+  process.exit(0);
+};
+
+async function chooseAnalysisFile(files: AnalysisFile[], analysis: ConfiguredAnalysis) {
+  const choices: Choice[] = files.map((file) => ({ title: posix.join(file.relativePath, file.filename), value: file }));
+  const currentIndex = files.findIndex((file) => file.filename === analysis.fileName && file.relativePath === (analysis.path ?? ""));
+  const { response } = await prompts(
+    {
       type: "autocomplete",
       limit: 20,
-      choices: files.concat([{ title: "> Skip", value: ">skip-selector" }]),
+      choices: choices.concat([{ title: "> Skip", value: skipChoice }]),
+      suggest: matchAnywhere,
       message: `Which analysis do you want to relate to ${highlightMSG(analysis.name)}`,
       name: "response",
-      initial: editFile?.title,
-    });
+      initial: currentIndex === -1 ? undefined : currentIndex,
+    },
+    { onCancel: cancelInit },
+  );
+  return response === skipChoice ? undefined : (response as AnalysisFile | undefined);
+}
 
-    if (response === ">skip-selector") {
-      analysis.fileName = "";
-      continue;
-    }
+export async function getAnalysisScripts(analysisList: NonNullable<IEnvironment["analysisList"]>, paths: AnalysisPaths) {
+  let files = findAnalysisFiles(paths);
+  if (!files) {
+    return analysisList;
+  }
 
-    const file = files.find((x) => x.value === response);
-    analysis.fileName = file?.title as string;
-    if (file?.description && file.description.length > 0) {
-      analysis.path = file.description;
-    }
-    const fileIndex = files.findIndex((x) => x.title === response);
-    if (fileIndex !== -1) {
-      files.splice(fileIndex, 1);
-    }
+  for (const analysis of analysisList) {
+    files = sortByNameSimilarity(files, analysis.name);
+    const file = await chooseAnalysisFile(files, analysis);
+    analysis.fileName = file?.filename ?? "";
+    analysis.path = file?.relativePath || undefined;
+    files = files.filter((x) => x !== file);
   }
   return analysisList;
 }
@@ -183,9 +221,7 @@ async function handleExistingEnv(state: InitState, envName: string, options: Con
     return;
   }
   if (noInput) {
-    errorHandler(
-      `Configuration for env '${envName}' already exists at ${state.scope.configPath}. Pass --force to overwrite, or pick a different env name.`,
-    );
+    errorHandler(`Configuration for env '${envName}' already exists at ${state.scope.configPath}. Pass --force to overwrite, or pick a different env name.`);
   }
   process.stderr.write(`\n${overwriteConfirmCopy(state, envName)}\n\n`);
   const { confirm } = await prompts({
@@ -376,7 +412,11 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
       newEnv.analysisList = configFile[envName]?.analysisList ?? [];
     } else {
       let analysisList = await getAnalysisList(account, configFile[envName]?.analysisList);
-      analysisList = await getAnalysisScripts(analysisList, configFile.analysisPath);
+      analysisList = await getAnalysisScripts(analysisList, {
+        root: state.scope.root,
+        analysisPath: configFile.analysisPath,
+        buildPath: configFile.buildPath,
+      });
       newEnv.analysisList = analysisList;
     }
   }
@@ -387,14 +427,16 @@ async function startConfig(positional: string, options: ConfigOptions = {}): Pro
   filesWritten.push({ path: state.scope.envFilePath, description: "active environment marker" });
 
   // Step 4: state-change summary.
-  process.stderr.write(`\n${summaryBlock({
-    filesWritten,
-    scope: state.scope.scope,
-    envName,
-    profileName: profile.info.name,
-    apiEndpoint: tagoAPIURL || DEFAULT_API_ENDPOINT,
-    sseEndpoint: tagoSSEURL || DEFAULT_SSE_ENDPOINT,
-  })}\n`);
+  process.stderr.write(
+    `\n${summaryBlock({
+      filesWritten,
+      scope: state.scope.scope,
+      envName,
+      profileName: profile.info.name,
+      apiEndpoint: tagoAPIURL || DEFAULT_API_ENDPOINT,
+      sseEndpoint: tagoSSEURL || DEFAULT_SSE_ENDPOINT,
+    })}\n`,
+  );
 }
 
 /**

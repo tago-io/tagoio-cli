@@ -74,7 +74,7 @@ List of commands of the CLI
 | an-ls, analysis-list | get the list of analyses. |
 | an-nf, analysis-info [ID] | get information about an analysis. |
 | an-crt, analysis-create [name] | create a new analysis. |
-| an-ed, analysis-edit [ID] | edit an analysis: rename it, change its runtime, variables, state or tags. |
+| an-ed, analysis-edit [ID] | edit an analysis: rename it, change its runtime, variables, state, endpoint or tags. |
 | an-dlt, analysis-delete [ID] | permanently delete an analysis. |
 | deploy, analysis-deploy [name] | deploy your analysis to TagoIO |
 | run, analysis-run [name] | run your TagoIO analysis from your machine. |
@@ -265,7 +265,10 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
   tagoio deploy           # Detect the current runtime
   tagoio deploy --deno    # Force Deno runtime
   tagoio deploy --node    # Force Node.js runtime
+  tagoio deploy --luau    # Force Luau runtime
   ```
+
+  Luau analyses are bundled with [darklua](https://github.com/seaofvoices/darklua) (`brew install darklua`), so the entry file can `require` other files. The project's `.darklua.json` is used when present; it must keep `bundle.require_mode`, because the Luau runtime has no `require`. The bundle must stay under the runtime's 64 KiB limit. Luau analyses run only on TagoIO, so `tagoio run` does not support them.
 
 - **tagoio trigger**: Use this command to trigger specific actions or events in your project.
   
