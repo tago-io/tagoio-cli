@@ -1,6 +1,6 @@
 {
   "name": "@tago-io/cli",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "TagoIO Application CLI Node.JS",
   "main": "./build/index.js",
   "type": "module",
@@ -70,7 +70,7 @@
     "vitest": "^4.1.11"
   },
   "allowScripts": {
-    "esbuild@0.28.1": true,
+    "esbuild@0.28.2": true,
     "fsevents@2.3.3": true
   }
 }

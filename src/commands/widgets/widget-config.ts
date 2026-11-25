@@ -5,6 +5,7 @@ import { getConfigFile, type IWidgetEntry, writeToConfigFile } from "../../lib/c
 import { isValidWidgetFolder } from "../../lib/widget-build.js";
 
 const DEFAULT_WIDGET_PATH = "./widgets";
+const DEFAULT_BUILD_PATH = "./build";
 
 /** The environment a command runs against: the flag, or the default the CLI already resolved. */
 function resolveEnvironmentName(environment: string | undefined): string | undefined {
@@ -13,6 +14,10 @@ function resolveEnvironmentName(environment: string | undefined): string | undef
 
 function widgetPathOf(config: { widgetPath?: string }): string {
   return config.widgetPath || DEFAULT_WIDGET_PATH;
+}
+
+function buildPathOf(config: { buildPath?: string }): string {
+  return config.buildPath || DEFAULT_BUILD_PATH;
 }
 
 /**
@@ -74,6 +79,7 @@ function listWidgetFolders(projectRoot: string, widgetPath: string): string[] {
 
 export {
   addWidgetEntry,
+  buildPathOf,
   DEFAULT_WIDGET_PATH,
   listWidgetFolders,
   removeDashboardEntries,

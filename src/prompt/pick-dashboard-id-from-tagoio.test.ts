@@ -42,3 +42,19 @@ describe("pickDashboardIDFromTagoIO", () => {
     await expect(pickDashboardIDFromTagoIO(account as never)).rejects.toThrow(/Dashboard not selected/);
   });
 });
+
+describe("toDashboardChoices", () => {
+  test("titles a choice with the label and ID, or the bare ID when the label is empty", async () => {
+    const { toDashboardChoices } = await import("./pick-dashboard-id-from-tagoio.js");
+
+    expect(
+      toDashboardChoices([
+        { id: "d1", label: "Fleet" },
+        { id: "d2", label: "" },
+      ]),
+    ).toEqual([
+      { title: "Fleet [d1]", value: "d1" },
+      { title: "d2", value: "d2" },
+    ]);
+  });
+});

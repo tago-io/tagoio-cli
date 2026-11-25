@@ -7,6 +7,7 @@ import { errorHandler, errorHandlerJSON, infoMSG, successMSG } from "../../lib/m
 import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { printScopeBanner } from "../../lib/scope-notice.js";
 import { isValidWidgetFolder } from "../../lib/widget-build.js";
+import { buildPathOf } from "./widget-config.js";
 import { selectEntries } from "./widget-deploy.js";
 
 interface IOptions {
@@ -76,7 +77,7 @@ async function widgetPull(folderArg: string | undefined, options: IOptions) {
       });
       continue;
     }
-    const file = resolve(scope.root, config.buildPath || "./build", "widgets", `${entry.folder}.${entry.widget_id}.published.tsx`);
+    const file = resolve(scope.root, buildPathOf(config), "widgets", `${entry.folder}.${entry.widget_id}.published.tsx`);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, source, "utf8");
     results.push({ folder: entry.folder, widget_id: entry.widget_id, file, bytes: Buffer.byteLength(source, "utf8") });

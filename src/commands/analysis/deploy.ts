@@ -52,7 +52,11 @@ async function getScript(buildedFile: string, scriptName: string) {
 /** The tool each runtime builds with, and how to install it when it is missing. */
 const BUILD_TOOLS: Record<string, { tool: string; hint: string; language: RunTypeOptions }> = {
   "--deno": { tool: "deno", hint: "Install deno from https://deno.land", language: "deno-rt2025" },
-  "--luau": { tool: "darklua", hint: "Install it with: brew install darklua", language: "luau-rt2026" },
+  "--luau": {
+    tool: "darklua",
+    hint: "Install it with: brew install darklua or cargo install darklua (https://darklua.com/docs/installation/)",
+    language: "luau-rt2026",
+  },
   "--node": { tool: "@tago-io/builder", hint: "Install it with: npm install -g @tago-io/builder", language: "node-rt2025" },
 };
 
@@ -77,12 +81,27 @@ async function getDarkluaConfig(folderPath: string, buildPath: string) {
 }
 
 /**
+ * Luau comments and string literals: `--[==[ ]==]` and `--` comments, `[==[ ]==]` long strings, and quoted strings.
+ * Comments come first so a `--[[` is never read as a long string.
+ */
+const LUAU_COMMENT_OR_STRING =
+  /--\[(=*)\[[\s\S]*?\]\1\]|--[^\n]*|\[(=*)\[[\s\S]*?\]\2\]|"(?:\\[\s\S]|[^"\\\n])*"|'(?:\\[\s\S]|[^'\\\n])*'|`(?:\\[\s\S]|[^`\\])*`/g;
+
+/**
+ * Drops comments and empties string literals, so only code is left to search.
+ * Strings become `""` rather than vanish, so `require "./x"` still reads as a call.
+ */
+function stripLuauCommentsAndStrings(source: string) {
+  return source.replace(LUAU_COMMENT_OR_STRING, (match) => (match.startsWith("--") ? " " : '""'));
+}
+
+/**
  * The Luau runtime has no `require`, so a bundle that still calls it never runs.
  * The script size limit is left to the API, which owns it.
  */
 async function checkLuauBundle(buildedFile: string, scriptName: string) {
   const source = await fs.readFile(buildedFile, { encoding: "utf8" });
-  if (/\brequire\s*[("'`]/.test(source)) {
+  if (/\brequire\s*[("'`[]/.test(stripLuauCommentsAndStrings(source))) {
     errorHandler(`Bundle for ${scriptName} still calls require. Set bundle.require_mode in .darklua.json.`);
   }
 }

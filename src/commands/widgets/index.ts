@@ -81,7 +81,7 @@ function widgetCommands(program: Command) {
     .addHelpText(
       "after",
       `
-    Reads each placed widget one by one, since the API has no widget listing.
+    Reads the dashboard's arrangement and its widget list: two requests per dashboard.
 
 Example:
     $ tagoio widget-list 62151835435d540010b768c4

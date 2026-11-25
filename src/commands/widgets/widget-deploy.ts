@@ -9,7 +9,7 @@ import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { printScopeBanner } from "../../lib/scope-notice.js";
 import { searchName } from "../../lib/search-name.js";
 import { buildWidget, type BuildResult } from "../../lib/widget-build.js";
-import { widgetPathOf } from "./widget-config.js";
+import { buildPathOf, widgetPathOf } from "./widget-config.js";
 
 interface IOptions {
   environment?: string;
@@ -223,7 +223,7 @@ async function widgetDeploy(folderArg: string | undefined, options: IOptions) {
     transport: { apiURL: getApiURL(config.profileRegion), token },
     projectRoot: scope.root,
     widgetPath: widgetPathOf(config),
-    buildPath: config.buildPath || "./build",
+    buildPath: buildPathOf(config),
     dryRun: options.dryRun,
   };
 

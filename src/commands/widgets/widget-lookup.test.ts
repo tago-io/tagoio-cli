@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { makeAccount } from "../../test-utils/mock-sdk.js";
 
 const pickDashboardMock = vi.fn();
+const listDashboardWidgetsMock = vi.fn();
+const transport = { apiURL: "https://api.us-e1.tago.io", token: "t" };
 
 vi.mock("../../lib/messages.js", () => ({
   errorHandler: (str: unknown) => {
@@ -12,6 +14,10 @@ vi.mock("../../lib/messages.js", () => ({
   errorHandlerJSON: (message: string, code?: string) => {
     throw new Error(`json:${code}:${message}`);
   },
+}));
+
+vi.mock("../../lib/custom-widget-transport.js", () => ({
+  listDashboardWidgets: listDashboardWidgetsMock,
 }));
 
 vi.mock("../../prompt/pick-dashboard-id-from-tagoio.js", () => ({
@@ -39,26 +45,36 @@ describe("resolveWidgetID", () => {
   beforeEach(() => {
     resources = makeAccount();
     resources.dashboards.info.mockResolvedValue({ arrangement: [{ widget_id: "w1" }, { widget_id: "w2" }] });
-    resources.dashboards.widgets.info.mockImplementation(async (_d: string, id: string) => ({ label: id, type: id === "w2" ? "iframe" : "display" }));
+    listDashboardWidgetsMock.mockReset().mockResolvedValue([
+      { id: "w1", label: "w1", type: "display" },
+      { id: "w2", label: "w2", type: "iframe" },
+    ]);
   });
 
   test("offers only the dashboard's custom widgets", async () => {
     prompts.inject(["w2"]);
     const { resolveWidgetID } = await import("./widget-lookup.js");
 
-    expect(await resolveWidgetID(resources as never, "d1", undefined, {})).toBe("w2");
+    expect(await resolveWidgetID(resources as never, transport, "d1", undefined, {})).toBe("w2");
   });
 
   test("a dashboard without custom widgets says so", async () => {
-    resources.dashboards.widgets.info.mockResolvedValue({ label: "x", type: "display" });
+    listDashboardWidgetsMock.mockResolvedValue([{ id: "w1", label: "x", type: "display" }]);
     const { resolveWidgetID } = await import("./widget-lookup.js");
 
-    await expect(resolveWidgetID(resources as never, "d1", undefined, {})).rejects.toThrow(/has no custom widgets/);
+    await expect(resolveWidgetID(resources as never, transport, "d1", undefined, {})).rejects.toThrow(/has no custom widgets/);
   });
 
   test("--silent without a widget ID fails", async () => {
     const { resolveWidgetID } = await import("./widget-lookup.js");
 
-    await expect(resolveWidgetID(resources as never, "d1", undefined, { silent: true })).rejects.toThrow(/missing_input/);
+    await expect(resolveWidgetID(resources as never, transport, "d1", undefined, { silent: true })).rejects.toThrow(/missing_input/);
+  });
+
+  test("a failed widget listing reports list_failed", async () => {
+    listDashboardWidgetsMock.mockRejectedValue(new Error("Too many requests to the API; wait a minute and try again."));
+    const { resolveWidgetID } = await import("./widget-lookup.js");
+
+    await expect(resolveWidgetID(resources as never, transport, "d1", undefined, {})).rejects.toThrow(/list_failed: Too many requests/);
   });
 });

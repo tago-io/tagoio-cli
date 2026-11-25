@@ -1,6 +1,6 @@
 import { Resources, type WidgetInfo } from "@tago-io/sdk";
 
-import { getEnvironmentConfig } from "../../lib/config-file.js";
+import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, infoMSG, writeStatus } from "../../lib/messages.js";
 import { stripTokenFields } from "../../lib/strip-token-fields.js";
 import { fetchCustomWidget, resolveDashboardID, resolveWidgetID } from "./widget-lookup.js";
@@ -49,8 +49,9 @@ async function widgetInfo(widgetArg: string | undefined, options: IOptions) {
   }
 
   const resources = new Resources({ token: config.profileToken, region: config.profileRegion });
+  const transport = { apiURL: getApiURL(config.profileRegion), token: config.profileToken };
   const dashboardID = await resolveDashboardID(resources, options);
-  const widgetID = await resolveWidgetID(resources, dashboardID, widgetArg, options);
+  const widgetID = await resolveWidgetID(resources, transport, dashboardID, widgetArg, options);
   const widget = await fetchCustomWidget(resources, dashboardID, widgetID, options);
 
   if (options.json) {
