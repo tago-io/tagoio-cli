@@ -13,7 +13,7 @@ import { parseAnalysisVariables } from "./analysis-variables.js";
  * Deliberately wider than the SDK's `SnippetRuntime`, which lists only five —
  * it describes the runtimes with code snippets, not the ones an analysis can
  * run on. Also wider than the SDK's `RunTypeOptions`, which lacks `bun-rt2026`
- * as of 12.3.6; the cast on `runtime` below covers that.
+ * as of 12.3.5; the cast on `runtime` below covers that.
  */
 const RUNTIMES = [
   "node",

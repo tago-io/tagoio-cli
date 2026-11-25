@@ -11,7 +11,7 @@ interface EndpointOptions {
 
 /**
  * The `endpoint` field the API returns on every analysis, as `{ active, access }`.
- * Not in the SDK's analysis types as of 12.3.6, so call sites cast past them.
+ * Not in the SDK's analysis types as of 12.3.5, so call sites cast past them.
  */
 interface AnalysisEndpoint {
   active?: boolean;
