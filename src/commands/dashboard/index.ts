@@ -9,7 +9,8 @@ import { dashboardInfo } from "./dashboard-info.js";
 import { dashboardList } from "./dashboard-list.js";
 
 function handleNumber(value: string, _previous: unknown) {
-  if (Number.isNaN(Number(value))) {
+  // `Number("")` is 0, so an empty value would pass as a number.
+  if (value.trim() === "" || Number.isNaN(Number(value))) {
     throw `${value} is not a number`;
   }
   return Number(value);
