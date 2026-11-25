@@ -167,24 +167,6 @@ describe("deployAnalysis", () => {
     expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-2", expect.any(Object));
   });
 
-  test("deploys only the named analysis when silent", async () => {
-    const list = [
-      { name: "scriptA", fileName: "a.ts", id: "an-1" },
-      { name: "scriptB", fileName: "b.ts", id: "an-2" },
-    ];
-    getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList: list }));
-    accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
-    accountInstance.analysis.uploadScript.mockResolvedValue(undefined);
-    accountInstance.analysis.edit.mockResolvedValue(undefined);
-    readFileMock.mockResolvedValue("ZmFrZS1zY3JpcHQ=");
-
-    const { deployAnalysis } = await import("./deploy.js");
-    await expect(deployAnalysis("scriptB", defaultOptions())).rejects.toThrow(/__exit:0/);
-
-    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledTimes(1);
-    expect(accountInstance.analysis.uploadScript).toHaveBeenCalledWith("an-2", expect.any(Object));
-  });
-
   test("rejects when more than one runtime flag is specified", async () => {
     getEnvironmentConfigMock.mockReturnValue(makeEnvironmentConfig({ analysisList }));
     accountInstance.analysis.info.mockResolvedValue({ runtime: "node" });
@@ -268,6 +250,30 @@ describe("deployAnalysis", () => {
       expect(accountInstance.analysis.uploadScript).not.toHaveBeenCalled();
     });
 
+    test.each([
+      ["a call without parentheses", 'local scope = require "./lib/scope"'],
+      ["a call after a comment and a string", '-- helpers\nlocal s = "x" local scope = require("./lib/scope")'],
+    ])("refuses %s to require", async (_case, source) => {
+      mockBuiltFile(source);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/still calls require/);
+    });
+
+    test.each([
+      ["a line comment", '-- require("./lib/scope")'],
+      ["a long comment", '--[==[\nlocal scope = require("./lib/scope")\n]==]'],
+      ["a quoted string", "print(\"call require('x') to load\")"],
+      ["a long string", 'local doc = [[ require("./lib/scope") ]]'],
+      ["an interpolated string", 'print(`use require("x")`)'],
+    ])("uploads a bundle that mentions require only in %s", async (_case, source) => {
+      mockBuiltFile(`${bundle}\n${source}`);
+
+      const { deployAnalysis } = await import("./deploy.js");
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/__exit:0/);
+      expect(accountInstance.analysis.uploadScript).toHaveBeenCalled();
+    });
+
     test("uploads a bundle of any size and leaves the size limit to the API", async () => {
       const largeBundle = `-- ${"x".repeat(64 * 1024)}`;
       mockBuiltFile(largeBundle);
@@ -298,7 +304,9 @@ describe("deployAnalysis", () => {
       });
 
       const { deployAnalysis } = await import("./deploy.js");
-      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(/Build tool 'darklua' not found. Install it with: brew install darklua/);
+      await expect(deployAnalysis("uplink", defaultOptions())).rejects.toThrow(
+        /Build tool 'darklua' not found. Install it with: brew install darklua or cargo install darklua/,
+      );
     });
   });
 

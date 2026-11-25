@@ -285,7 +285,7 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
   tagoio deploy --luau    # Force Luau runtime
   ```
 
-  Luau analyses are bundled with [darklua](https://github.com/seaofvoices/darklua) (`brew install darklua`), so the entry file can `require` other files. The project's `.darklua.json` is used when present; it must keep `bundle.require_mode`, because the Luau runtime has no `require`. The bundle must stay under the runtime's 64 KiB limit. Luau analyses run only on TagoIO, so `tagoio run` does not support them.
+  Luau analyses are bundled with [darklua](https://github.com/seaofvoices/darklua) (`brew install darklua` or `cargo install darklua`; see [installation](https://darklua.com/docs/installation/)), so the entry file can `require` other files. The project's `.darklua.json` is used when present; it must keep `bundle.require_mode`, because the Luau runtime has no `require`. The bundle must stay under the runtime's 64 KiB limit. Luau analyses run only on TagoIO, so `tagoio run` does not support them.
 
 - **tagoio widget-deploy**: Builds a custom widget folder and uploads it to the widgets it is mapped to.
 
