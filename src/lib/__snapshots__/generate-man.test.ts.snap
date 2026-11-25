@@ -1440,6 +1440,234 @@ Example:
    $ tagoio device\\-copy
    $ tagoio device\\-copy \\-\\-to 62151835435d540010b768c4 \\-\\-from 78151835435d540010b768c4
 .fi
+.SS dashboard\\-list
+get the list of dashboards.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-n\\fR, \\fB\\-\\-name\\fR \\fI[name]\\fR
+partial label of the dashboard
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to filter in (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to filter in (default: [])
+.TP
+\\fB\\-\\-amount\\fR \\fI<number>\\fR
+how many dashboards to fetch (default: 100)
+.TP
+\\fB\\-\\-page\\fR \\fI<number>\\fR
+page of results, starting at 1
+.TP
+\\fB\\-\\-order\\-by\\fR \\fI<field>\\fR
+label, created_at or updated_at
+.TP
+\\fB\\-\\-order\\fR \\fI<direction>\\fR
+asc or desc (default: asc)
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.PP
+.nf
+    The type column tells Normal ("dashboard") and Blueprint ("blueprint")
+    dashboards apart. The API has no type filter, so there is no \\-\\-type flag.
+
+Example:
+    $ tagoio dashboard\\-list
+    $ tagoio db\\-ls \\-\\-name fleet \\-\\-order\\-by updated_at \\-\\-order desc
+.fi
+.SS dashboard\\-info [ID]
+get information about a dashboard, including its tabs and Blueprint slots.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-raw\\fR
+get object the same as stored
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dashboard ID)
+.PP
+.nf
+    Lists the tabs with their keys, which 'widget\\-create \\-\\-tab' takes, and the
+    Blueprint slots with their IDs, which widget data sources and filters use.
+    \\-\\-json returns the whole dashboard record, including its arrangement.
+
+Example:
+    $ tagoio dashboard\\-info 62151835435d540010b768c4
+    $ tagoio db\\-nf 62151835435d540010b768c4 \\-\\-json
+.fi
+.SS dashboard\\-create [label]
+create a new Normal or Blueprint dashboard.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-blueprint\\fR
+create a Blueprint dashboard instead of a Normal one
+.TP
+\\fB\\-\\-blueprint\\-devices\\fR \\fI<json>\\fR
+Blueprint slots as a JSON array (needs \\-\\-blueprint)
+.TP
+\\fB\\-\\-blueprint\\-devices\\-file\\fR \\fI<path>\\fR
+read the Blueprint slots from a JSON file instead
+.TP
+\\fB\\-\\-tab\\fR \\fI<key=Label>\\fR
+tab to create (repeatable) (default: [])
+.TP
+\\fB\\-\\-tabs\\fR \\fI<json>\\fR
+tabs as a JSON array, for a type such as single_widget
+.TP
+\\fB\\-\\-tabs\\-file\\fR \\fI<path>\\fR
+read the tabs from a JSON file instead
+.TP
+\\fB\\-\\-hidden\\fR
+hide the dashboard from the sidebar
+.TP
+\\fB\\-\\-icon\\fR \\fI<name|url>\\fR
+sidebar icon: a name such as "wifi", or an https URL
+.TP
+\\fB\\-\\-icon\\-color\\fR \\fI<hex>\\fR
+icon color, such as "#8a3120" (needs \\-\\-icon)
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the label)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    The type cannot change after the dashboard is created.
+
+    \\-\\-tab key=Label makes a normal tab. \\-\\-tabs takes the full tab objects, for
+    a tab type: { "key", "value", "type" }, where "type" is "" for a normal
+    tab, "hidden" for a tab users do not see, or "single_widget" for a tab
+    whose one widget fills the screen.
+
+    A tab's "conditions" limit who sees it in TagoRUN: [{ "resource": "user",
+    "key", "value" }] matches the user's tags, and a user matching any one
+    condition sees the tab. A tab without conditions shows to everyone.
+
+    A Blueprint slot is { "name", "type": "device" | "entity", "conditions":
+    [{ "key", "value" }] }, matching the tags of the devices or entities it
+    offers. Leave out "id": the API assigns one, shown by 'dashboard\\-info'.
+    "filter_conditions": [{ "type": "tag_match", "tag_key", "blueprint_device" }]
+    narrows a slot by another: "blueprint_device" is the other slot's name
+    (not its ID), and only options whose "tag_key" tag holds the ID picked
+    there are offered.
+
+Example:
+    $ tagoio dashboard\\-create "Fleet Overview" \\-\\-tab main=Overview \\-\\-tab alerts=Alerts
+    $ tagoio db\\-crt "Customer" \\-\\-blueprint \\\\
+        \\-\\-blueprint\\-devices '[{"name":"customer","type":"device","conditions":[{"key":"device_type","value":"customer"}]}]'
+.fi
+.SS dashboard\\-edit [ID]
+edit a dashboard: rename it, replace its tabs or Blueprint slots, show or hide it, or change its tags.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-label\\fR \\fI<label>\\fR
+new label
+.TP
+\\fB\\-\\-tab\\fR \\fI<key=Label>\\fR
+replace the tabs (repeatable) (default: [])
+.TP
+\\fB\\-\\-tabs\\fR \\fI<json>\\fR
+replace the tabs with a JSON array, for a type such as single_widget
+.TP
+\\fB\\-\\-tabs\\-file\\fR \\fI<path>\\fR
+read the tabs from a JSON file instead
+.TP
+\\fB\\-\\-blueprint\\-devices\\fR \\fI<json>\\fR
+replace the Blueprint slots with a JSON array (Blueprint dashboards only)
+.TP
+\\fB\\-\\-blueprint\\-devices\\-file\\fR \\fI<path>\\fR
+read the Blueprint slots from a JSON file instead
+.TP
+\\fB\\-\\-visible\\fR
+show the dashboard in the sidebar
+.TP
+\\fB\\-\\-hidden\\fR
+hide the dashboard from the sidebar
+.TP
+\\fB\\-\\-icon\\fR \\fI<name|url>\\fR
+sidebar icon: a name such as "wifi", or an https URL (keeps the stored color)
+.TP
+\\fB\\-\\-icon\\-color\\fR \\fI<hex>\\fR
+icon color, such as "#8a3120" (keeps the stored icon)
+.TP
+\\fB\\-k\\fR, \\fB\\-\\-tagkey\\fR \\fI[key]\\fR
+tag key to set (pairs with \\-\\-tagvalue by index) (default: [])
+.TP
+\\fB\\-v\\fR, \\fB\\-\\-tagvalue\\fR \\fI[value]\\fR
+tag value to set (default: [])
+.TP
+\\fB\\-\\-merge\\-tags\\fR
+merge given tags into existing ones (default: replace the tag set)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dashboard ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    \\-\\-tab and \\-\\-blueprint\\-devices REPLACE the stored list. Pass every tab or
+    slot you want to keep: widgets on a tab key you drop stop showing, and a
+    slot needs its "id" kept so widgets bound to it keep working.
+    'dashboard\\-info \\-\\-json' shows the current lists.
+
+    A tab's "conditions" limit who sees it in TagoRUN; see 'dashboard\\-create \\-\\-help'.
+
+Example:
+    $ tagoio dashboard\\-edit 62151835435d540010b768c4 \\-\\-label "Fleet"
+    $ tagoio db\\-ed 62151835435d540010b768c4 \\-\\-icon wifi \\-\\-icon\\-color "#8a3120"
+    $ tagoio db\\-ed 62151835435d540010b768c4 \\-\\-tab main=Overview \\-\\-tab map=Map
+    $ tagoio db\\-ed 62151835435d540010b768c4 \\-\\-tabs '[{"key":"app","value":"App","type":"single_widget"}]'
+    $ tagoio db\\-ed 62151835435d540010b768c4 \\-\\-tabs\\-file tabs.json
+    $ tagoio db\\-ed 62151835435d540010b768c4 \\-\\-blueprint\\-devices\\-file slots.json
+.fi
+.SS dashboard\\-delete [ID]
+permanently delete a dashboard and its widgets.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dashboard ID)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Every widget on the dashboard is deleted with it, including the source of
+    its custom widgets.
+
+Example:
+    $ tagoio dashboard\\-delete 62151835435d540010b768c4
+    $ tagoio db\\-dlt 62151835435d540010b768c4 \\-y
+.fi
 .SS copy\\-tab [dashboardID]
 copy a tab of a dashboard to another tab
 .TP
@@ -1459,6 +1687,455 @@ Example:
     $ tagoio copy\\-tab
     $ tagoio copy\\-tab 62151835435d540010b768c4 \\-\\-from 1688653060637 \\-\\-to 2688653060638
     $ tagoio copy\\-tab 62151835435d540010b768c4 \\-\\-env dev
+.fi
+.SS widget\\-list [dashboardID]
+list the widgets on a dashboard, with their tab and position.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-type\\fR \\fI<type>\\fR
+only widgets of this type, e.g. "iframe" for custom widgets
+.TP
+\\fB\\-s\\fR, \\fB\\-\\-stringify\\fR
+return list as text
+.TP
+\\fB\\-\\-json\\fR
+return json list
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the dashboard ID)
+.PP
+.nf
+    Reads each placed widget one by one, since the API has no widget listing.
+
+Example:
+    $ tagoio widget\\-list 62151835435d540010b768c4
+    $ tagoio wg\\-ls 62151835435d540010b768c4 \\-\\-type iframe \\-\\-json
+.fi
+.SS widget\\-info [widgetID]
+get information about a custom widget: its code, parameters, data sources and filters.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard holding the widget
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the IDs)
+.PP
+.nf
+    Only custom widgets ("iframe") are handled.
+
+Example:
+    $ tagoio widget\\-info 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef
+    $ tagoio wg\\-nf 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-json
+.fi
+.SS widget\\-create [label]
+create a custom widget on a dashboard and place it.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard to add the widget to
+.TP
+\\fB\\-\\-folder\\fR \\fI<folder>\\fR
+widget folder to register in widgetList and deploy
+.TP
+\\fB\\-\\-param\\fR \\fI<KEY=VALUE>\\fR
+widget parameter (repeatable; replaces the set) (default: [])
+.TP
+\\fB\\-\\-data\\fR \\fI<json>\\fR
+data sources (device variables) as a JSON array
+.TP
+\\fB\\-\\-data\\-file\\fR \\fI<path>\\fR
+read the data sources from a JSON file instead
+.TP
+\\fB\\-\\-max\\-data\\fR \\fI<number>\\fR
+most records per device the data sources return (Admin default: 1000)
+.TP
+\\fB\\-\\-frame\\-settings\\fR \\fI<json>\\fR
+frame keys to change: radius, padding, shadow, header_visibility
+.TP
+\\fB\\-\\-frame\\-settings\\-file\\fR \\fI<path>\\fR
+read the frame settings from a JSON file
+.TP
+\\fB\\-\\-device\\-filter\\fR \\fI<json>\\fR
+device filter groups as a JSON array
+.TP
+\\fB\\-\\-device\\-filter\\-file\\fR \\fI<path>\\fR
+read the device filter groups from a JSON file
+.TP
+\\fB\\-\\-user\\-filter\\fR \\fI<json>\\fR
+user filter groups as a JSON array
+.TP
+\\fB\\-\\-user\\-filter\\-file\\fR \\fI<path>\\fR
+read the user filter groups from a JSON file
+.TP
+\\fB\\-\\-entity\\-filter\\fR \\fI<json>\\fR
+entity filter groups as a JSON array
+.TP
+\\fB\\-\\-entity\\-filter\\-file\\fR \\fI<path>\\fR
+read the entity filter groups from a JSON file
+.TP
+\\fB\\-\\-entity\\-source\\fR \\fI<json>\\fR
+replace the entity data sources (rows of an entity or Blueprint entity slot) with a JSON array
+.TP
+\\fB\\-\\-entity\\-source\\-file\\fR \\fI<path>\\fR
+read the entity data sources from a JSON file
+.TP
+\\fB\\-\\-analysis\\fR \\fI<id>\\fR
+analysis to run when the widget sends data
+.TP
+\\fB\\-\\-tab\\fR \\fI<key>\\fR
+tab key to place it on (default: the first tab)
+.TP
+\\fB\\-\\-x\\fR \\fI<number>\\fR
+column, 0\\-3 (default: 0)
+.TP
+\\fB\\-\\-y\\fR \\fI<number>\\fR
+row (default: below the tab's last widget)
+.TP
+\\fB\\-\\-width\\fR \\fI<number>\\fR
+width in columns, 1\\-4 (default: 4)
+.TP
+\\fB\\-\\-height\\fR \\fI<number>\\fR
+height in rows of 80 px (default: 6)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the label and \\-\\-dashboard)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Creates a custom widget ("iframe") and adds it to the dashboard layout. With
+    \\-\\-folder, the widget is also added to this environment's widgetList in
+    tagoconfig.json and the folder is built and deployed to it.
+    'widget\\-edit \\-\\-help' describes the \\-\\-frame\\-settings keys.
+
+    Filters follow the Admin's Device, User and Entity Filters sections. Each
+    flag takes a list of groups and replaces that section; sections you do not
+    pass stay as they are. A group is:
+
+      { "filters": [ { "tag_key": "device_type", "tag_value": "sensor" },
+                     { "blueprint_device": "<slot id>", "blueprint_device_tag_match": "customer_id" } ],
+        "data":    [ { "type": "parameter", "parameter": "name" },
+                     { "type": "tag", "tag": "eui", "editable": true },
+                     { "type": "configuration_parameter", "configuration_parameter": "address" } ] }
+
+    Entity groups use { "type": "field", "field": "<field>" } columns. The CLI
+    writes both the Admin's filter groups and the resource list the widget
+    reads, so the Admin shows the same filters and saving there keeps them.
+    'widget\\-info \\-\\-json' shows the stored groups in this same shape.
+
+    The entity filter lists entities by tag. To show an entity's rows, use
+    \\-\\-entity\\-source instead: [{ "id": "<entity or Blueprint entity slot id>",
+    "view": ["field", ...] }]. With a slot ID the rows follow the entity picked
+    in that slot. "index" defaults to id_updated_at_idx, "orderBy" ("asc" or
+    "desc") to "desc" and "amount" to 1000; "editable" lists fields from
+    "view" the widget may change. It replaces every entity data source on
+    the widget, including ones set in the Admin.
+
+Example:
+    $ tagoio widget\\-create "Users" \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-folder users\\-summary
+    $ tagoio wg\\-crt "Sensors" \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-tab main \\-\\-param view_type=viewer \\\\
+        \\-\\-device\\-filter '[{"filters":[{"tag_key":"device_type","tag_value":"sensor"}],"data":[{"type":"parameter","parameter":"name"}]}]'
+.fi
+.SS widget\\-edit [widgetID]
+edit a custom widget: label, parameters, data sources, filters or analysis.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard holding the widget
+.TP
+\\fB\\-\\-label\\fR \\fI<label>\\fR
+new label
+.TP
+\\fB\\-\\-param\\fR \\fI<KEY=VALUE>\\fR
+widget parameter (repeatable; replaces the set) (default: [])
+.TP
+\\fB\\-\\-data\\fR \\fI<json>\\fR
+data sources (device variables) as a JSON array
+.TP
+\\fB\\-\\-data\\-file\\fR \\fI<path>\\fR
+read the data sources from a JSON file instead
+.TP
+\\fB\\-\\-max\\-data\\fR \\fI<number>\\fR
+most records per device the data sources return (Admin default: 1000)
+.TP
+\\fB\\-\\-frame\\-settings\\fR \\fI<json>\\fR
+frame keys to change: radius, padding, shadow, header_visibility
+.TP
+\\fB\\-\\-frame\\-settings\\-file\\fR \\fI<path>\\fR
+read the frame settings from a JSON file
+.TP
+\\fB\\-\\-device\\-filter\\fR \\fI<json>\\fR
+device filter groups as a JSON array
+.TP
+\\fB\\-\\-device\\-filter\\-file\\fR \\fI<path>\\fR
+read the device filter groups from a JSON file
+.TP
+\\fB\\-\\-user\\-filter\\fR \\fI<json>\\fR
+user filter groups as a JSON array
+.TP
+\\fB\\-\\-user\\-filter\\-file\\fR \\fI<path>\\fR
+read the user filter groups from a JSON file
+.TP
+\\fB\\-\\-entity\\-filter\\fR \\fI<json>\\fR
+entity filter groups as a JSON array
+.TP
+\\fB\\-\\-entity\\-filter\\-file\\fR \\fI<path>\\fR
+read the entity filter groups from a JSON file
+.TP
+\\fB\\-\\-entity\\-source\\fR \\fI<json>\\fR
+replace the entity data sources (rows of an entity or Blueprint entity slot) with a JSON array
+.TP
+\\fB\\-\\-entity\\-source\\-file\\fR \\fI<path>\\fR
+read the entity data sources from a JSON file
+.TP
+\\fB\\-\\-analysis\\fR \\fI<id>\\fR
+analysis to run when the widget sends data
+.TP
+\\fB\\-\\-clear\\-data\\fR
+remove every data source
+.TP
+\\fB\\-\\-clear\\-device\\-filter\\fR
+remove the device filters
+.TP
+\\fB\\-\\-clear\\-user\\-filter\\fR
+remove the user filters
+.TP
+\\fB\\-\\-clear\\-entity\\-filter\\fR
+remove the entity filters
+.TP
+\\fB\\-\\-clear\\-entity\\-source\\fR
+remove the entity data sources
+.TP
+\\fB\\-\\-clear\\-analysis\\fR
+stop running an analysis when the widget sends data
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the IDs)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Each flag replaces what it names and keeps everything else, including the
+    uploaded code, header buttons and the analysis.
+
+    \\-\\-frame\\-settings changes only what it names: "radius" { top_left,
+    top_right, bottom_left, bottom_right }, "padding" { top, right, bottom,
+    left }, "shadow" { hide } and "header_visibility" (show_always,
+    show_on_hover or show_only_buttons). A corner or side left out keeps its
+    stored value.
+
+    Filters follow the Admin's Device, User and Entity Filters sections. Each
+    flag takes a list of groups and replaces that section; sections you do not
+    pass stay as they are. A group is:
+
+      { "filters": [ { "tag_key": "device_type", "tag_value": "sensor" },
+                     { "blueprint_device": "<slot id>", "blueprint_device_tag_match": "customer_id" } ],
+        "data":    [ { "type": "parameter", "parameter": "name" },
+                     { "type": "tag", "tag": "eui", "editable": true },
+                     { "type": "configuration_parameter", "configuration_parameter": "address" } ] }
+
+    Entity groups use { "type": "field", "field": "<field>" } columns. The CLI
+    writes both the Admin's filter groups and the resource list the widget
+    reads, so the Admin shows the same filters and saving there keeps them.
+    'widget\\-info \\-\\-json' shows the stored groups in this same shape.
+
+    The entity filter lists entities by tag. To show an entity's rows, use
+    \\-\\-entity\\-source instead: [{ "id": "<entity or Blueprint entity slot id>",
+    "view": ["field", ...] }]. With a slot ID the rows follow the entity picked
+    in that slot. "index" defaults to id_updated_at_idx, "orderBy" ("asc" or
+    "desc") to "desc" and "amount" to 1000; "editable" lists fields from
+    "view" the widget may change. It replaces every entity data source on
+    the widget, including ones set in the Admin.
+
+Example:
+    $ tagoio widget\\-edit 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-label "Users"
+    $ tagoio wg\\-ed 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-user\\-filter\\-file users.json
+    $ tagoio wg\\-ed 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\\\
+        \\-\\-frame\\-settings '{"radius":{"top_left":16,"top_right":16,"bottom_left":16,"bottom_right":16}}'
+.fi
+.SS widget\\-move [widgetID]
+move a custom widget to another tab, position or size on its dashboard.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard holding the widget
+.TP
+\\fB\\-\\-tab\\fR \\fI<key>\\fR
+tab key to move it to
+.TP
+\\fB\\-\\-x\\fR \\fI<number>\\fR
+column, 0\\-3
+.TP
+\\fB\\-\\-y\\fR \\fI<number>\\fR
+row
+.TP
+\\fB\\-\\-width\\fR \\fI<number>\\fR
+width in columns, 1\\-4
+.TP
+\\fB\\-\\-height\\fR \\fI<number>\\fR
+height in rows of 80 px
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the IDs)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Moving to another tab puts the widget below that tab's last widget, at its
+    current size, unless \\-\\-x/\\-\\-y/\\-\\-width/\\-\\-height say otherwise. Without \\-\\-tab
+    it stays on its tab and only the given position or size changes.
+
+    On a "single_widget" tab the one widget fills the screen, so its position
+    and size do not matter there.
+
+Example:
+    $ tagoio widget\\-move 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-tab app
+    $ tagoio wg\\-mv 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-height 10
+.fi
+.SS widget\\-delete [widgetID]
+take a custom widget off its dashboard and delete it.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard holding the widget
+.TP
+\\fB\\-y\\fR, \\fB\\-\\-yes\\fR
+skip the delete confirmation
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the IDs)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Also removes the widget from this environment's widgetList.
+
+Example:
+    $ tagoio widget\\-delete 6ad1084c174a0b000cb231a4 \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-y
+.fi
+.SS widget\\-link [folder]
+link custom widgets that already exist in the profile to widget folders in widgetList.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-dashboard\\fR \\fI<dashboardID>\\fR
+dashboard holding the widgets
+.TP
+\\fB\\-\\-widget\\fR \\fI<widgetID>\\fR
+custom widget to link to the folder (repeatable) (default: [])
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the folder, \\-\\-dashboard and \\-\\-widget)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Without arguments, pick the dashboards, then their custom widgets, then a
+    folder for each widget ("> Skip" leaves one unlinked). Widgets already in
+    widgetList come checked. For the dashboards you pick, the answer replaces
+    their widgetList entries, so a widget you uncheck or skip is unlinked;
+    entries on other dashboards stay as they are.
+
+    With a folder, \\-\\-dashboard and \\-\\-widget, the widgets are linked without
+    prompts. A widget already linked to another folder moves to this one.
+
+    Only folders under widgetPath (default ./widgets) that hold an App.tsx can
+    be linked. Run 'widget\\-deploy <folder>' afterwards to upload the code.
+
+Example:
+    $ tagoio widget\\-link
+    $ tagoio wg\\-ln customer\\-table \\-\\-dashboard 6a68b4f5e4b1e5000b5ab1ef \\-\\-widget 6ad1084c174a0b000cb231a4
+.fi
+.SS widget\\-deploy [folder]
+build a custom widget folder and upload it to every widget it is mapped to.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-all\\fR
+deploy every widget in widgetList (for CI/CD)
+.TP
+\\fB\\-\\-dry\\-run\\fR
+build only; write the file to the build folder without uploading
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI<profile\\-token>\\fR
+profile token for this run, bypassing the lock file (CI/CD)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the folder or \\-\\-all)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Each widgetList entry maps a folder under widgetPath (default ./widgets) to
+    a custom widget: { "folder", "dashboard_id", "widget_id" }. A folder placed
+    on several widgets has one entry each, and a deploy updates all of them.
+
+    The build bundles <folder>/App.tsx with its local modules (shared folders
+    included) into one .tsx, written to <buildPath>/widgets/<folder>.tsx. Each
+    package import is pinned to the version in the nearest deno.json "imports"
+    or package.json "dependencies"; an undeclared package fails the build.
+    CSS imports are dropped: the platform injects Tailwind when a manifest
+    lists tailwindcss.
+
+    The platform bundles the upload. If its bundle fails, the source is saved
+    but the widget keeps running its previous build, so the deploy fails. On
+    the per\\-minute upload limit it waits once and tries again.
+
+Example:
+    $ tagoio widget\\-deploy users\\-summary
+    $ tagoio widget\\-deploy \\-\\-all \\-\\-silent
+    $ tagoio wg\\-dp alerts \\-\\-dry\\-run
+.fi
+.SS widget\\-pull [folder]
+download the source a custom widget runs into the build folder.
+.TP
+\\fB\\-\\-env\\fR, \\fB\\-\\-environment\\fR \\fI[environment]\\fR
+environment from config.js
+.TP
+\\fB\\-\\-all\\fR
+pull every widget in widgetList
+.TP
+\\fB\\-t\\fR, \\fB\\-\\-token\\fR \\fI<profile\\-token>\\fR
+profile token for this run, bypassing the lock file (CI/CD)
+.TP
+\\fB\\-\\-silent\\fR
+do not prompt (requires the folder or \\-\\-all)
+.TP
+\\fB\\-\\-json\\fR
+return result as json
+.PP
+.nf
+    Writes <buildPath>/widgets/<folder>.<widget id>.published.tsx for each
+    placement, to compare with a local build or pick up an edit made in the
+    Admin. It never writes into the widget folder: the published file is the
+    single built file and would replace the folder's modules.
+
+Example:
+    $ tagoio widget\\-pull users\\-summary
 .fi
 .SS entity\\-list
 list entities in the active profile
@@ -2838,7 +3515,9 @@ when no \\-\\-env flag is given. Persisted by tagoio set\\-env.
 .TP
 .I ./tagoconfig.json
 Project\\-level configuration. Created and updated by
-tagoio init.
+tagoio init. Each environment's widgetList maps custom widget folders to the
+widgets tagoio widget\\-deploy uploads them to; tagoio widget\\-link fills it from
+the widgets already in the profile.
 .TP
 .I ./.tago-lock.<env>.lock
 Per\\-environment profile token written by tagoio login.

@@ -23,6 +23,7 @@ import { sqlCommands } from "./commands/sql/index.js";
 import { setEnvironment } from "./commands/set-env.js";
 import { startConfig } from "./commands/start-config.js";
 import { whoami } from "./commands/whoami.js";
+import { widgetCommands } from "./commands/widgets/index.js";
 import { getConfigFile } from "./lib/config-file.js";
 import { configureHelp } from "./lib/configure-help.js";
 import { getEnvFilePath } from "./lib/dotenv-config.js";
@@ -168,6 +169,7 @@ Example:
   sqlCommands(program);
   deviceCommands(program);
   dashboardCommands(program);
+  widgetCommands(program);
   entityCommands(program);
   filesCommands(program);
   actionCommands(program);

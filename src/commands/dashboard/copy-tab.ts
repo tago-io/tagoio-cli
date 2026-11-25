@@ -152,7 +152,7 @@ async function copyTabWidgets(dashID: string, options: IOptions) {
     errorHandler(
       `No widgets were copied. The source tab "${fromTabName}" has no widgets associated with its tab key. ` +
         `This usually means the dashboard uses a model where arrangement entries have tab=null. ` +
-        `Verify with: tagoio dashboard widgets, or open an issue with the dashboard ID ${dashID}.`,
+        `Verify with: tagoio widget-list ${dashID}, or open an issue with the dashboard ID ${dashID}.`,
     );
   }
   successMSG(

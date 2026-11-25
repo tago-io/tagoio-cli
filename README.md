@@ -116,7 +116,23 @@ List of commands of the CLI
 | dv-cp, device-copy | copy data from one device to another |
 | | |
 | **Dashboards** | |
+| db-ls, dashboard-list | get the list of dashboards. |
+| db-nf, dashboard-info [ID] | get information about a dashboard, including its tabs and Blueprint slots. |
+| db-crt, dashboard-create [label] | create a new Normal or Blueprint dashboard. |
+| db-ed, dashboard-edit [ID] | edit a dashboard: rename it, replace its tabs or Blueprint slots, show or hide it, or change its tags. |
+| db-dlt, dashboard-delete [ID] | permanently delete a dashboard and its widgets. |
 | copy-tab [dashboardID] | copy a tab of a dashboard to another tab |
+| | |
+| **Widgets** | |
+| wg-ls, widget-list [dashboardID] | list the widgets on a dashboard, with their tab and position. |
+| wg-nf, widget-info [widgetID] | get information about a custom widget: its code, parameters, data sources and filters. |
+| wg-crt, widget-create [label] | create a custom widget on a dashboard and place it. |
+| wg-ed, widget-edit [widgetID] | edit a custom widget: label, parameters, data sources, filters or analysis. |
+| wg-mv, widget-move [widgetID] | move a custom widget to another tab, position or size on its dashboard. |
+| wg-dlt, widget-delete [widgetID] | take a custom widget off its dashboard and delete it. |
+| wg-ln, widget-link [folder] | link custom widgets that already exist in the profile to widget folders in widgetList. |
+| wg-dp, widget-deploy [folder] | build a custom widget folder and upload it to every widget it is mapped to. |
+| wg-pl, widget-pull [folder] | download the source a custom widget runs into the build folder. |
 | | |
 | **Entities** | |
 | en-ls, entity-list | list entities in the active profile |
@@ -252,6 +268,7 @@ If you are using the TagoDeploy service, you can configure the URLs for both the
 The `tagoconfig.json` file encapsulates information about your current project, including:
 
 - **Analysis Details**: Information about your analysis, including their IDs and names.
+- **Custom Widgets**: Which widget folder deploys to which custom widget, per environment.
 - **Environment Configurations**: Details about the environments configured for your project.
 - **Other Settings**: Additional settings and configurations specific to your project.
 
@@ -269,6 +286,34 @@ Having a `tagoconfig.json` file is essential for executing several commands, suc
   ```
 
   Luau analyses are bundled with [darklua](https://github.com/seaofvoices/darklua) (`brew install darklua`), so the entry file can `require` other files. The project's `.darklua.json` is used when present; it must keep `bundle.require_mode`, because the Luau runtime has no `require`. The bundle must stay under the runtime's 64 KiB limit. Luau analyses run only on TagoIO, so `tagoio run` does not support them.
+
+- **tagoio widget-deploy**: Builds a custom widget folder and uploads it to the widgets it is mapped to.
+
+  ```sh
+  tagoio widget-deploy users-summary   # every widget the folder is mapped to
+  tagoio widget-deploy --all           # every widget in widgetList
+  ```
+
+  Each environment's `widgetList` maps a folder under `widgetPath` (default `./widgets`) to a custom widget. A folder placed on several widgets has one entry per widget:
+
+  ```json
+  {
+    "widgetPath": "./widgets",
+    "dev": {
+      "widgetList": [
+        { "folder": "users-summary", "dashboard_id": "6a68b4f5e4b1e5000b5ab1ef", "widget_id": "6ad1084c174a0b000cb231a4" }
+      ]
+    }
+  }
+  ```
+
+  The CLI bundles `<folder>/App.tsx` and its local modules into one `.tsx` file and pins each package import to the version declared in the nearest `deno.json` or `package.json`. `tagoio widget-create --folder <folder>` creates the widget, adds the entry and deploys it in one step.
+
+  For widgets that already exist in the profile, `tagoio widget-link` picks the dashboards, then their custom widgets, then the folder each one deploys from, and writes the entries. Unchecking a widget, or choosing Skip, unlinks it. A script can link without prompts:
+
+  ```sh
+  tagoio widget-link customer-table --dashboard 6a68b4f5e4b1e5000b5ab1ef --widget 6ad1084c174a0b000cb231a4
+  ```
 
 - **tagoio trigger**: Use this command to trigger specific actions or events in your project.
   
@@ -302,6 +347,8 @@ The flag combination:
 - `--env, --environment` — picks the environment block from `tagoconfig.json`
 - `-t, --token` — a TagoIO token. Accepts either a **profile token** or an **external-analysis token** (see permissions below). Bypasses the local `.tago-lock` file, which doesn't exist in CI runners
 - `--silent` — skips confirmation prompts
+
+Custom widgets deploy the same way, with `tagoio widget-deploy --all --env production -t ${{ secrets.TAGOIO_TOKEN }} --silent`.
 
 Together, the command runs fully non-interactively — suitable for any CI/CD system. No call to `tagoio init` or `tagoio login` is required before deploy, but your repository **must** include a pre-configured `tagoconfig.json` mapping each analysis file to its analysis ID.
 
