@@ -7,7 +7,7 @@ import { getApiURL, getEnvironmentConfig } from "../../lib/config-file.js";
 import { errorHandler, errorHandlerJSON, infoMSG, requireOrFail, successMSG } from "../../lib/messages.js";
 import { requireLocalScope } from "../../lib/resolve-scope.js";
 import { type BuildResult, isValidWidgetFolder } from "../../lib/widget-build.js";
-import { addWidgetEntry, resolveEnvironmentName, widgetPathOf } from "./widget-config.js";
+import { addWidgetEntry, buildPathOf, resolveEnvironmentName, widgetPathOf } from "./widget-config.js";
 import { buildFolder, deployEntries } from "./widget-deploy.js";
 import { resolveDashboardID } from "./widget-lookup.js";
 import {
@@ -114,7 +114,7 @@ async function widgetCreate(labelArg: string | undefined, options: IOptions) {
     if (!existsSync(join(resolve(scope.root, widgetPathOf(config)), options.folder, "App.tsx"))) {
       failWith(`No App.tsx in ${join(widgetPathOf(config), options.folder)}. A widget folder needs one.`, "folder_not_found", options.json);
     }
-    const built = await buildFolder({ projectRoot: scope.root, widgetPath: widgetPathOf(config), buildPath: config.buildPath || "./build" }, options.folder);
+    const built = await buildFolder({ projectRoot: scope.root, widgetPath: widgetPathOf(config), buildPath: buildPathOf(config) }, options.folder);
     if ("error" in built) {
       failWith(`${built.error} No widget was created.`, "build_failed", options.json);
     }
@@ -178,7 +178,7 @@ async function widgetCreate(labelArg: string | undefined, options: IOptions) {
         transport: { apiURL: getApiURL(config.profileRegion), token: config.profileToken },
         projectRoot: scope.root,
         widgetPath: widgetPathOf(config),
-        buildPath: config.buildPath || "./build",
+        buildPath: buildPathOf(config),
       },
       [entry],
       new Map([[options.folder, prebuilt]]),

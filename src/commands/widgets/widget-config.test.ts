@@ -109,3 +109,12 @@ describe("widgetPathOf", () => {
     expect(widgetPathOf({ widgetPath: "./src/widgets" })).toBe("./src/widgets");
   });
 });
+
+describe("buildPathOf", () => {
+  test("defaults to ./build", async () => {
+    const { buildPathOf } = await import("./widget-config.js");
+
+    expect(buildPathOf({})).toBe("./build");
+    expect(buildPathOf({ buildPath: "./out" })).toBe("./out");
+  });
+});
